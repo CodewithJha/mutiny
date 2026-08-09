@@ -3,6 +3,8 @@
 builder = "nixpacks"
 
 [deploy]
-startCommand = "uv sync && mkdir -p data && uv run uvicorn mutiny_api.main:app --host 0.0.0.0 --port ${PORT:-8000}"
+# .mutiny/ is gitignored; ensure sample adapter exists after each deploy so
+# Hosted Run Campaign (openai_agents + examples/openai_support_agent) works.
+startCommand = "uv sync && mkdir -p data && (test -f examples/openai_support_agent/.mutiny/adapter.py || (cd examples/openai_support_agent && uv run mutiny init)) && uv run uvicorn mutiny_api.main:app --host 0.0.0.0 --port ${PORT:-8000}"
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 10

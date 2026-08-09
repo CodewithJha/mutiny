@@ -23,6 +23,8 @@ node_modules/
 .next/
 .worktrees/
 .mutiny/
+!examples/openai_support_agent/.mutiny/
+!examples/openai_support_agent/.mutiny/**
 
 
 .vscode/
