@@ -89,9 +89,13 @@ Keyword-shaped, product-shaped: agent safety, tool-call verification, OpenAI Age
 
 ## Screenshots & demo
 
-Visual placeholders live under [`docs/assets/`](./docs/assets/) (intentional SVG mocks — swap for real PNG/GIF anytime; see that folder’s README).
+Live Hosted captures from [mutiny-sable.vercel.app](https://mutiny-sable.vercel.app) plus a CLI run frame. Assets live under [`docs/assets/`](./docs/assets/).
 
-### Loop storyboard
+### Demo loop
+
+![Mutiny demo: Hosted campaigns, violation evidence, tests, and CLI run](./docs/assets/mutiny-demo.gif)
+
+Static storyboard (fallback):
 
 ![Mutiny loop: init → run → violation → regression → test → PASS](./docs/assets/storyboard.svg)
 
@@ -106,22 +110,18 @@ Visual placeholders live under [`docs/assets/`](./docs/assets/) (intentional SVG
                                mutiny test  →  PASS (after fix)
 ```
 
-**Real GIF later:** record the sample loop → save as `docs/assets/mutiny-demo.gif` → put the GIF above this storyboard in this section (keep the SVG as fallback). Details: [`docs/assets/README.md`](./docs/assets/README.md).
-
 ### Hosted & CLI frames
 
-| View | Placeholder |
+| View | Capture |
 |---|---|
-| Hero / landing | ![Hosted hero placeholder](./docs/assets/hero.svg) |
-| Campaign / lineage | ![Campaign placeholder](./docs/assets/campaign.svg) |
-| Policy | ![Policy placeholder](./docs/assets/policy.svg) |
-| Tests | ![Tests placeholder](./docs/assets/tests.svg) |
-| Regressions | ![Regressions placeholder](./docs/assets/regressions.svg) |
-| CLI `mutiny run` | ![CLI run placeholder](./docs/assets/cli-run.svg) |
+| Hero / landing | ![Hosted landing](./docs/assets/hero.png) |
+| Campaigns | ![Campaigns list with violations](./docs/assets/campaign.png) |
+| Violation / evolution graph | ![Campaign violation and evidence](./docs/assets/regressions.png) |
+| Policy | ![Hosted policies](./docs/assets/policy.png) |
+| Tests | ![Hosted tests](./docs/assets/tests.png) |
+| CLI `mutiny run` | ![CLI local campaign finding a violation](./docs/assets/cli-run.png) |
 
 The [sample project](./examples/openai_support_agent/) runs offline without an API key. Hosted lineage (optional): `./scripts/dev.sh`, then `mutiny run` without `--no-hosted`.
-
-> Real screenshots and terminal recordings are welcome PRs (`docs` / `examples` labels).
 
 ---
 
@@ -323,10 +323,10 @@ Building an adapter? Start from `packages/mutiny_core`’s `TargetAdapter` port 
 | Command | What it does |
 |---|---|
 | `mutiny init [--path] [--force]` | Scaffold `.mutiny/adapter.py` + `policy.yaml` + `mutiny.yaml` |
-| `mutiny run [--path] [--no-hosted] [--hosted-url]` | Load adapter + policy; campaign; minimize / save regressions |
-| `mutiny test [--path] [--failed] [--json]` | Replay `.mutiny/tests/` (PASS / FAIL / SKIPPED) |
+| `mutiny run [--path] [--no-hosted] [--hosted-url] [--attestation]` | Load adapter + policy; campaign; minimize / save regressions |
+| `mutiny test [id] [--path] [--failed] [--json] [--no-report]` | Replay `.mutiny/tests/` (PASS / FAIL / SKIPPED); optional single id |
 
-Full flag list: `uv run mutiny <cmd> --help`. Expanding this table from `--help` is a welcome docs PR.
+Full flag reference: [`docs/CLI.md`](./docs/CLI.md) (from `mutiny --help`). Quick check: `mutiny <cmd> --help`.
 
 ---
 
@@ -334,8 +334,8 @@ Full flag list: `uv run mutiny <cmd> --help`. Expanding this table from `--help`
 
 | Phase | Focus |
 |---|---|
-| **Current scope** | Engine-first Core · Adapter #1 (OpenAI Agents SDK) · CLI · minimize / regress · optional Hosted |
-| **Next** | Real screenshots / GIF · contributor onboarding · more adapters |
+| **Current scope** | Engine-first Core · Adapter #1 (OpenAI Agents SDK) · CLI · minimize / regress · optional Hosted · PyPI `mutiny-ai` |
+| **Next** | Contributor onboarding · more adapters · keep demo assets current |
 | **Beta** | LangGraph / CrewAI / PydanticAI / HTTP adapters · policy packs · exportable reports |
 | **v1** | Stable contracts · CI GitHub Action for regression replay · authenticated Hosted |
 
@@ -371,6 +371,9 @@ If this engine is useful, a star helps other agent builders find it. Fork the re
 **Is Mutiny on PyPI?**  
 Yes — install with `pip install mutiny-ai` ([PyPI](https://pypi.org/project/mutiny-ai/)). CLI command is **`mutiny`**. Do not use bare `pip install mutiny` or `mutiny-sdk` — those are other projects.
 
+**How do I run on Windows?**  
+Create a venv, then activate with PowerShell `.\.venv\Scripts\Activate.ps1` (or cmd `activate.bat`). Prefer WSL for contributor/`uv` workflows. Short FAQ: [SUPPORT.md § Windows](./SUPPORT.md#windows).
+
 **Which agent frameworks work today?**  
 **Adapter #1: OpenAI Agents SDK** only. Others (LangGraph, CrewAI, PydanticAI, AutoGen, HTTP) are roadmap / contribution targets on the same `TargetAdapter` port.
 
@@ -397,7 +400,6 @@ No. Authorized testing only — local / in-process / localhost. Not an open-inte
 - **Published on PyPI** as `mutiny-ai` (`pip install mutiny-ai`) — see [docs/PUBLISHING.md](./docs/PUBLISHING.md).
 - **Policy expressiveness** is deliberately narrow (deterministic operators on tool calls) — not NL policies judged by an LLM.
 - **Hosted** is optional and secondary; auth / multi-tenant cloud are not current scope.
-- **Screenshots / recorded demo** — SVG placeholders ship in `docs/assets/`; real PNG/GIF contributions welcome.
 - Sample and reference demo agents use **mock tools**; they are not production payment or email systems.
 - See [CHANGELOG.md](./CHANGELOG.md) for Unreleased / initial release notes.
 

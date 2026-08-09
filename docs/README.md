@@ -24,6 +24,7 @@ with sandboxed mock tools for demos.
 | If you want… | Read |
 |---|---|
 | Install + try in 5 minutes | [Root README](../README.md) |
+| CLI flags (`init` / `run` / `test`) | [CLI.md](./CLI.md) |
 | Packaging / PyPI | [PUBLISHING.md](./PUBLISHING.md) |
 | Clean-machine bootstrap | [COLD_START.md](./COLD_START.md) |
 | Contribute / first PR | [CONTRIBUTING.md](../CONTRIBUTING.md) · [GOOD_FIRST_ISSUES.md](./GOOD_FIRST_ISSUES.md) |
@@ -31,7 +32,7 @@ with sandboxed mock tools for demos.
 | How the system runs | [SYSTEM_DESIGN.md](./SYSTEM_DESIGN.md) |
 | What’s next | [ROADMAP.md](./ROADMAP.md) |
 | Why we chose X | [DECISION_LOG.md](./DECISION_LOG.md) (esp. ADR-017, ADR-018) |
-| Support / security | [SUPPORT.md](../SUPPORT.md) · [SECURITY.md](../SECURITY.md) |
+| Support / Windows / security | [SUPPORT.md](../SUPPORT.md) · [SECURITY.md](../SECURITY.md) |
 
 ---
 
@@ -46,6 +47,7 @@ with sandboxed mock tools for demos.
 | [DEMO_SCRIPT.md](./DEMO_SCRIPT.md) | Live demo scripts, backup, Q&A | System internals |
 | [COLD_START.md](./COLD_START.md) | Clean-machine bootstrap + smoke gate | Product narrative |
 | [GOOD_FIRST_ISSUES.md](./GOOD_FIRST_ISSUES.md) | Catalog of small contributor tasks | Execution ownership of Core redesigns |
+| [CLI.md](./CLI.md) | `mutiny` commands and flags from `--help` | Hosted UI walkthrough |
 | [../CHANGELOG.md](../CHANGELOG.md) | Unreleased + release notes | Live demo narration |
 | [DEVPOST.md](./DEVPOST.md) | Short public pitch copy | Live demo choreography |
 | [COMPETITOR_ANALYSIS.md](./COMPETITOR_ANALYSIS.md) | Competitive landscape (claims freeze) | Mutiny feature specs |
@@ -100,4 +102,4 @@ OpenAI Agents SDK Adapter   ← Adapter #1 (shipped)
    Sample / demo agent             ← reference harness
 ```
 
-Screenshots / demo assets: [`docs/assets/`](./assets/) — SVG placeholders ship today (`hero`, `campaign`, `policy`, `tests`, `regressions`, `cli-run`, `storyboard`). Replace with real PNG/GIF per [`assets/README.md`](./assets/README.md). Release notes: [`CHANGELOG.md`](../CHANGELOG.md).
+Screenshots / demo assets: [`docs/assets/`](./assets/) — live Hosted PNGs + optional GIF; SVG storyboard remains as a static diagram. See [`assets/README.md`](./assets/README.md). Release notes: [`CHANGELOG.md`](../CHANGELOG.md).

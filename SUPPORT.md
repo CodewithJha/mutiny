@@ -12,6 +12,18 @@
 | Contributing workflow | [CONTRIBUTING.md](./CONTRIBUTING.md) |
 | Architecture / product intent | [`docs/`](./docs/README.md) · [Roadmap issue](https://github.com/CodewithJha/mutiny/issues/11) |
 
+## Windows
+
+| Topic | Tip |
+|---|---|
+| Activate venv (PowerShell) | `python -m venv .venv` then `.\.venv\Scripts\Activate.ps1` |
+| Activate venv (cmd) | `.venv\Scripts\activate.bat` |
+| Execution policy | If Activate.ps1 is blocked: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` |
+| Paths | Prefer forward slashes or quoted paths (`--path "C:\agents\mybot"`). Avoid mixing `\` escapes in YAML |
+| WSL | Recommended for contributor/`uv` workflows — use the Linux install path from the [README](./README.md#install) inside WSL |
+
+Install is the same: `pip install mutiny-ai` then `mutiny init`.
+
 ## Before you open an issue
 
 1. Confirm install path: `pip install mutiny-ai` in your agent project ([README install](./README.md#install)), or from source with `uv sync --extra dev`.

@@ -81,7 +81,7 @@ User-facing PyPI name for the CLI package is **`mutiny-ai`** (see [docs/PUBLISHI
 - Start from [docs/GOOD_FIRST_ISSUES.md](./docs/GOOD_FIRST_ISSUES.md) (≥30 catalogued ideas).
 - Comment on the GitHub issue before large work so nobody duplicates effort.
 - Do **not** redesign Core, campaign search, policy language, or Hosted product flows in a first PR.
-- First PRs that shine: cheatsheets, CLI help text, unit tests, sample policy comments, a11y labels, screenshot placeholders.
+- First PRs that shine: cheatsheets, CLI help text, unit tests, sample policy comments, a11y labels, refreshed Hosted screenshots.
 
 **Guidance for maintainers**
 

@@ -88,14 +88,7 @@ mutiny --help
 pip index versions mutiny-ai
 ```
 
-Then flip user-facing docs / landing to primary:
-
-```bash
-pip install mutiny-ai
-mutiny init
-```
-
-(Keep the git install as a “from source” footnote.)
+User-facing docs already lead with `pip install mutiny-ai` (keep git install as an optional footnote).
 
 ---
 

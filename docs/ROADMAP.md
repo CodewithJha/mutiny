@@ -41,8 +41,8 @@
 
 ## 2. Next (after current OSS baseline)
 
-- Package publish story for `mutiny` (PyPI)
-- Recorded demo + screenshots under `docs/assets/`
+- Keep PyPI packages (`mutiny-ai` / `mutiny-core` / `mutiny-openai-agents`) version-aligned on each release
+- Keep demo assets under `docs/assets/` current with Hosted UI
 - Keep good-first-issue queue fresh ([GOOD_FIRST_ISSUES.md](./GOOD_FIRST_ISSUES.md))
 - Clarify sample vs customer-project paths in UX copy as adapters land
 

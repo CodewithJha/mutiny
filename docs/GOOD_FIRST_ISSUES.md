@@ -32,9 +32,9 @@ Maintainer catalog of **small, realistic** tasks for new contributors. Open GitH
 | # | Title | Difficulty | Acceptance | Affected files | Labels |
 |---|---|---|---|---|---|
 | 1 | Policy.yaml operator cheatsheet | S | Add `docs/POLICY_CHEATSHEET.md` with operators + examples from `tests/unit/test_policy_*` and sample `policy.yaml`; link from `docs/README.md` map; no language redesign | `docs/POLICY_CHEATSHEET.md`, `docs/README.md`, `tests/unit/test_policy_*.py`, `examples/openai_support_agent/policy.yaml` | `docs` `good first issue` |
-| 2 | Document CLI flags from `--help` | S | Expand README Commands or add `docs/CLI.md` listing real flags from `mutiny {init,run,test} --help`; keep install path as `pip install mutiny-ai` | `README.md`, optional `docs/CLI.md` | `docs` `cli` |
+| 2 | Document CLI flags from `--help` | S | **Done** — see [`docs/CLI.md`](./CLI.md) + README Commands table; keep flags in sync when CLI changes | `README.md`, `docs/CLI.md` | `docs` `cli` |
 | 3 | Keep install wording consistent | XS | Pitch docs should lead with `pip install mutiny-ai` (never bare `pip install mutiny`) | `docs/DEMO_SCRIPT.md`, `docs/DEVPOST.md`, `docs/PRD.md` | `docs` |
-| 4 | Screenshot / GIF assets | XS–S | SVG placeholders ship under `docs/assets/`; **remaining:** real `*.png` / `mutiny-demo.gif` + README path swap per `docs/assets/README.md` (GH [#3](https://github.com/CodewithJha/mutiny/issues/3)) | `docs/assets/*`, `README.md` | `docs` `examples` |
+| 4 | Screenshot / GIF assets | XS–S | **Done for 0.1.0** — real PNG + `mutiny-demo.gif` under `docs/assets/`; refresh captures when Hosted UI changes ([#3](https://github.com/CodewithJha/mutiny/issues/3)) | `docs/assets/*`, `README.md` | `docs` `examples` |
 | 5 | Cross-link sample vs demo harness | XS | Three short paragraphs linking sample agent ↔ `examples/demo` ↔ COLD_START | `examples/*/README.md`, `docs/COLD_START.md` | `docs` `examples` |
 | 6 | FAQ: Windows / WSL notes | S | 3 bullets in README FAQ for `uv` / venv on Windows + WSL | `README.md` | `docs` |
 | 7 | Adapter-author reading order | XS | 10–15 lines pointer section in ARCHITECTURE (no redesign) | `docs/ARCHITECTURE.md` | `docs` |

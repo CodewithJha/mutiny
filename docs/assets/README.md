@@ -2,38 +2,45 @@
 
 Screenshots and short demo recordings for the root README live here.
 
-## Checked-in placeholders (SVG)
+## Checked-in captures (PNG / GIF)
 
-Intentional UI/terminal mock frames — **not** broken image links. Replace with real captures when you have them (keep the same basename, prefer `.png` / `.webp` / `.gif`, then update README image paths).
+Real Hosted UI captures from [mutiny-sable.vercel.app](https://mutiny-sable.vercel.app) plus a local CLI frame. SVG storyboard remains as a static diagram fallback.
 
-| File | Intended real shot |
+| File | Content |
 |---|---|
-| `hero.svg` → `hero.png` | Hosted landing / first viewport |
-| `campaign.svg` → `campaign.png` | Hosted campaign / lineage |
-| `policy.svg` → `policy.png` | `policy.yaml` or Hosted `/policies` |
-| `tests.svg` → `tests.png` | Hosted `/tests` or `mutiny test` output |
-| `regressions.svg` → `regressions.png` | `.mutiny/tests/` artifact view |
-| `cli-run.svg` → `cli-run.png` | Terminal: `uv run mutiny run --no-hosted` |
-| `storyboard.svg` | Loop diagram (keep until a GIF exists) |
-| `hosted-campaign.svg` / `policy-yaml.svg` | Aliases of campaign / policy placeholders |
+| `hero.png` | Hosted landing / first viewport |
+| `campaign.png` | Hosted `/campaigns` (list + violation statuses) |
+| `regressions.png` | Hosted `/campaign/{id}` violation + evolution graph + tool evidence |
+| `policy.png` | Hosted `/policies` |
+| `tests.png` | Hosted `/tests` |
+| `cli-run.png` | Terminal: `mutiny run --no-hosted` finding a violation |
+| `mutiny-demo.gif` | Short slideshow of the frames above |
+| `storyboard.svg` | Loop diagram (static fallback) |
+| `*.svg` (other) | Legacy mocks kept for reference; README prefers PNG/GIF |
 
-## Dropping a real GIF later
+## Refreshing captures
 
-1. Record the sample loop (asciinema, terminal.sexy, or screen capture):
+1. Hosted stills (prefer waiting for network idle):
+
+   ```bash
+   # example: puppeteer-core + Chrome headless against the live URL
+   # or local ./scripts/dev.sh then screenshot http://127.0.0.1:3000
+   ```
+
+2. CLI frame:
 
    ```bash
    cd examples/openai_support_agent
-   uv run mutiny init
-   uv run mutiny run --no-hosted
-   uv run mutiny test
+   mutiny run --no-hosted
+   # capture terminal; scrub personal absolute paths before committing
    ```
 
-2. Export as `docs/assets/mutiny-demo.gif` (or `.webm`), keep under ~2 MB if possible.
-3. In the root README **Screenshots & demo** section, put the GIF **above** the storyboard SVG and keep the SVG as a static fallback.
-4. Open a PR with label `docs` / `examples`.
+3. Rebuild GIF from PNGs with ffmpeg (keep under ~500 KB if possible).
+
+4. Keep README **Screenshots & demo** paths pointing at the PNG/GIF basenames above.
 
 ## Guidelines
 
-- Still frames: PNG or WebP, &lt; ~1–2 MB each.
-- Prefer dark terminal / Hosted UI captures that match the product voice.
-- Alt text in README should describe the real UI once placeholders are replaced.
+- Still frames: PNG or WebP, prefer &lt; ~1 MB each.
+- Scrub API keys and personal home-directory paths.
+- Alt text in README should describe the real UI.

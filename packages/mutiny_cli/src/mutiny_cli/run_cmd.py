@@ -256,7 +256,7 @@ def _run_local(root: Path, config: dict[str, Any], policy: PolicySet) -> int:
 
     print("→ Local campaign (Core + .mutiny/adapter.py)")
     core_cfg = CampaignConfig(
-        population_size: int(config.get("population_size", 8)),
+        population_size=int(config.get("population_size", 8)),
         max_generations=int(config.get("max_generations", 6)),
         elite_count=int(config.get("elite_count", 2)),
         max_turns=int(config.get("max_turns", 4)),
