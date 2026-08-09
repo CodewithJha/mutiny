@@ -57,7 +57,7 @@ Campaign, candidate, genome, trace, fitness, violation, minimize, regression, at
 ## Open decisions
 
 - Exact live Featherless model pin for demos (config, not product truth)
-- Package publish name / PyPI story for `pip install mutiny`
+- Package publish name / PyPI story for `pip install mutiny-ai` (CLI command `mutiny`; bare `mutiny` on PyPI is taken)
 - How Hosted UI attaches to a customer-local `mutiny run` vs the sample/reference harness
 
 ## Assumptions

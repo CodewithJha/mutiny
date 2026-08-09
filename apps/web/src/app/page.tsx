@@ -8,7 +8,7 @@ import { GitHubStarLink } from "@/components/GitHubStarLink";
 import { Button, CopyButton } from "@/components/ui";
 
 const JOURNEY: { label: string; detail: string; tone?: "pass" | "fail" }[] = [
-  { label: "Install", detail: "clone + init" },
+  { label: "Install", detail: "pip + init" },
   { label: "Define Rules", detail: "policy.yaml" },
   { label: "Run Campaign", detail: "evolve prompts" },
   { label: "Find Violation", detail: "tool call breaks", tone: "fail" },
@@ -20,28 +20,27 @@ const JOURNEY: { label: string; detail: string; tone?: "pass" | "fail" }[] = [
 
 const INSTALL_CMDS = [
   {
-    id: "clone",
+    id: "install",
     title: "Install",
-    command:
-      "git clone https://github.com/CodewithJha/mutiny.git\ncd mutiny && uv sync --extra dev",
-    hint: "From source with uv — not on PyPI yet",
+    command: "pip install mutiny-ai",
+    hint: "Package name on PyPI; CLI command stays mutiny",
   },
   {
     id: "init",
     title: "Scaffold",
-    command: "uv run mutiny init",
+    command: "mutiny init",
     hint: "Creates .mutiny/adapter.py · policy.yaml · mutiny.yaml",
   },
   {
     id: "run",
     title: "Hunt",
-    command: "uv run mutiny run",
+    command: "mutiny run",
     hint: "Evolve prompts until a verified violation",
   },
   {
     id: "test",
     title: "Replay",
-    command: "uv run mutiny test",
+    command: "mutiny test",
     hint: "FAIL until the agent is fixed — then PASS",
   },
 ] as const;
@@ -348,7 +347,7 @@ export default function HomePage() {
             Install
           </h2>
           <p className="landing-section-lede">
-            Clone the repo, sync with uv, then scaffold and run. Mutiny stays
+            Install into your agent project, then scaffold and run. Mutiny stays
             outside the agent — your tools stay sandboxed.
           </p>
 

@@ -240,7 +240,7 @@ Add new ADRs at the bottom. Do not rewrite history; supersede with a new ADR.
 
 **Decision:**
 
-1. **Primary product path:** Developer owns an OpenAI Agents SDK project → `pip install mutiny` → `mutiny init` (`.mutiny/adapter.py`, `policy.yaml`, `mutiny.yaml`) → connect agent → `mutiny run` → campaign → minimize → regression tests.  
+1. **Primary product path:** Developer owns an OpenAI Agents SDK project → `pip install mutiny-ai` → `mutiny init` (`.mutiny/adapter.py`, `policy.yaml`, `mutiny.yaml`) → connect agent → `mutiny run` → campaign → minimize → regression tests.  
 2. **Framework lock (current scope):** OpenAI Agents SDK **only**. LangGraph, CrewAI, PydanticAI, AutoGen, MCP, HTTP adapters = ROADMAP (Beta/v1).  
 3. **Bundled demo agent:** Reclassified as **reference implementation / sample project / docs example / reliability harness** — not the primary user workflow.  
 4. **Architecture preserved:** One Core; `TargetAdapter` port; Hosted API/UI remain valuable secondary surfaces for lineage/ops.  

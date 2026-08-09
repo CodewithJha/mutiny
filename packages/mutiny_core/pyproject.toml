@@ -4,10 +4,19 @@ version = "0.1.0"
 description = "Mutiny Core — deterministic policy oracle and domain kernel"
 readme = "README.md"
 requires-python = ">=3.11"
+license = "MIT"
+authors = [
+    { name = "Priyanshu Jha", email = "155089480+CodewithJha@users.noreply.github.com" },
+]
 dependencies = [
     "pydantic>=2.0,<3",
     "pyyaml>=6.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/CodewithJha/mutiny"
+Repository = "https://github.com/CodewithJha/mutiny"
+Issues = "https://github.com/CodewithJha/mutiny/issues"
 
 [project.optional-dependencies]
 dev = [

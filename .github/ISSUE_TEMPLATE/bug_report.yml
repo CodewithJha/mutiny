@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for helping. Mutiny installs **from source** today (`uv sync --extra dev`) — not on PyPI yet.
+        Thanks for helping. Prefer **`pip install mutiny-ai`** in an agent project, or from source (`uv sync --extra dev`) / the README git install until PyPI is live.
         Security-sensitive reports → [SECURITY.md](https://github.com/CodewithJha/mutiny/blob/main/SECURITY.md).
   - type: dropdown
     id: area

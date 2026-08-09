@@ -6,7 +6,7 @@ requires-python = ">=3.11"
 dependencies = [
     "mutiny-core",
     "mutiny-openai-agents",
-    "mutiny-cli",
+    "mutiny-ai",
     "demo-agent",
     "mutiny-api",
 ]
@@ -29,7 +29,7 @@ mutiny = "mutiny_cli.main:main"
 [tool.uv.sources]
 mutiny-core = { workspace = true }
 mutiny-openai-agents = { workspace = true }
-mutiny-cli = { workspace = true }
+mutiny-ai = { workspace = true }
 demo-agent = { workspace = true }
 mutiny-api = { workspace = true }
 

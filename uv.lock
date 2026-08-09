@@ -12,8 +12,8 @@ resolution-markers = [
 members = [
     "demo-agent",
     "mutiny",
+    "mutiny-ai",
     "mutiny-api",
-    "mutiny-cli",
     "mutiny-core",
     "mutiny-openai-agents",
 ]
@@ -616,8 +616,8 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "demo-agent" },
+    { name = "mutiny-ai" },
     { name = "mutiny-api" },
-    { name = "mutiny-cli" },
     { name = "mutiny-core" },
     { name = "mutiny-openai-agents" },
 ]
@@ -637,8 +637,8 @@ openai-agents = [
 [package.metadata]
 requires-dist = [
     { name = "demo-agent", editable = "apps/demo_agent" },
+    { name = "mutiny-ai", editable = "packages/mutiny_cli" },
     { name = "mutiny-api", editable = "apps/api" },
-    { name = "mutiny-cli", editable = "packages/mutiny_cli" },
     { name = "mutiny-core", editable = "packages/mutiny_core" },
     { name = "mutiny-core", extras = ["llm"], marker = "extra == 'llm'", editable = "packages/mutiny_core" },
     { name = "mutiny-openai-agents", editable = "packages/mutiny_openai_agents" },
@@ -647,6 +647,25 @@ requires-dist = [
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.24" },
 ]
 provides-extras = ["dev", "llm", "openai-agents"]
+
+[[package]]
+name = "mutiny-ai"
+version = "0.1.0"
+source = { editable = "packages/mutiny_cli" }
+dependencies = [
+    { name = "httpx" },
+    { name = "mutiny-core" },
+    { name = "mutiny-openai-agents" },
+    { name = "pyyaml" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "httpx", specifier = ">=0.27" },
+    { name = "mutiny-core", editable = "packages/mutiny_core" },
+    { name = "mutiny-openai-agents", editable = "packages/mutiny_openai_agents" },
+    { name = "pyyaml", specifier = ">=6.0" },
+]
 
 [[package]]
 name = "mutiny-api"
@@ -669,25 +688,6 @@ requires-dist = [
     { name = "mutiny-core", editable = "packages/mutiny_core" },
     { name = "mutiny-openai-agents", editable = "packages/mutiny_openai_agents" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },
-]
-
-[[package]]
-name = "mutiny-cli"
-version = "0.1.0"
-source = { editable = "packages/mutiny_cli" }
-dependencies = [
-    { name = "httpx" },
-    { name = "mutiny-core" },
-    { name = "mutiny-openai-agents" },
-    { name = "pyyaml" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "httpx", specifier = ">=0.27" },
-    { name = "mutiny-core", editable = "packages/mutiny_core" },
-    { name = "mutiny-openai-agents", editable = "packages/mutiny_openai_agents" },
-    { name = "pyyaml", specifier = ">=6.0" },
 ]
 
 [[package]]

@@ -10,7 +10,7 @@ nit. Larger adapters need an issue first.
 ## 30-minute path (fork → PR)
 
 1. **Fork** [CodewithJha/mutiny](https://github.com/CodewithJha/mutiny) and clone your fork.
-2. **Sync** the workspace (not on PyPI yet — always from source):
+2. **Sync** the workspace (contributors use source; users install `mutiny-ai`):
 
    ```bash
    uv sync --extra dev
@@ -48,13 +48,13 @@ uv sync --extra dev
 uv run mutiny --help
 ```
 
-Alternate (per-package editable pip — root `pip install -e .` does not work):
+Alternate (per-package editable pip — install siblings together):
 
 ```bash
-pip install -e packages/mutiny_core
-pip install -e packages/mutiny_openai_agents
-pip install -e packages/mutiny_cli
+pip install -e packages/mutiny_core -e packages/mutiny_openai_agents -e packages/mutiny_cli
 ```
+
+User-facing PyPI name for the CLI package is **`mutiny-ai`** (see [docs/PUBLISHING.md](./docs/PUBLISHING.md)).
 
 ## Project layout (where to change things)
 

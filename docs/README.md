@@ -9,9 +9,10 @@ and contributor onboarding.
 
 > `mutiny init` → connect adapter → `mutiny run` → search for policy breaks → prove on traces → minimize → save permanent regression tests.
 
-**Shipped today:** Adapter #1 — **OpenAI Agents SDK**. Install **from source**
-(`uv sync --extra dev`); PyPI publish is on the roadmap. Sample/demo agents are
-**reference harnesses**, not the primary product.
+**Shipped today:** Adapter #1 — **OpenAI Agents SDK**. Install with
+**`pip install mutiny-ai`** (CLI stays `mutiny`), or from source / git until the
+first PyPI upload. Sample/demo agents are **reference harnesses**, not the
+primary product.
 
 **Safety:** Authorized testing only. Targets are local / in-process / localhost
 with sandboxed mock tools for demos.
@@ -23,6 +24,7 @@ with sandboxed mock tools for demos.
 | If you want… | Read |
 |---|---|
 | Install + try in 5 minutes | [Root README](../README.md) |
+| Packaging / PyPI | [PUBLISHING.md](./PUBLISHING.md) |
 | Clean-machine bootstrap | [COLD_START.md](./COLD_START.md) |
 | Contribute / first PR | [CONTRIBUTING.md](../CONTRIBUTING.md) · [GOOD_FIRST_ISSUES.md](./GOOD_FIRST_ISSUES.md) |
 | Architecture boundaries | [ARCHITECTURE.md](./ARCHITECTURE.md) |
@@ -67,7 +69,7 @@ Community files at repo root: [CONTRIBUTING](../CONTRIBUTING.md),
 
 If docs disagree, fix the docs in that order—do not silently pick a convenient interpretation in code.
 
-**Install claims:** Prefer the root README. Today that means **git + `uv sync`**, not `pip install mutiny` (planned). Pitch docs that still show PyPI should say “planned.”
+**Install claims:** Prefer the root README. User path is **`pip install mutiny-ai`** (CLI stays `mutiny`). Until PyPI upload, use the git install or clone + `uv sync` — never claim bare `pip install mutiny` (that name is taken).
 
 ---
 
