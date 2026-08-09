@@ -1,0 +1,63 @@
+name: Bug report
+description: Something broken in Core, CLI, Adapter #1, Hosted, docs, or scripts
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping. Mutiny installs **from source** today (`uv sync --extra dev`) — not on PyPI yet.
+        Security-sensitive reports → [SECURITY.md](https://github.com/CodewithJha/mutiny/blob/main/SECURITY.md).
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Core (policy / campaign / minimize / regression)
+        - CLI (`mutiny init` / `run` / `test`)
+        - Adapter #1 (OpenAI Agents SDK)
+        - Sample project (`examples/openai_support_agent`)
+        - Hosted API
+        - Hosted UI
+        - Docs / scripts / CI
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: Clear description of the bug.
+      placeholder: mutiny test reported PASS but the tool call still violates policy.yaml …
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction steps
+      description: Minimal steps from a clean clone when possible.
+      value: |
+        1. `uv sync --extra dev`
+        2. `cd examples/openai_support_agent`
+        3. …
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      description: "OS, Python version, Node (if Hosted), commit SHA if known"
+      placeholder: "macOS 15 / Python 3.12 / uv / commit abc1234"
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / output
+      render: shell

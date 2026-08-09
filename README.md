@@ -29,7 +29,7 @@ Not on PyPI yet — install from this repo (see [Install](#install)).
 
 - [Why Mutiny](#why-mutiny)
 - [Features](#features)
-- [Demo](#demo)
+- [Screenshots & demo](#screenshots--demo)
 - [Install](#install)
 - [Quick start](#quick-start)
 - [How it works](#how-it-works)
@@ -37,8 +37,10 @@ Not on PyPI yet — install from this repo (see [Install](#install)).
 - [Adapters](#adapters)
 - [Commands](#commands)
 - [Troubleshooting](#troubleshooting)
-- [Contributing](#contributing)
 - [Roadmap](#roadmap)
+- [Contributing](#contributing)
+- [FAQ](#faq)
+- [Known limitations](#known-limitations)
 - [Safety](#safety)
 - [License](#license)
 
@@ -82,9 +84,17 @@ Keyword-shaped, product-shaped: agent safety, tool-call verification, OpenAI Age
 
 ---
 
-## Demo
+## Screenshots & demo
 
-No polished GIF in-repo yet — here’s the loop (and the [sample project](./examples/openai_support_agent/) runs offline without an API key):
+No polished GIF in-repo yet. Drop assets in [`docs/assets/`](./docs/assets/) — suggested names:
+
+| Placeholder | Intended shot |
+|---|---|
+| `docs/assets/cli-run.png` | Terminal: sample `mutiny run --no-hosted` |
+| `docs/assets/hosted-campaign.png` | Hosted campaign / lineage UI |
+| `docs/assets/policy-yaml.png` | A clear `policy.yaml` tool-use rule |
+
+Until those land, the loop looks like this (the [sample project](./examples/openai_support_agent/) runs offline without an API key):
 
 ```
   policy.yaml          mutiny run           .mutiny/tests/
@@ -97,7 +107,7 @@ No polished GIF in-repo yet — here’s the loop (and the [sample project](./ex
 
 Hosted lineage (optional): start API + UI with `./scripts/dev.sh`, then run without `--no-hosted`.
 
-> Want to contribute a short terminal recording or screenshot? Open a PR — docs love it.
+> Screenshots and short terminal recordings are welcome PRs (`docs` / `examples` labels).
 
 ---
 
@@ -299,36 +309,75 @@ Building an adapter? Start from `packages/mutiny_core`’s `TargetAdapter` port 
 
 ---
 
+## Roadmap
+
+| Phase | Focus |
+|---|---|
+| **Current scope** | Engine-first Core · Adapter #1 (OpenAI Agents SDK) · CLI · minimize / regress · optional Hosted |
+| **Next** | Package publish story · demos / screenshots · contributor onboarding |
+| **Beta** | LangGraph / CrewAI / PydanticAI / HTTP adapters · policy packs · exportable reports |
+| **v1** | Stable contracts · CI GitHub Action for regression replay · authenticated Hosted |
+
+Full detail: [`docs/ROADMAP.md`](./docs/ROADMAP.md).
+
+**Wanted contributor areas:** framework adapters, policy packs, tests, Hosted a11y/UX polish, CI/DX.
+
+---
+
 ## Contributing
 
-PRs welcome — especially adapters, policy packs, tests, and docs clarity.
+PRs welcome — especially adapters, policy packs, tests, docs, and a11y.
 
 ```bash
 uv sync --extra dev
 uv run pytest tests/unit -q
 ```
 
-- **Guide:** [CONTRIBUTING.md](./CONTRIBUTING.md)
-- **Conduct:** [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)
-- **Good first ideas:** new `TargetAdapter`s, example policies, minimize/regression coverage, clearer init errors
+- **Guide (30-min path):** [CONTRIBUTING.md](./CONTRIBUTING.md)
+- **Good first issues catalog:** [`docs/GOOD_FIRST_ISSUES.md`](./docs/GOOD_FIRST_ISSUES.md)
+- **Conduct / Security / Support:** [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) · [SECURITY.md](./SECURITY.md) · [SUPPORT.md](./SUPPORT.md)
+- **Docs hub:** [`docs/README.md`](./docs/README.md)
 - **Issues:** [github.com/CodewithJha/mutiny/issues](https://github.com/CodewithJha/mutiny/issues)
 
-If this engine is useful, a star helps other agent builders find it. Forks and issues are welcome too.
+If this engine is useful, a star helps other agent builders find it.
 
 ---
 
-## Roadmap
+## FAQ
 
-| Phase | Focus |
-|---|---|
-| **Current scope** | Engine-first Core · Adapter #1 (OpenAI Agents SDK) · CLI · minimize / regress · optional Hosted |
-| **Next** | Package publish story · demos / screenshots · good-first-issue labeling |
-| **Beta** | LangGraph / CrewAI / PydanticAI / HTTP adapters · policy packs · exportable reports |
-| **v1** | Stable contracts · CI GitHub Action for regression replay · authenticated Hosted |
+**Is Mutiny on PyPI?**  
+Not yet. Install from this repo with `uv sync --extra dev` (or per-package editable `pip`). See [Install](#install).
 
-Full detail: [`docs/ROADMAP.md`](./docs/ROADMAP.md).
+**Which agent frameworks work today?**  
+**Adapter #1: OpenAI Agents SDK** only. Others (LangGraph, CrewAI, PydanticAI, AutoGen, HTTP) are roadmap / contribution targets on the same `TargetAdapter` port.
 
-**Wanted contributor areas:** framework adapters, policy operator coverage, Hosted UX polish, CI/DX.
+**Do I need an OpenAI API key?**  
+No for the [sample project](./examples/openai_support_agent/) — it uses an offline scripted model when the key is unset. Your own live agent may need whatever keys that agent already uses.
+
+**Is the Hosted UI required?**  
+No. CLI is primary. Use `mutiny run --no-hosted` for local-only campaigns. Hosted adds lineage / ops when you want a browser.
+
+**Is the bundled demo agent the product?**  
+No. It’s a **reference harness** for docs and reliability. The product story is: install Mutiny into *your* agent project.
+
+**Can I point Mutiny at random websites?**  
+No. Authorized testing only — local / in-process / localhost. Not an open-internet attack proxy.
+
+**Where do I ask for help?**  
+[SUPPORT.md](./SUPPORT.md). Security → [SECURITY.md](./SECURITY.md).
+
+---
+
+## Known limitations
+
+- **One shipped adapter** (OpenAI Agents SDK); multi-framework support is intentional future work, not missing polish of a single kernel.
+- **Install from source** — no PyPI wheel yet; root `pip install -e .` is unsupported (uv workspace).
+- **Policy expressiveness** is deliberately narrow (deterministic operators on tool calls) — not NL policies judged by an LLM.
+- **Hosted** is optional and secondary; auth / multi-tenant cloud are not current scope.
+- **Screenshots / recorded demo** assets are still placeholders — contributions welcome under `docs/assets/`.
+- Sample and demo agents use **mock tools**; they are not production payment or email systems.
+
+Honest scope detail: [`docs/ROADMAP.md`](./docs/ROADMAP.md) § Current scope.
 
 ---
 
@@ -341,9 +390,3 @@ Authorized testing only. Current targets are local projects / in-process or loca
 ## License
 
 [MIT](./LICENSE) © 2026 Priyanshu Jha / CodewithJha
-
----
-
-### Current scope & limitations
-
-Mutiny is an open-source, engine-first project: install into **your** agent via an adapter, fuzz tool-use policies, prove breaks on traces, minimize, and freeze regressions. Adapter #1 is the **OpenAI Agents SDK**; additional frameworks are on the roadmap. The bundled sample/demo agent is a **reference harness** for docs and reliability — not the primary user story. PyPI publish is planned; the monorepo `uv` workflow is the supported install path today.

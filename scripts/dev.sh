@@ -29,6 +29,9 @@ curl -sf http://127.0.0.1:8000/api/health | head -c 200
 echo
 
 echo "→ UI  http://127.0.0.1:3000"
+if [[ ! -d "$ROOT/apps/web/node_modules" ]]; then
+  echo "  tip: cd apps/web && npm install   # first-time Hosted UI deps"
+fi
 (cd "$ROOT/apps/web" && npm run dev) &
 WEB_PID=$!
 

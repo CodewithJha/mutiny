@@ -37,7 +37,7 @@ Do not invent a different demo narrative in README or slides without updating th
 | Time | Say | Show |
 |---|---|---|
 | 0:00–0:15 | “Agents don’t just chat—they call tools that move money. Prompts aren’t tests.” | Sample project tree |
-| 0:15–0:30 | “Mutiny is a behavioral fuzz-testing engine. You install it into *your* agent project.” | `pip install mutiny` → `mutiny init` artifacts |
+| 0:15–0:30 | “Mutiny is a behavioral fuzz-testing engine. You install it into *your* agent project.” | From-source install (`uv sync`) → `mutiny init` artifacts (PyPI planned) |
 | 0:30–0:45 | “You connect via an adapter and declare invariants—e.g. refunds over $200 need approval. Adapter #1: OpenAI Agents SDK.” | `.mutiny/adapter.py` + `policy.yaml` / `refund_limit` |
 | 0:45–1:05 | “`mutiny run` fuzzes your agent against those invariants.” | Campaign progress (CLI or Hosted) |
 | 1:05–1:20 | “Violation—deterministic proof from the tool call.” | `issue_refund(amount=…, approved=false)` + rule id |

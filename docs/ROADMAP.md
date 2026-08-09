@@ -39,14 +39,12 @@
 
 ---
 
-## 2. Next (OSS polish)
+## 2. Next (after current OSS baseline)
 
-- Public README aligned to PRD (engine-first pitch; honest install path)  
-- License chosen and applied  
-- Package publish story for `mutiny`  
-- Recorded demo + screenshots  
-- Issue templates; “good first issues” on operators/adapters  
-- Clarify sample vs customer-project paths in UX copy  
+- Package publish story for `mutiny` (PyPI)
+- Recorded demo + screenshots under `docs/assets/`
+- Keep good-first-issue queue fresh ([GOOD_FIRST_ISSUES.md](./GOOD_FIRST_ISSUES.md))
+- Clarify sample vs customer-project paths in UX copy as adapters land
 
 ---
 

@@ -1,0 +1,56 @@
+name: Feature request
+description: Propose an enhancement, adapter, policy pack, or DX improvement
+title: "[feat] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Prefer small, reviewable ideas. Large adapters (LangGraph, CrewAI, …) — open an issue first so we can align on `TargetAdapter`.
+        See [docs/ROADMAP.md](https://github.com/CodewithJha/mutiny/blob/main/docs/ROADMAP.md) and [docs/GOOD_FIRST_ISSUES.md](https://github.com/CodewithJha/mutiny/blob/main/docs/GOOD_FIRST_ISSUES.md).
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Core
+        - New adapter
+        - Adapter #1 improvements
+        - CLI / DX
+        - Policy operators / packs
+        - Hosted API / UI
+        - Docs / examples / a11y
+        - Tests / CI
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What friction or gap does this address?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Concrete idea. For adapters, name the framework and how it maps to TargetAdapter.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Optional — other approaches or “none yet”.
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope check
+      options:
+        - label: Does not redesign Core / campaign / policy architecture
+          required: false
+        - label: Keeps Core free of framework SDK imports
+          required: false
+        - label: Authorized testing only (no open-internet attack proxy)
+          required: false

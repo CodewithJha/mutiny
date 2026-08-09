@@ -8,7 +8,7 @@ Paste / adapt into event or launch write-ups. Keep claims honest; freeze competi
 AFL for AI agent tool policies — a behavioral fuzz-testing engine you install into your agent, find the break, prove it on the tool call, lock it as a test.
 
 ## Elevator (15 seconds)
-AI agents don’t just chat — they call tools that move money and change accounts. Prompts aren’t tests. **Mutiny** is a behavioral fuzz-testing engine for AI agents: `pip install mutiny` → `mutiny init` → `mutiny run`. Adapter #1 ships with support for OpenAI Agents SDK projects. It searches until your agent breaks an explicit rule (e.g. refunds over $200 need approval), shows the **real tool-call JSON** as proof, minimizes the conversation, and saves a regression that FAIL→PASS when you fix the agent.
+AI agents don’t just chat — they call tools that move money and change accounts. Prompts aren’t tests. **Mutiny** is a behavioral fuzz-testing engine for AI agents: install from source today (`uv sync` / clone) → `mutiny init` → `mutiny run` (PyPI planned). Adapter #1 ships with support for OpenAI Agents SDK projects. It searches until your agent breaks an explicit rule (e.g. refunds over $200 need approval), shows the **real tool-call JSON** as proof, minimizes the conversation, and saves a regression that FAIL→PASS when you fix the agent.
 
 ## The problem
 System prompts say “be careful with refunds.” Agents still do:

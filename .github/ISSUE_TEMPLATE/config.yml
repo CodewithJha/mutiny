@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/CodewithJha/mutiny/security/advisories/new
+    about: Private disclosure — see SECURITY.md
+  - name: Documentation hub
+    url: https://github.com/CodewithJha/mutiny/blob/main/docs/README.md
+    about: Architecture, roadmap, cold start, decision log
+  - name: Contributing guide
+    url: https://github.com/CodewithJha/mutiny/blob/main/CONTRIBUTING.md
+    about: 30-minute fork → PR path
