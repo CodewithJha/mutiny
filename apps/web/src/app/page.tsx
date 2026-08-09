@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { DEFAULT_PROJECT_PATH, mutinyApi } from "@/lib/api";
+import { GitHubStarLink } from "@/components/GitHubStarLink";
 import { Button, CopyButton } from "@/components/ui";
 
 const JOURNEY: { label: string; detail: string; tone?: "pass" | "fail" }[] = [
@@ -135,6 +136,7 @@ export default function HomePage() {
           <a href="#proof">Proof</a>
         </nav>
         <div className="landing-nav-cta">
+          <GitHubStarLink />
           <Link href="/campaigns" className="landing-dash-link">
             Campaigns
           </Link>

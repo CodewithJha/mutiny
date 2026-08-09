@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { GitHubFooterLink } from "@/components/GitHubStarLink";
 import { mutinyApi, type Health } from "@/lib/api";
 
 const NAV = [
@@ -136,6 +137,7 @@ function OperateShell({
         </div>
 
         <div className="sidebar-footer">
+          <GitHubFooterLink />
           <div className="sidebar-status">
             <span className="label">API</span>
             <span className="value">

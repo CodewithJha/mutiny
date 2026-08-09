@@ -1628,6 +1628,92 @@ select {
   color: var(--text);
 }
 
+/* —— GitHub star (landing nav) —— */
+.github-star {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  transition:
+    border-color var(--duration) var(--ease-out),
+    background var(--duration) var(--ease-out),
+    color var(--duration) var(--ease-out);
+}
+
+.github-star:hover {
+  border-color: rgba(255, 195, 106, 0.45);
+  background: rgba(255, 195, 106, 0.08);
+  color: var(--text);
+}
+
+.github-star:focus-visible {
+  outline: 2px solid var(--pink);
+  outline-offset: 2px;
+}
+
+.github-star-icon {
+  flex-shrink: 0;
+  opacity: 0.92;
+}
+
+.github-star-label {
+  line-height: 1;
+}
+
+.github-star-count {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.25rem;
+  padding: 0 6px;
+  border-radius: var(--radius-sm);
+  background: var(--primary-dim);
+  border: 1px solid rgba(106, 95, 193, 0.35);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--gold-mid);
+  line-height: 1;
+}
+
+.sidebar-github {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  margin-bottom: 2px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--muted-strong);
+  transition:
+    color var(--duration) var(--ease-out),
+    background var(--duration) var(--ease-out);
+}
+
+.sidebar-github:hover {
+  color: var(--text);
+  background: rgba(253, 68, 176, 0.06);
+}
+
+.sidebar-github:focus-visible {
+  outline: 2px solid var(--pink);
+  outline-offset: 2px;
+}
+
+.sidebar-github-icon {
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
 .landing-hero {
   position: relative;
   z-index: 10;
@@ -2819,6 +2905,10 @@ select {
   }
 
   .landing-nav-cta .landing-dash-link {
+    display: none;
+  }
+
+  .github-star-label {
     display: none;
   }
 
