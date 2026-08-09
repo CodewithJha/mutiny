@@ -1,0 +1,93 @@
+# Publish mutiny-core → mutiny-openai-agents → mutiny-ai to PyPI.
+# Preferred auth: Trusted Publishing (OIDC). Fallback: UV_PUBLISH_TOKEN secret.
+#
+# One-time PyPI setup (before first run):
+#   https://pypi.org/manage/account/publishing/
+#   Add a pending publisher for EACH of: mutiny-core, mutiny-openai-agents, mutiny-ai
+#     Owner: CodewithJha
+#     Repository: mutiny
+#     Workflow: publish.yml
+#     Environment: pypi
+#
+# Or create an API token and set repo secret UV_PUBLISH_TOKEN (pypi-...).
+#
+# Then: Actions → Publish to PyPI → Run workflow
+#   or: create a GitHub Release
+
+name: Publish to PyPI
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  publish:
+    name: Build and upload
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/mutiny-ai/
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Publish mutiny-core
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.UV_PUBLISH_TOKEN }}
+        run: |
+          set -euo pipefail
+          uv build --out-dir dist/core packages/mutiny_core
+          if [ -n "${UV_PUBLISH_TOKEN:-}" ]; then
+            uv publish --token "$UV_PUBLISH_TOKEN" dist/core/*
+          else
+            uv publish --trusted-publishing always dist/core/*
+          fi
+
+      - name: Publish mutiny-openai-agents
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.UV_PUBLISH_TOKEN }}
+        run: |
+          set -euo pipefail
+          uv build --out-dir dist/openai packages/mutiny_openai_agents
+          if [ -n "${UV_PUBLISH_TOKEN:-}" ]; then
+            uv publish --token "$UV_PUBLISH_TOKEN" dist/openai/*
+          else
+            uv publish --trusted-publishing always dist/openai/*
+          fi
+
+      - name: Publish mutiny-ai
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.UV_PUBLISH_TOKEN }}
+        run: |
+          set -euo pipefail
+          uv build --out-dir dist/cli packages/mutiny_cli
+          if [ -n "${UV_PUBLISH_TOKEN:-}" ]; then
+            uv publish --token "$UV_PUBLISH_TOKEN" dist/cli/*
+          else
+            uv publish --trusted-publishing always dist/cli/*
+          fi
+
+      - name: Verify on PyPI
+        run: |
+          set -euo pipefail
+          python3 -m pip install --upgrade pip
+          for i in 1 2 3 4 5 6; do
+            if python3 -m pip index versions mutiny-ai 2>/dev/null | grep -q 0.1.0; then
+              echo "mutiny-ai 0.1.0 is on PyPI"
+              exit 0
+            fi
+            echo "Waiting for PyPI index… ($i)"
+            sleep 10
+          done
+          echo "Published, but index lag — check https://pypi.org/project/mutiny-ai/"
+          exit 0

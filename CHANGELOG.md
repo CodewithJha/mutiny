@@ -3,13 +3,17 @@
 All notable changes to Mutiny are documented here.
 
 Format inspired by [Keep a Changelog](https://keepachangelog.com/).  
-Wheels are prepared as **`mutiny-ai`** (+ `mutiny-core`, `mutiny-openai-agents`) — first upload: [docs/PUBLISHING.md](./docs/PUBLISHING.md). Until then, versions refer to git tags / GitHub Releases.
+Wheels are prepared as **`mutiny-ai`** (+ `mutiny-core`, `mutiny-openai-agents`) — first upload needs a PyPI token or Trusted Publishing: [docs/PUBLISHING.md](./docs/PUBLISHING.md). Until then, versions refer to git tags / GitHub Releases.
 
 ## [Unreleased]
 
+### Added
+
+- GitHub Actions workflow + `scripts/publish_pypi.sh` for ordered PyPI upload (`mutiny-core` → `mutiny-openai-agents` → `mutiny-ai`)
+
 ### Planned
 
-- PyPI package publish (`pip install mutiny-ai`)
+- First PyPI upload (`pip install mutiny-ai`) — blocked on token / Trusted Publisher setup
 - Additional framework adapters (LangGraph, CrewAI, PydanticAI, …)
 - Recorded demo GIF / Hosted screenshots under `docs/assets/`
 - CI GitHub Action for sample-project `mutiny test` replay

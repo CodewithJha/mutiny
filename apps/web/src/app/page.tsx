@@ -26,7 +26,7 @@ const INSTALL_CMDS = [
   "mutiny-core @ git+https://github.com/CodewithJha/mutiny.git#subdirectory=packages/mutiny_core" \\
   "mutiny-openai-agents @ git+https://github.com/CodewithJha/mutiny.git#subdirectory=packages/mutiny_openai_agents" \\
   "mutiny-ai @ git+https://github.com/CodewithJha/mutiny.git#subdirectory=packages/mutiny_cli"`,
-    hint: "PyPI name will be mutiny-ai (not yet published). CLI command is mutiny.",
+    hint: "PyPI: mutiny-ai (upload pending). CLI command is mutiny.",
   },
   {
     id: "init",
