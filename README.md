@@ -9,7 +9,11 @@
 **Behavioral fuzz-testing for AI agents.**  
 _Define what your agent must never do. Then prove it can't._
 
-Mutiny installs into your agent project, takes deterministic **tool-use policies**, and searches for conversations that break them. When it finds a break, it **proves** it on a tool-call trace (not an LLM judge), **minimizes** the reproduction, and freezes it as a **regression test**.
+| | |
+|---|---|
+| **What** | A fuzz engine you install into *your* agent project (`mutiny init` → `run` → `test`) |
+| **Why** | Agents call tools that move money; prompts aren’t tests; chat evals miss tool-arg bugs |
+| **Different** | Deterministic policy on **tool-call traces** (code proves) + minimize + permanent regressions — not LLM-as-judge, not “host our demo agent” |
 
 Adapter #1 ships today: **OpenAI Agents SDK**. Same Core for every future adapter — contributions welcome.
 
@@ -86,28 +90,39 @@ Keyword-shaped, product-shaped: agent safety, tool-call verification, OpenAI Age
 
 ## Screenshots & demo
 
-No polished GIF in-repo yet. Drop assets in [`docs/assets/`](./docs/assets/) — suggested names:
+Visual placeholders live under [`docs/assets/`](./docs/assets/) (intentional SVG mocks — swap for real PNG/GIF anytime; see that folder’s README).
 
-| Placeholder | Intended shot |
+### Loop storyboard
+
+![Mutiny loop: init → run → violation → regression → test → PASS](./docs/assets/storyboard.svg)
+
+```
+  mutiny init  →  mutiny run  →  violation (code proves)
+                                      │
+                                      ▼
+                               minimize + save
+                               .mutiny/tests/
+                                      │
+                                      ▼
+                               mutiny test  →  PASS (after fix)
+```
+
+**Real GIF later:** record the sample loop → save as `docs/assets/mutiny-demo.gif` → put the GIF above this storyboard in this section (keep the SVG as fallback). Details: [`docs/assets/README.md`](./docs/assets/README.md).
+
+### Hosted & CLI frames
+
+| View | Placeholder |
 |---|---|
-| `docs/assets/cli-run.png` | Terminal: sample `mutiny run --no-hosted` |
-| `docs/assets/hosted-campaign.png` | Hosted campaign / lineage UI |
-| `docs/assets/policy-yaml.png` | A clear `policy.yaml` tool-use rule |
+| Hero / landing | ![Hosted hero placeholder](./docs/assets/hero.svg) |
+| Campaign / lineage | ![Campaign placeholder](./docs/assets/campaign.svg) |
+| Policy | ![Policy placeholder](./docs/assets/policy.svg) |
+| Tests | ![Tests placeholder](./docs/assets/tests.svg) |
+| Regressions | ![Regressions placeholder](./docs/assets/regressions.svg) |
+| CLI `mutiny run` | ![CLI run placeholder](./docs/assets/cli-run.svg) |
 
-Until those land, the loop looks like this (the [sample project](./examples/openai_support_agent/) runs offline without an API key):
+The [sample project](./examples/openai_support_agent/) runs offline without an API key. Hosted lineage (optional): `./scripts/dev.sh`, then `mutiny run` without `--no-hosted`.
 
-```
-  policy.yaml          mutiny run           .mutiny/tests/
-  (invariants)  ──►  search → prove  ──►  minimized regressions
-                         │                      │
-                         ▼                      ▼
-                   tool-call trace         mutiny test
-                   (code oracle)           PASS / FAIL
-```
-
-Hosted lineage (optional): start API + UI with `./scripts/dev.sh`, then run without `--no-hosted`.
-
-> Screenshots and short terminal recordings are welcome PRs (`docs` / `examples` labels).
+> Real screenshots and terminal recordings are welcome PRs (`docs` / `examples` labels).
 
 ---
 
@@ -303,9 +318,11 @@ Building an adapter? Start from `packages/mutiny_core`’s `TargetAdapter` port 
 
 | Command | What it does |
 |---|---|
-| `mutiny init` | Scaffold adapter stub + `policy.yaml` + `mutiny.yaml` |
-| `mutiny run` | Load adapter + policy; run a campaign; minimize / save regressions |
-| `mutiny test` | Replay regressions under `.mutiny/tests/` (PASS / FAIL / SKIPPED) |
+| `mutiny init [--path] [--force]` | Scaffold `.mutiny/adapter.py` + `policy.yaml` + `mutiny.yaml` |
+| `mutiny run [--path] [--no-hosted] [--hosted-url]` | Load adapter + policy; campaign; minimize / save regressions |
+| `mutiny test [--path] [--failed] [--json]` | Replay `.mutiny/tests/` (PASS / FAIL / SKIPPED) |
+
+Full flag list: `uv run mutiny <cmd> --help`. Expanding this table from `--help` is a welcome docs PR.
 
 ---
 
@@ -314,7 +331,7 @@ Building an adapter? Start from `packages/mutiny_core`’s `TargetAdapter` port 
 | Phase | Focus |
 |---|---|
 | **Current scope** | Engine-first Core · Adapter #1 (OpenAI Agents SDK) · CLI · minimize / regress · optional Hosted |
-| **Next** | Package publish story · demos / screenshots · contributor onboarding |
+| **Next** | PyPI publish · real screenshots / GIF · contributor onboarding |
 | **Beta** | LangGraph / CrewAI / PydanticAI / HTTP adapters · policy packs · exportable reports |
 | **v1** | Stable contracts · CI GitHub Action for regression replay · authenticated Hosted |
 
@@ -335,6 +352,7 @@ uv run pytest tests/unit -q
 
 - **Guide (30-min path):** [CONTRIBUTING.md](./CONTRIBUTING.md)
 - **Good first issues catalog:** [`docs/GOOD_FIRST_ISSUES.md`](./docs/GOOD_FIRST_ISSUES.md)
+- **Changelog / releases:** [CHANGELOG.md](./CHANGELOG.md)
 - **Conduct / Security / Support:** [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) · [SECURITY.md](./SECURITY.md) · [SUPPORT.md](./SUPPORT.md)
 - **Docs hub:** [`docs/README.md`](./docs/README.md)
 - **Issues:** [github.com/CodewithJha/mutiny/issues](https://github.com/CodewithJha/mutiny/issues)
@@ -374,8 +392,9 @@ No. Authorized testing only — local / in-process / localhost. Not an open-inte
 - **Install from source** — no PyPI wheel yet; root `pip install -e .` is unsupported (uv workspace).
 - **Policy expressiveness** is deliberately narrow (deterministic operators on tool calls) — not NL policies judged by an LLM.
 - **Hosted** is optional and secondary; auth / multi-tenant cloud are not current scope.
-- **Screenshots / recorded demo** assets are still placeholders — contributions welcome under `docs/assets/`.
-- Sample and demo agents use **mock tools**; they are not production payment or email systems.
+- **Screenshots / recorded demo** — SVG placeholders ship in `docs/assets/`; real PNG/GIF contributions welcome.
+- Sample and reference demo agents use **mock tools**; they are not production payment or email systems.
+- See [CHANGELOG.md](./CHANGELOG.md) for Unreleased / initial release notes.
 
 Honest scope detail: [`docs/ROADMAP.md`](./docs/ROADMAP.md) § Current scope.
 

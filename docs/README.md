@@ -44,6 +44,7 @@ with sandboxed mock tools for demos.
 | [DEMO_SCRIPT.md](./DEMO_SCRIPT.md) | Live demo scripts, backup, Q&A | System internals |
 | [COLD_START.md](./COLD_START.md) | Clean-machine bootstrap + smoke gate | Product narrative |
 | [GOOD_FIRST_ISSUES.md](./GOOD_FIRST_ISSUES.md) | Catalog of small contributor tasks | Execution ownership of Core redesigns |
+| [../CHANGELOG.md](../CHANGELOG.md) | Unreleased + release notes | Live demo narration |
 | [DEVPOST.md](./DEVPOST.md) | Short public pitch copy | Live demo choreography |
 | [COMPETITOR_ANALYSIS.md](./COMPETITOR_ANALYSIS.md) | Competitive landscape (claims freeze) | Mutiny feature specs |
 | [DECISION_LOG.md](./DECISION_LOG.md) | Architecture Decision Records | Ongoing task lists |
@@ -97,4 +98,4 @@ OpenAI Agents SDK Adapter   ← Adapter #1 (shipped)
    Sample / demo agent             ← reference harness
 ```
 
-Screenshots / demo assets: place under `docs/assets/` (see README Screenshots section). Suggested files: `cli-run.png`, `hosted-campaign.png`, `policy-yaml.png`.
+Screenshots / demo assets: [`docs/assets/`](./assets/) — SVG placeholders ship today (`hero`, `campaign`, `policy`, `tests`, `regressions`, `cli-run`, `storyboard`). Replace with real PNG/GIF per [`assets/README.md`](./assets/README.md). Release notes: [`CHANGELOG.md`](../CHANGELOG.md).

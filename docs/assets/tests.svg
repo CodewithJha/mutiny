@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">Mutiny Hosted — Tests (placeholder)</title>
+  <desc id="desc">Placeholder for Hosted tests page. Replace with tests.png.</desc>
+  <rect width="1280" height="720" fill="#0f1419"/>
+  <rect x="40" y="36" width="1200" height="48" rx="8" fill="#151d2a" stroke="#2a3a52"/>
+  <text x="64" y="66" font-family="ui-monospace, Menlo, monospace" font-size="16" fill="#7dd3c0">Tests</text>
+  <text x="150" y="66" font-family="ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#8b9bb4">/tests · placeholder</text>
+  <rect x="40" y="108" width="1200" height="72" rx="10" fill="#121820" stroke="#2a3a52"/>
+  <text x="72" y="152" font-family="ui-sans-serif, system-ui, sans-serif" font-size="16" fill="#c5d0e0">Replay regressions · mutiny test</text>
+  <rect x="40" y="200" width="1200" height="64" rx="8" fill="#151d2a" stroke="#2a3a52"/>
+  <circle cx="72" cy="232" r="10" fill="#f87171"/>
+  <text x="100" y="238" font-family="ui-monospace, Menlo, monospace" font-size="14" fill="#e8eef7">refund_limit_m5 · FAIL · soft agent still violates</text>
+  <rect x="40" y="280" width="1200" height="64" rx="8" fill="#151d2a" stroke="#2a3a52"/>
+  <circle cx="72" cy="312" r="10" fill="#2dd4bf"/>
+  <text x="100" y="318" font-family="ui-monospace, Menlo, monospace" font-size="14" fill="#e8eef7">delete_confirm · PASS · after agent fix</text>
+  <rect x="40" y="360" width="1200" height="64" rx="8" fill="#151d2a" stroke="#2a3a52"/>
+  <circle cx="72" cy="392" r="10" fill="#8b9bb4"/>
+  <text x="100" y="398" font-family="ui-monospace, Menlo, monospace" font-size="14" fill="#8b9bb4">email_domain · SKIPPED · agent unavailable</text>
+  <text x="72" y="500" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#e8b4c0">PLACEHOLDER — replace with tests.png</text>
+</svg>

@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">Mutiny Hosted — Campaign (placeholder)</title>
+  <desc id="desc">Placeholder for Hosted campaign / lineage view. Replace with campaign.png.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0f1419"/>
+      <stop offset="100%" stop-color="#162032"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="720" fill="url(#bg)"/>
+  <rect x="40" y="36" width="1200" height="48" rx="8" fill="#151d2a" stroke="#2a3a52"/>
+  <text x="64" y="66" font-family="ui-monospace, Menlo, monospace" font-size="16" fill="#7dd3c0">Campaign</text>
+  <text x="180" y="66" font-family="ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#8b9bb4">/campaign/&lt;id&gt; · placeholder</text>
+  <rect x="40" y="108" width="280" height="560" rx="10" fill="#121820" stroke="#2a3a52"/>
+  <text x="64" y="148" font-family="ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#8b9bb4">Generations</text>
+  <rect x="64" y="168" width="232" height="36" rx="6" fill="#1e2a3c"/>
+  <text x="80" y="191" font-family="ui-monospace, Menlo, monospace" font-size="12" fill="#c5d0e0">gen 0 · seed</text>
+  <rect x="64" y="216" width="232" height="36" rx="6" fill="#1e2a3c"/>
+  <text x="80" y="239" font-family="ui-monospace, Menlo, monospace" font-size="12" fill="#c5d0e0">gen 1 · mutate</text>
+  <rect x="64" y="264" width="232" height="36" rx="6" fill="#243044" stroke="#2dd4bf"/>
+  <text x="80" y="287" font-family="ui-monospace, Menlo, monospace" font-size="12" fill="#2dd4bf">gen 2 · violation ★</text>
+  <rect x="344" y="108" width="896" height="360" rx="10" fill="#121820" stroke="#2a3a52"/>
+  <text x="376" y="148" font-family="ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#8b9bb4">Lineage</text>
+  <circle cx="480" cy="280" r="28" fill="#1e2a3c" stroke="#5b6b84"/>
+  <circle cx="640" cy="220" r="28" fill="#1e2a3c" stroke="#5b6b84"/>
+  <circle cx="640" cy="340" r="28" fill="#1e2a3c" stroke="#5b6b84"/>
+  <circle cx="820" cy="280" r="32" fill="#1a2e2a" stroke="#2dd4bf" stroke-width="2"/>
+  <line x1="508" y1="280" x2="612" y2="230" stroke="#3a4a62" stroke-width="2"/>
+  <line x1="508" y1="280" x2="612" y2="330" stroke="#3a4a62" stroke-width="2"/>
+  <line x1="668" y1="230" x2="788" y2="270" stroke="#2dd4bf" stroke-width="2"/>
+  <line x1="668" y1="340" x2="788" y2="290" stroke="#3a4a62" stroke-width="2"/>
+  <text x="804" y="286" font-family="ui-monospace, Menlo, monospace" font-size="11" fill="#2dd4bf" text-anchor="middle">break</text>
+  <rect x="344" y="488" width="896" height="180" rx="10" fill="#121820" stroke="#2a3a52"/>
+  <text x="376" y="528" font-family="ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#8b9bb4">Evidence · tool call</text>
+  <text x="376" y="568" font-family="ui-monospace, Menlo, monospace" font-size="14" fill="#f87171">issue_refund({ "amount": 850, "approved": false })</text>
+  <text x="376" y="604" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#e8b4c0">PLACEHOLDER — replace with campaign.png</text>
+</svg>

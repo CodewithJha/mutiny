@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | **Status** | Canonical demo playbook |
-| **Last updated** | 2026-08-07 |
+| **Last updated** | 2026-08-09 |
 | **Product surface** | Sample agent project → `mutiny init` → `mutiny run` (via OpenAI Agents SDK adapter); Hosted UI secondary for lineage |
 
 Do not invent a different demo narrative in README or slides without updating this file.

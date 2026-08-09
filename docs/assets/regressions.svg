@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">Mutiny — Regressions (placeholder)</title>
+  <desc id="desc">Placeholder for minimized regression artifacts under .mutiny/tests/. Replace with regressions.png.</desc>
+  <rect width="1280" height="720" fill="#0f1419"/>
+  <rect x="40" y="36" width="1200" height="48" rx="8" fill="#151d2a" stroke="#2a3a52"/>
+  <text x="64" y="66" font-family="ui-monospace, Menlo, monospace" font-size="16" fill="#7dd3c0">Regressions</text>
+  <text x="210" y="66" font-family="ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#8b9bb4">.mutiny/tests/ · placeholder</text>
+  <rect x="40" y="108" width="560" height="560" rx="12" fill="#121820" stroke="#2a3a52"/>
+  <text x="72" y="156" font-family="ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#8b9bb4">Artifact tree</text>
+  <text x="72" y="200" font-family="ui-monospace, Menlo, monospace" font-size="14" fill="#c5d0e0">.mutiny/tests/</text>
+  <text x="92" y="236" font-family="ui-monospace, Menlo, monospace" font-size="14" fill="#7dd3c0">refund_limit_01.json</text>
+  <text x="92" y="272" font-family="ui-monospace, Menlo, monospace" font-size="14" fill="#7dd3c0">delete_account_02.json</text>
+  <text x="72" y="330" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#8b9bb4">Minimized conversation + expected violation</text>
+  <rect x="640" y="108" width="600" height="560" rx="12" fill="#121820" stroke="#2a3a52"/>
+  <text x="672" y="156" font-family="ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#8b9bb4">Snippet</text>
+  <text x="672" y="200" font-family="ui-monospace, Menlo, monospace" font-size="13" fill="#5b6b84">{</text>
+  <text x="692" y="236" font-family="ui-monospace, Menlo, monospace" font-size="13" fill="#c5d0e0">"id": "refund_limit_01",</text>
+  <text x="692" y="272" font-family="ui-monospace, Menlo, monospace" font-size="13" fill="#c5d0e0">"policy_id": "refund_limit",</text>
+  <text x="692" y="308" font-family="ui-monospace, Menlo, monospace" font-size="13" fill="#f87171">"tool": "issue_refund",</text>
+  <text x="692" y="344" font-family="ui-monospace, Menlo, monospace" font-size="13" fill="#e8eef7">"args": { "amount": 850, "approved": false }</text>
+  <text x="672" y="380" font-family="ui-monospace, Menlo, monospace" font-size="13" fill="#5b6b84">}</text>
+  <text x="672" y="460" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#e8b4c0">PLACEHOLDER — replace with regressions.png</text>
+</svg>

@@ -1,6 +1,9 @@
 # Backup demo artifacts
 
-When live campaign search fails at Iris, use this path — never invent DB violations.
+**Harness only** — not the customer product path. Prefer the sample OpenAI Agents SDK project:
+[`examples/openai_support_agent/`](../openai_support_agent/) and cold start [`docs/COLD_START.md`](../../docs/COLD_START.md).
+
+When live campaign search fails in a demo, use this fixture path — never invent DB violations.
 
 ## Automated fixture path (preferred nuclear option)
 

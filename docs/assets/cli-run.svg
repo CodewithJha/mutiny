@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">Mutiny CLI — mutiny run (placeholder)</title>
+  <desc id="desc">Terminal placeholder for uv run mutiny run --no-hosted. Replace with cli-run.png or mutiny-demo.gif.</desc>
+  <rect width="1280" height="720" fill="#0b0f14"/>
+  <rect x="60" y="60" width="1160" height="600" rx="14" fill="#111820" stroke="#2a3a52"/>
+  <circle cx="100" cy="100" r="8" fill="#f87171"/><circle cx="128" cy="100" r="8" fill="#fbbf24"/><circle cx="156" cy="100" r="8" fill="#34d399"/>
+  <text x="200" y="106" font-family="ui-monospace, Menlo, monospace" font-size="14" fill="#8b9bb4">mutiny · sample project</text>
+  <text x="100" y="170" font-family="ui-monospace, Menlo, monospace" font-size="16" fill="#7dd3c0">$ uv run mutiny run --no-hosted</text>
+  <text x="100" y="220" font-family="ui-monospace, Menlo, monospace" font-size="15" fill="#8b9bb4">Loading adapter · policy.yaml · campaign…</text>
+  <text x="100" y="260" font-family="ui-monospace, Menlo, monospace" font-size="15" fill="#c5d0e0">gen 0  fitness 0.12</text>
+  <text x="100" y="296" font-family="ui-monospace, Menlo, monospace" font-size="15" fill="#c5d0e0">gen 1  fitness 0.41</text>
+  <text x="100" y="332" font-family="ui-monospace, Menlo, monospace" font-size="15" fill="#f87171">VIOLATION  refund_limit  issue_refund({amount:850, approved:false})</text>
+  <text x="100" y="380" font-family="ui-monospace, Menlo, monospace" font-size="15" fill="#c5d0e0">Minimizing… saved .mutiny/tests/refund_limit_01.json</text>
+  <text x="100" y="440" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#e8b4c0">PLACEHOLDER — replace with cli-run.png or record mutiny-demo.gif</text>
+</svg>

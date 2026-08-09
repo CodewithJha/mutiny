@@ -67,4 +67,6 @@ uv run mutiny test          # after regressions are saved under .mutiny/tests/
 
 - Tools are **mocks** — no payment rails or real email.
 - Hosted loads this directory as `project_path` (`.mutiny/adapter.py`).
+- This folder is the **sample / reference** agent. Backup fixture demos live under [`examples/demo/`](../demo/) (harness, not the product).
+- Cold start: [`docs/COLD_START.md`](../../docs/COLD_START.md).
 - Authorized testing only.

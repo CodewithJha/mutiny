@@ -1,101 +1,129 @@
 # Good First Issues
 
-Maintainer catalog of **small, realistic** tasks for new contributors. Many are labeled `good first issue` / `help wanted` on GitHub when opened; the rest stay here as a backlog seed.
+Maintainer catalog of **small, realistic** tasks for new contributors. Open GitHub issues labeled `good first issue` mirror the top items; this file is the longer backlog.
 
 **Rules of the road:** do not redesign Core, campaigns, policies, or Hosted product architecture. Prefer docs, tests, CLI DX, a11y, examples, and thin adapter glue.
 
-**How to pick one:** see [CONTRIBUTING.md](../CONTRIBUTING.md#good-first-issues--help-wanted). Claim an open GitHub issue (or open one from this list) before a large PR.
+**How to pick one:** see [CONTRIBUTING.md](../CONTRIBUTING.md#good-first-issues--help-wanted). Comment on the GitHub issue before starting so nobody duplicates effort.
+
+**Difficulty key:** `XS` ≈ &lt;1h docs/copy · `S` ≈ half day · `M` ≈ full day (still first-PR safe).
+
+---
+
+## Open on GitHub (labeled)
+
+| GH | Catalog | Title | Difficulty | Primary files |
+|---|---|---|---|---|
+| [#1](https://github.com/CodewithJha/mutiny/issues/1) | #1 | Policy operator cheatsheet | S | `docs/POLICY_CHEATSHEET.md`, `docs/README.md`, `tests/unit/test_policy_*` |
+| [#2](https://github.com/CodewithJha/mutiny/issues/2) | #2 | Document CLI flags from `--help` | S | `README.md` Commands, optional `docs/CLI.md` |
+| [#3](https://github.com/CodewithJha/mutiny/issues/3) | #4 | Screenshot placeholders | XS | **Done for SVGs** — remaining: real PNG/GIF under `docs/assets/` |
+| [#4](https://github.com/CodewithJha/mutiny/issues/4) | #9 | Skip-to-content / focus order | S | `apps/web` landing routes / layout |
+| [#5](https://github.com/CodewithJha/mutiny/issues/5) | #15 | Policy evaluator edge cases | S | `tests/unit/test_policy_evaluator.py` |
+| [#6](https://github.com/CodewithJha/mutiny/issues/6) | #21 | `mutiny init` next-step hint | XS | `packages/mutiny_cli/`, `tests/unit/test_mutiny_cli_init.py` |
+| [#7](https://github.com/CodewithJha/mutiny/issues/7) | #28 | Comment headers in sample policy | XS | `examples/openai_support_agent/policy.yaml` |
+| [#8](https://github.com/CodewithJha/mutiny/issues/8) | #37 | Document `/api/health` fields | S | `docs/` or `apps/api` README; `HealthResponse` in schemas |
+| [#9](https://github.com/CodewithJha/mutiny/issues/9) | #24 | `dev.sh` node_modules hint | XS | `scripts/dev.sh` (tip may already exist — verify + docs) |
+| [#10](https://github.com/CodewithJha/mutiny/issues/10) | #27 | Second email-domain policy example | S | `examples/policies/` |
 
 ---
 
 ## Docs (1–8)
 
-| # | Title | Why it’s small | Labels |
-|---|---|---|---|
-| 1 | Add a one-page “policy.yaml cheatsheet” under `docs/` with operator examples from tests | Copy from `tests/unit/test_policy_*` + sample policy | `docs` `good first issue` |
-| 2 | Document every `mutiny run` / `init` / `test` CLI flag in README Commands (mirror `--help`) | Run `uv run mutiny --help` and subcommands | `docs` `cli` |
-| 3 | Fix remaining “`pip install mutiny`” pitch lines in `docs/DEMO_SCRIPT.md` / `DEVPOST.md` to say “from source today; PyPI planned” | Search + replace with honesty | `docs` |
-| 4 | Add Screenshots placeholders under `docs/assets/` + README captions (CLI terminal, Hosted campaign, policy file) | Create dirs + markdown image slots | `docs` `examples` |
-| 5 | Cross-link `examples/demo/README.md` ↔ sample agent ↔ COLD_START so harness vs customer path is obvious | Three short paragraphs | `docs` `examples` |
-| 6 | Expand FAQ: Windows `uv` / venv activation; WSL notes | Reproduce once, write 3 bullets | `docs` |
-| 7 | Add “Reading order for adapter authors” section to `docs/ARCHITECTURE.md` (pointer only) | 10–15 lines, no redesign | `docs` |
-| 8 | Gloss ADR titles in `docs/README.md` document map (one-line each for ADR-017 / 018) | Link + one sentence | `docs` |
+| # | Title | Difficulty | Acceptance | Affected files | Labels |
+|---|---|---|---|---|---|
+| 1 | Policy.yaml operator cheatsheet | S | Add `docs/POLICY_CHEATSHEET.md` with operators + examples from `tests/unit/test_policy_*` and sample `policy.yaml`; link from `docs/README.md` map; no language redesign | `docs/POLICY_CHEATSHEET.md`, `docs/README.md`, `tests/unit/test_policy_*.py`, `examples/openai_support_agent/policy.yaml` | `docs` `good first issue` |
+| 2 | Document CLI flags from `--help` | S | Expand README Commands or add `docs/CLI.md` listing real flags from `uv run mutiny {init,run,test} --help`; keep install path honest (from source) | `README.md`, optional `docs/CLI.md` | `docs` `cli` |
+| 3 | Honest PyPI wording in pitch docs | XS | Any remaining “`pip install mutiny` as available today” lines say from-source / planned | `docs/DEMO_SCRIPT.md`, `docs/DEVPOST.md`, `docs/PRD.md` | `docs` |
+| 4 | Screenshot / GIF assets | XS–S | SVG placeholders ship under `docs/assets/`; **remaining:** real `*.png` / `mutiny-demo.gif` + README path swap per `docs/assets/README.md` | `docs/assets/*`, `README.md` | `docs` `examples` |
+| 5 | Cross-link sample vs demo harness | XS | Three short paragraphs linking sample agent ↔ `examples/demo` ↔ COLD_START | `examples/*/README.md`, `docs/COLD_START.md` | `docs` `examples` |
+| 6 | FAQ: Windows / WSL notes | S | 3 bullets in README FAQ for `uv` / venv on Windows + WSL | `README.md` | `docs` |
+| 7 | Adapter-author reading order | XS | 10–15 lines pointer section in ARCHITECTURE (no redesign) | `docs/ARCHITECTURE.md` | `docs` |
+| 8 | Gloss ADR-017 / 018 in docs map | XS | One-line each in `docs/README.md` document map | `docs/README.md` | `docs` |
 
 ## Frontend / Hosted UI polish (9–14)
 
-| # | Title | Why it’s small | Labels |
-|---|---|---|---|
-| 9 | Ensure skip-to-content / focus order on Hosted landing (`apps/web`) | a11y pass, no layout redesign | `frontend` `a11y` `good first issue` |
-| 10 | Add visible `aria-live` status for campaign “running / finished” text already on screen | Wire existing status string | `frontend` `a11y` |
-| 11 | Keyboard: Escape closes any existing modal/drawer if present; document if not | Audit + small handler | `frontend` `a11y` |
-| 12 | Prefer `prefers-reduced-motion` for decorative CSS transitions in `globals.css` | Media query wrap | `frontend` `a11y` |
-| 13 | Empty-state copy on `/policies` or `/tests` when lists are empty — clearer “sample vs your project” | Copy-only | `frontend` `docs` |
-| 14 | Favicon / page title consistency across Hosted routes | Meta + title | `frontend` |
+| # | Title | Difficulty | Acceptance | Affected files | Labels |
+|---|---|---|---|---|---|
+| 9 | Skip-to-content / focus order | S | Skip link + sensible focus order on Hosted landing; **no** layout/brand redesign | `apps/web/src/app/**` | `frontend` `a11y` `good first issue` |
+| 10 | `aria-live` for campaign status | S | Wire existing running/finished status string to live region | `apps/web` campaign UI | `frontend` `a11y` |
+| 11 | Escape closes modal/drawer | S | Handler if modal exists; else document N/A in PR | `apps/web` | `frontend` `a11y` |
+| 12 | `prefers-reduced-motion` | S | Wrap decorative transitions in `globals.css` | `apps/web/src/app/globals.css` | `frontend` `a11y` |
+| 13 | Empty-state copy sample vs project | XS | Clearer empty copy on `/policies` or `/tests` | Hosted empty states | `frontend` `docs` |
+| 14 | Favicon / title consistency | XS | Meta + title across routes | `apps/web` | `frontend` |
 
 ## Tests (15–20)
 
-| # | Title | Why it’s small | Labels |
-|---|---|---|---|
-| 15 | Add unit cases for a policy operator edge (empty args, nested paths) in `tests/unit/test_policy_evaluator.py` | Mirror existing patterns | `tests` `good first issue` |
-| 16 | Regression replay: assert SKIPPED path when fixture missing / agent unavailable | Extend `test_regression.py` / CLI test | `tests` `cli` |
-| 17 | Golden fixture: one minimized conversation JSON under `examples/regressions/` with README blurb | File + 5-line doc | `tests` `examples` |
-| 18 | CLI init: assert generated `policy.yaml` / `mutiny.yaml` keys in `test_mutiny_cli_init.py` | Snapshot-style asserts | `tests` `cli` |
-| 19 | Adapter runner: cover error message when `AGENT_REF` is wrong | One failing path test | `tests` `backend` |
-| 20 | Reliability: document expected smoke output in `tests/reliability/` docstring | Docstring only or assert message | `tests` `docs` |
+| # | Title | Difficulty | Acceptance | Affected files | Labels |
+|---|---|---|---|---|---|
+| 15 | Policy operator edge cases | S | Cases for empty args / nested paths; `uv run pytest tests/unit/test_policy_evaluator.py -q` green | `tests/unit/test_policy_evaluator.py` | `tests` `good first issue` |
+| 16 | SKIPPED regression path | S | Assert SKIPPED when fixture/agent missing | `tests/unit` / CLI tests | `tests` `cli` |
+| 17 | Golden minimized conversation | S | One JSON under `examples/regressions/` + README blurb | `examples/regressions/` | `tests` `examples` |
+| 18 | CLI init key asserts | S | Assert generated yaml keys in init test | `tests/unit/test_mutiny_cli_init.py` | `tests` `cli` |
+| 19 | Wrong `AGENT_REF` error | S | One failing-path test with clear message | adapter / CLI tests | `tests` `backend` |
+| 20 | Reliability docstring | XS | Document expected smoke output | `tests/reliability/` | `tests` `docs` |
 
 ## CLI / DX (21–26)
 
-| # | Title | Why it’s small | Labels |
-|---|---|---|---|
-| 21 | `mutiny init`: print next-step hint (`edit adapter.py` → `mutiny run --no-hosted`) | One echo after write | `cli` `good first issue` |
-| 22 | `mutiny test`: friendlier summary line counts (PASS/FAIL/SKIPPED) | Format string | `cli` |
-| 23 | Refuse / warn if `mutiny run` cwd has no `policy.yaml` with actionable path | Early check | `cli` |
-| 24 | `scripts/dev.sh`: print `npm install` hint when `apps/web/node_modules` missing | Guard before `npm run dev` | `cli` `docs` |
-| 25 | Align sample README commands to always show `uv run mutiny …` | Docs-only in examples | `docs` `examples` `cli` |
-| 26 | Add `mutiny --version` if missing (package version from metadata) | Tiny CLI change | `cli` |
+| # | Title | Difficulty | Acceptance | Affected files | Labels |
+|---|---|---|---|---|---|
+| 21 | `mutiny init` next-step hint | XS | Print edit-adapter → `mutiny run --no-hosted` after success; test if practical | `packages/mutiny_cli/`, init tests | `cli` `good first issue` |
+| 22 | Friendlier `mutiny test` counts | XS | Clear PASS/FAIL/SKIPPED summary line | CLI test command | `cli` |
+| 23 | Missing `policy.yaml` warning | S | Actionable path in error | `packages/mutiny_cli/` run | `cli` |
+| 24 | `dev.sh` npm install hint | XS | Tip when `node_modules` missing (verify existing tip; improve docs if enough) | `scripts/dev.sh`, `docs/COLD_START.md` | `cli` `docs` |
+| 25 | Sample README always `uv run mutiny` | XS | Docs-only alignment | `examples/**/README.md` | `docs` `examples` `cli` |
+| 26 | `mutiny --version` | S | Print package version from metadata | `packages/mutiny_cli/` | `cli` |
 
 ## Examples / policy packs (27–32)
 
-| # | Title | Why it’s small | Labels |
-|---|---|---|---|
-| 27 | Second example `policy.yaml` for “email requires confirmed recipient domain” | Copy sample style | `examples` `good first issue` |
-| 28 | Comment headers in `examples/openai_support_agent/policy.yaml` explaining each rule | Comments only | `examples` `docs` |
-| 29 | `examples/policies/` pack: refund approval + delete confirm stubs with README | YAML + README | `examples` |
-| 30 | Trace example JSON under `examples/traces/` with annotation of a violation | Static file | `examples` |
-| 31 | Document offline model env vars in sample README table (`OPENAI_API_KEY`, `MUTINY_SAMPLE_OFFLINE`) | Table already partial | `examples` `docs` |
-| 32 | Tiny “policy pack” CONTRIBUTING blurb: where packs should live | Docs | `docs` `examples` |
+| # | Title | Difficulty | Acceptance | Affected files | Labels |
+|---|---|---|---|---|---|
+| 27 | Email recipient domain policy | S | Example policy + short README; mock-tools only | `examples/policies/` | `examples` `good first issue` |
+| 28 | Comment headers in sample policy | XS | Comments only; YAML still valid for `mutiny run` | `examples/openai_support_agent/policy.yaml` | `examples` `docs` |
+| 29 | Policy pack stubs | S | refund + delete stubs + README | `examples/policies/` | `examples` |
+| 30 | Annotated violation trace | S | Static JSON + notes | `examples/traces/` | `examples` |
+| 31 | Offline env var table | XS | Document `OPENAI_API_KEY`, `MUTINY_SAMPLE_OFFLINE` | sample README | `examples` `docs` |
+| 32 | Where policy packs live | XS | Short CONTRIBUTING blurb | `CONTRIBUTING.md` | `docs` `examples` |
 
 ## a11y & UI copy (33–36)
 
-| # | Title | Why it’s small | Labels |
-|---|---|---|---|
-| 33 | Audit Hosted forms for associated `<label>` / `htmlFor` | Spot-fix missing labels | `a11y` `frontend` |
-| 34 | Color contrast pass on safety banner / secondary text | Token tweak only | `a11y` `frontend` |
-| 35 | Alt text for any decorative vs informative images once screenshots land | Markdown / img alt | `a11y` `docs` |
-| 36 | Reduce jargon in Hosted empty states (“regression” → short plain sentence + link to docs) | Copy | `frontend` `docs` |
+| # | Title | Difficulty | Acceptance | Affected files | Labels |
+|---|---|---|---|---|---|
+| 33 | Form label audit | S | Associated `<label>` / `htmlFor` | `apps/web` forms | `a11y` `frontend` |
+| 34 | Contrast on safety banner | S | Token tweak only | Hosted CSS tokens | `a11y` `frontend` |
+| 35 | Alt text for screenshots | XS | Once real images land | `README.md`, assets | `a11y` `docs` |
+| 36 | Plain-language empty states | XS | “regression” → short sentence + docs link | Hosted copy | `frontend` `docs` |
 
 ## Backend / API docs (37–40)
 
-| # | Title | Why it’s small | Labels |
-|---|---|---|---|
-| 37 | Document `/api/health` response fields in `docs/` or API README | Observe once with curl | `backend` `docs` `good first issue` |
-| 38 | OpenAPI / FastAPI description strings for 2–3 public routes | Docstrings | `backend` `docs` |
-| 39 | Integration test assert health JSON keys stay stable | One assert block | `tests` `backend` |
-| 40 | Clarify docker-compose vs `scripts/dev.sh` in COLD_START (when to use which) | Docs | `docs` |
+| # | Title | Difficulty | Acceptance | Affected files | Labels |
+|---|---|---|---|---|---|
+| 37 | Document `/api/health` | S | Fields from `HealthResponse` (`status`, `api`, `db`, `model`, `version`, …) after `curl`; optional stable-key integration assert | `docs/`, `apps/api/.../schemas.py` | `backend` `docs` `good first issue` |
+| 38 | OpenAPI descriptions | S | Docstrings on 2–3 public routes | `apps/api` | `backend` `docs` |
+| 39 | Health JSON key assert | S | Integration test stable keys | `tests/integration` | `tests` `backend` |
+| 40 | docker-compose vs `dev.sh` | XS | When to use which in COLD_START | `docs/COLD_START.md` | `docs` |
 
 ## Stretch-but-still-first (claim via issue first)
 
 | # | Title | Notes | Labels |
 |---|---|---|---|
-| 41 | Scaffold empty `packages/mutiny_langgraph/` with README + `TargetAdapter` stub raising `NotImplementedError` | Interface only — no Core changes | `help wanted` `backend` |
-| 42 | Same stub for CrewAI or PydanticAI | One package skeleton | `help wanted` |
-| 43 | GitHub Action: run `uv run mutiny test` in sample project after unit tests | CI YAML | `tests` `cli` |
-| 44 | Record asciinema / GIF of sample `mutiny run --no-hosted` | Asset + README link | `docs` `examples` |
+| 41 | LangGraph stub package | `TargetAdapter` + `NotImplementedError` only | `help wanted` `backend` |
+| 42 | CrewAI or PydanticAI stub | One package skeleton | `help wanted` |
+| 43 | CI: sample `mutiny test` | After unit tests in workflow | `tests` `cli` |
+| 44 | Record sample GIF | `docs/assets/mutiny-demo.gif` + README | `docs` `examples` |
 
 ---
+
+## Context links
+
+- [CONTRIBUTING.md](../CONTRIBUTING.md) — 30-minute path  
+- [docs/README.md](./README.md) — docs hub  
+- [docs/assets/README.md](./assets/README.md) — screenshot / GIF drop instructions  
+- [CHANGELOG.md](../CHANGELOG.md) — Unreleased / 0.1.0  
+- [COLD_START.md](./COLD_START.md) — clean-machine bootstrap  
 
 ## Maintainer notes
 
 - Prefer opening **5–10** GitHub issues from the top of each category with `good first issue` + area label.
 - Use `help wanted` for adapter stubs and CI that need design agreement.
-- Close or unlabel items that are done; keep this file as the long backlog.
+- Close or unlabel items that ship; keep this file as the long backlog.
+- When editing issues, include **Difficulty**, **Affected files**, **Acceptance**, and a link back here.

@@ -18,12 +18,22 @@ nit. Larger adapters need an issue first.
    uv run pytest tests/unit -q
    ```
 
-3. **Pick a small task** from [docs/GOOD_FIRST_ISSUES.md](./docs/GOOD_FIRST_ISSUES.md)
-   or an open issue labeled [`good first issue`](https://github.com/CodewithJha/mutiny/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).
-4. **Branch**, make a focused change, re-run unit tests.
-5. **Open a PR** using the template. Link the issue. One concern per PR.
+3. **Optional smoke** (sample project, offline — no API key):
 
-Optional Hosted smoke: `./scripts/dev.sh` then `curl -sf http://127.0.0.1:8000/api/health`.
+   ```bash
+   cd examples/openai_support_agent
+   uv run mutiny init
+   uv run mutiny run --no-hosted
+   # mutiny test after a finding is saved under .mutiny/tests/
+   cd ../..
+   ```
+
+4. **Pick a small task** from [docs/GOOD_FIRST_ISSUES.md](./docs/GOOD_FIRST_ISSUES.md)
+   or an open issue labeled [`good first issue`](https://github.com/CodewithJha/mutiny/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).
+5. **Branch**, make a focused change, re-run `uv run pytest tests/unit -q`.
+6. **Open a PR** using the template. Link the issue. One concern per PR.
+
+Optional Hosted: `./scripts/dev.sh` (if `apps/web/node_modules` is missing, `cd apps/web && npm install` first) then `curl -sf http://127.0.0.1:8000/api/health`.
 
 ## Install
 

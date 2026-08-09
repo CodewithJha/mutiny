@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">Mutiny Hosted — Hero (placeholder)</title>
+  <desc id="desc">Placeholder frame for the Hosted landing / hero screenshot. Replace with a real PNG or WebP named hero.png.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f1419"/>
+      <stop offset="100%" stop-color="#1a2332"/>
+    </linearGradient>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M32 0H0V32" fill="none" stroke="#243044" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="1280" height="720" fill="url(#bg)"/>
+  <rect width="1280" height="720" fill="url(#grid)" opacity="0.45"/>
+  <rect x="48" y="40" width="1184" height="56" rx="8" fill="#151d2a" stroke="#2a3a52"/>
+  <text x="72" y="75" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="20" fill="#7dd3c0" font-weight="700">MUTINY</text>
+  <text x="180" y="75" font-family="ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#8b9bb4">Hosted · placeholder</text>
+  <rect x="48" y="120" width="760" height="520" rx="12" fill="#121820" stroke="#2a3a52"/>
+  <text x="88" y="200" font-family="Georgia, 'Times New Roman', serif" font-size="42" fill="#e8eef7">Behavioral fuzz-testing</text>
+  <text x="88" y="250" font-family="Georgia, 'Times New Roman', serif" font-size="42" fill="#e8eef7">for AI agents</text>
+  <text x="88" y="310" font-family="ui-sans-serif, system-ui, sans-serif" font-size="18" fill="#8b9bb4">Define what your agent must never do. Then prove it can't.</text>
+  <rect x="88" y="360" width="180" height="44" rx="6" fill="#2dd4bf"/>
+  <text x="118" y="388" font-family="ui-sans-serif, system-ui, sans-serif" font-size="16" fill="#0f1419" font-weight="700">Get started</text>
+  <rect x="840" y="120" width="392" height="520" rx="12" fill="#151d2a" stroke="#2a3a52"/>
+  <text x="880" y="180" font-family="ui-monospace, Menlo, monospace" font-size="13" fill="#7dd3c0">policy.yaml</text>
+  <text x="880" y="220" font-family="ui-monospace, Menlo, monospace" font-size="12" fill="#c5d0e0">refund_limit:</text>
+  <text x="900" y="248" font-family="ui-monospace, Menlo, monospace" font-size="12" fill="#8b9bb4">tool: issue_refund</text>
+  <text x="900" y="276" font-family="ui-monospace, Menlo, monospace" font-size="12" fill="#f87171">approved == false → VIOLATION</text>
+  <rect x="48" y="660" width="1184" height="36" rx="6" fill="#1a1520" stroke="#5b3a4a"/>
+  <text x="64" y="684" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#e8b4c0">PLACEHOLDER — drop real screenshot as hero.png (see docs/assets/README.md)</text>
+</svg>

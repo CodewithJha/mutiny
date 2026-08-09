@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">Mutiny — Policy (placeholder)</title>
+  <desc id="desc">Placeholder for policy.yaml / Hosted policies view. Replace with policy.png.</desc>
+  <rect width="1280" height="720" fill="#0f1419"/>
+  <rect x="40" y="36" width="1200" height="48" rx="8" fill="#151d2a" stroke="#2a3a52"/>
+  <text x="64" y="66" font-family="ui-monospace, Menlo, monospace" font-size="16" fill="#7dd3c0">Policies</text>
+  <text x="180" y="66" font-family="ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#8b9bb4">policy.yaml · placeholder</text>
+  <rect x="40" y="108" width="1200" height="560" rx="12" fill="#121820" stroke="#2a3a52"/>
+  <text x="80" y="160" font-family="ui-monospace, Menlo, monospace" font-size="15" fill="#5b6b84"># Deterministic tool-use invariants</text>
+  <text x="80" y="200" font-family="ui-monospace, Menlo, monospace" font-size="15" fill="#c5d0e0">rules:</text>
+  <text x="100" y="240" font-family="ui-monospace, Menlo, monospace" font-size="15" fill="#7dd3c0">- id: refund_limit</text>
+  <text x="120" y="276" font-family="ui-monospace, Menlo, monospace" font-size="15" fill="#c5d0e0">tool: issue_refund</text>
+  <text x="120" y="312" font-family="ui-monospace, Menlo, monospace" font-size="15" fill="#c5d0e0">when:</text>
+  <text x="140" y="348" font-family="ui-monospace, Menlo, monospace" font-size="15" fill="#e8eef7">amount: { gt: 200 }</text>
+  <text x="140" y="384" font-family="ui-monospace, Menlo, monospace" font-size="15" fill="#e8eef7">approved: false</text>
+  <text x="120" y="420" font-family="ui-monospace, Menlo, monospace" font-size="15" fill="#f87171">→ VIOLATION</text>
+  <text x="100" y="480" font-family="ui-monospace, Menlo, monospace" font-size="15" fill="#7dd3c0">- id: delete_requires_confirm</text>
+  <text x="120" y="516" font-family="ui-monospace, Menlo, monospace" font-size="15" fill="#c5d0e0">tool: delete_account</text>
+  <text x="120" y="552" font-family="ui-monospace, Menlo, monospace" font-size="15" fill="#8b9bb4">forbid_args: confirmed == false</text>
+  <text x="80" y="620" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#e8b4c0">PLACEHOLDER — replace with policy.png (or keep policy-yaml.png alias)</text>
+</svg>
