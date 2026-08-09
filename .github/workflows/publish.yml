@@ -1,9 +1,9 @@
 # Publish mutiny-core → mutiny-openai-agents → mutiny-ai to PyPI.
 # Preferred auth: Trusted Publishing (OIDC). Fallback: UV_PUBLISH_TOKEN secret.
 #
-# One-time PyPI setup (before first run):
+# One-time PyPI setup (before first upload of a new project, or for OIDC):
 #   https://pypi.org/manage/account/publishing/
-#   Add a pending publisher for EACH of: mutiny-core, mutiny-openai-agents, mutiny-ai
+#   Add a publisher for EACH of: mutiny-core, mutiny-openai-agents, mutiny-ai
 #     Owner: CodewithJha
 #     Repository: mutiny
 #     Workflow: publish.yml
@@ -13,6 +13,9 @@
 #
 # Then: Actions → Publish to PyPI → Run workflow
 #   or: create a GitHub Release
+#
+# Already-published versions are skipped (idempotent), so re-running a release
+# that was uploaded manually still reports success.
 
 name: Publish to PyPI
 
@@ -41,53 +44,54 @@ jobs:
       - name: Set up Python
         run: uv python install 3.12
 
-      - name: Publish mutiny-core
+      - name: Publish packages
         env:
+          # May be empty when the secret is unset — never leave an empty token
+          # in the environment while using Trusted Publishing (uv rejects that).
           UV_PUBLISH_TOKEN: ${{ secrets.UV_PUBLISH_TOKEN }}
         run: |
           set -euo pipefail
-          uv build --out-dir dist/core packages/mutiny_core
-          if [ -n "${UV_PUBLISH_TOKEN:-}" ]; then
-            uv publish --token "$UV_PUBLISH_TOKEN" dist/core/*
-          else
-            uv publish --trusted-publishing always dist/core/*
-          fi
 
-      - name: Publish mutiny-openai-agents
-        env:
-          UV_PUBLISH_TOKEN: ${{ secrets.UV_PUBLISH_TOKEN }}
-        run: |
-          set -euo pipefail
-          uv build --out-dir dist/openai packages/mutiny_openai_agents
-          if [ -n "${UV_PUBLISH_TOKEN:-}" ]; then
-            uv publish --token "$UV_PUBLISH_TOKEN" dist/openai/*
-          else
-            uv publish --trusted-publishing always dist/openai/*
-          fi
+          publish_pkg() {
+            local dir="$1"
+            local pypi_name="$2"
+            local out="$3"
+            local version
+            version="$(grep -E '^version[[:space:]]*=' "$dir/pyproject.toml" | head -1 | sed -E 's/.*"([^"]+)".*/\1/')"
 
-      - name: Publish mutiny-ai
-        env:
-          UV_PUBLISH_TOKEN: ${{ secrets.UV_PUBLISH_TOKEN }}
-        run: |
-          set -euo pipefail
-          uv build --out-dir dist/cli packages/mutiny_cli
-          if [ -n "${UV_PUBLISH_TOKEN:-}" ]; then
-            uv publish --token "$UV_PUBLISH_TOKEN" dist/cli/*
-          else
-            uv publish --trusted-publishing always dist/cli/*
-          fi
+            echo "==> ${pypi_name}==${version}"
+
+            if curl -fsSL "https://pypi.org/pypi/${pypi_name}/${version}/json" >/dev/null 2>&1; then
+              echo "Already on PyPI — skip upload"
+              return 0
+            fi
+
+            rm -rf "$out"
+            uv build --out-dir "$out" "$dir"
+
+            if [ -n "${UV_PUBLISH_TOKEN:-}" ]; then
+              uv publish --token "$UV_PUBLISH_TOKEN" "$out"/*
+            else
+              # Empty UV_PUBLISH_TOKEN / TWINE_* must not be set or uv errors with:
+              # "a username and a password are not allowed when using trusted publishing"
+              unset UV_PUBLISH_TOKEN UV_PUBLISH_USERNAME UV_PUBLISH_PASSWORD \
+                TWINE_USERNAME TWINE_PASSWORD || true
+              uv publish --trusted-publishing always "$out"/*
+            fi
+          }
+
+          publish_pkg packages/mutiny_core mutiny-core dist/core
+          publish_pkg packages/mutiny_openai_agents mutiny-openai-agents dist/openai
+          publish_pkg packages/mutiny_cli mutiny-ai dist/cli
 
       - name: Verify on PyPI
         run: |
           set -euo pipefail
-          python3 -m pip install --upgrade pip
-          for i in 1 2 3 4 5 6; do
-            if python3 -m pip index versions mutiny-ai 2>/dev/null | grep -q 0.1.0; then
-              echo "mutiny-ai 0.1.0 is on PyPI"
-              exit 0
+          for pkg in mutiny-core mutiny-openai-agents mutiny-ai; do
+            if curl -fsSL "https://pypi.org/pypi/${pkg}/0.1.0/json" >/dev/null; then
+              echo "ok ${pkg} 0.1.0"
+            else
+              echo "missing ${pkg} 0.1.0" >&2
+              exit 1
             fi
-            echo "Waiting for PyPI index… ($i)"
-            sleep 10
           done
-          echo "Published, but index lag — check https://pypi.org/project/mutiny-ai/"
-          exit 0

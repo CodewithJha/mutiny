@@ -68,6 +68,10 @@ uv publish --token "$UV_PUBLISH_TOKEN" dist/cli/*
 
 Optional fallback secret: repo secret `UV_PUBLISH_TOKEN` (used if set; otherwise OIDC Trusted Publishing).
 
+**Do not** set `UV_PUBLISH_TOKEN` to an empty value in CI — `uv` then rejects Trusted Publishing with *“a username and a password are not allowed when using trusted publishing”*. Leave the secret unset, or set a real `pypi-…` token.
+
+The Actions workflow skips any version that is already on PyPI (idempotent re-runs / manual-first uploads).
+
 ---
 
 ## Publish order (required)
