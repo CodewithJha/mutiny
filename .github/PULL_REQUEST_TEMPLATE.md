@@ -14,7 +14,8 @@
 
 ## Checklist
 
-- [ ] I read [CONTRIBUTING.md](../CONTRIBUTING.md)
+- [ ] I read [CONTRIBUTING.md](../CONTRIBUTING.md) (where to ask, how reviews work, how to run tests)
+- [ ] Linked related issue (`Fixes #N`) or Discussion when applicable
 - [ ] Core stays free of framework SDK imports (adapters own glue)
 - [ ] Tests added or updated when behavior changes (`uv run pytest tests/unit -q`)
 - [ ] Docs / README claims match reality (no PyPI / multi-adapter claims unless shipped)

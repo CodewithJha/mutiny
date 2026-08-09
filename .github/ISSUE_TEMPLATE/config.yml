@@ -1,5 +1,11 @@
 blank_issues_enabled: true
 contact_links:
+  - name: Feature ideas & brainstorming
+    url: https://github.com/CodewithJha/mutiny/discussions/12
+    about: Use Discussions for ideas — Issues are for actionable work
+  - name: Ask a question
+    url: https://github.com/CodewithJha/mutiny/discussions/categories/q-a
+    about: “How do I…?” and design chat
   - name: Security vulnerability
     url: https://github.com/CodewithJha/mutiny/security/advisories/new
     about: Private disclosure — see SECURITY.md

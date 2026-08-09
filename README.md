@@ -335,7 +335,7 @@ Full flag list: `uv run mutiny <cmd> --help`. Expanding this table from `--help`
 | **Beta** | LangGraph / CrewAI / PydanticAI / HTTP adapters · policy packs · exportable reports |
 | **v1** | Stable contracts · CI GitHub Action for regression replay · authenticated Hosted |
 
-Full detail: [`docs/ROADMAP.md`](./docs/ROADMAP.md).
+Full detail: [`docs/ROADMAP.md`](./docs/ROADMAP.md) · tracked as [🚀 Roadmap to v1.0](https://github.com/CodewithJha/mutiny/issues/11).
 
 **Wanted contributor areas:** framework adapters, policy packs, tests, Hosted a11y/UX polish, CI/DX.
 
@@ -343,7 +343,7 @@ Full detail: [`docs/ROADMAP.md`](./docs/ROADMAP.md).
 
 ## Contributing
 
-PRs welcome — especially adapters, policy packs, tests, docs, and a11y.
+PRs welcome — especially adapters, policy packs, tests, docs, and a11y. Newcomers: start with a [`good first issue`](https://github.com/CodewithJha/mutiny/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) (fork → PR in about 30 minutes).
 
 ```bash
 uv sync --extra dev
@@ -352,12 +352,13 @@ uv run pytest tests/unit -q
 
 - **Guide (30-min path):** [CONTRIBUTING.md](./CONTRIBUTING.md)
 - **Good first issues catalog:** [`docs/GOOD_FIRST_ISSUES.md`](./docs/GOOD_FIRST_ISSUES.md)
+- **Ideas & brainstorming:** [Discussions](https://github.com/CodewithJha/mutiny/discussions/12)
 - **Changelog / releases:** [CHANGELOG.md](./CHANGELOG.md)
 - **Conduct / Security / Support:** [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) · [SECURITY.md](./SECURITY.md) · [SUPPORT.md](./SUPPORT.md)
 - **Docs hub:** [`docs/README.md`](./docs/README.md)
 - **Issues:** [github.com/CodewithJha/mutiny/issues](https://github.com/CodewithJha/mutiny/issues)
 
-If this engine is useful, a star helps other agent builders find it.
+If this engine is useful, a star helps other agent builders find it. Fork the repo and open a PR — we’re glad to help in the comments.
 
 ---
 

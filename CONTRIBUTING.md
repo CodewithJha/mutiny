@@ -91,11 +91,33 @@ pip install -e packages/mutiny_cli
 
 ## Ideas that fit the architecture
 
-- **New adapters** on the existing `TargetAdapter` port (LangGraph, CrewAI, PydanticAI, AutoGen, HTTP) — see [docs/ROADMAP.md](./docs/ROADMAP.md); open an issue first.
+- **New adapters** on the existing `TargetAdapter` port (LangGraph, CrewAI, PydanticAI, AutoGen, HTTP) — see [docs/ROADMAP.md](./docs/ROADMAP.md); brainstorm in Discussions, then open an issue before a large PR.
 - Policy examples / packs for common tool-use invariants.
 - Docs clarity: sample project path vs customer project path.
 - Test coverage for policy operators, minimize, and regression replay.
 - CI / DX: better failure messages from `mutiny init` / `mutiny test`.
+
+## Where to ask
+
+| Need | Where |
+|---|---|
+| Brainstorm / feature ideas | [Discussions → Ideas](https://github.com/CodewithJha/mutiny/discussions/categories/ideas) (start from [Feature Requests & Community Ideas](https://github.com/CodewithJha/mutiny/discussions/12)) |
+| Actionable bug or scoped task | [GitHub Issues](https://github.com/CodewithJha/mutiny/issues) |
+| “How do I…?” | [Discussions → Q&A](https://github.com/CodewithJha/mutiny/discussions/categories/q-a) |
+| Security | [SECURITY.md](./SECURITY.md) — private only |
+
+**Discussions = explore. Issues = actionable work** with a clear goal. Large adapters: discuss first, then open an issue before a big PR.
+
+## How to run tests
+
+```bash
+uv sync --extra dev
+uv run pytest tests/unit -q          # default for most PRs
+uv run pytest tests/integration -q   # when touching API / Hosted / sample loop
+uv run pytest tests/reliability -q   # when touching campaign / minimize / flaky paths
+```
+
+Optional offline smoke: `cd examples/openai_support_agent && uv run mutiny init && uv run mutiny run --no-hosted`.
 
 ## Pull request etiquette
 
@@ -106,6 +128,14 @@ pip install -e packages/mutiny_cli
 5. Authorized testing only — no open-internet attack proxy behavior.
 6. Be kind in review; assume good intent. See [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md).
 
+## How reviews work
+
+- Maintainers review for scope, Core/adapter boundaries, and honest docs claims.
+- Expect at least one pass of feedback on non-trivial PRs; small docs/test PRs often merge faster.
+- Link the related issue (`Fixes #N`). If feedback asks for a design change on Core/campaign/policy, pause and discuss — don’t redesign in the same PR.
+- Volunteer maintainers: best effort. Ping politely if a PR sits idle for a week+.
+- Disagreement is fine; keep it specific and kind ([CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)).
+
 ## Commit style
 
 Short, imperative messages that say *why* when it isn’t obvious:
@@ -114,9 +144,8 @@ Short, imperative messages that say *why* when it isn’t obvious:
 - `docs: clarify customer-project quick start`
 - `feat(adapter): scaffold LangGraph TargetAdapter stub`
 
-## Questions
+## Getting help
 
-- [SUPPORT.md](./SUPPORT.md) — where to ask
-- [SECURITY.md](./SECURITY.md) — vulnerabilities (private)
-- [GitHub Issues](https://github.com/CodewithJha/mutiny/issues) / [Discussions](https://github.com/CodewithJha/mutiny/discussions)
-- Architecture: [`docs/`](./docs/) — [ARCHITECTURE.md](./docs/ARCHITECTURE.md), [ROADMAP.md](./docs/ROADMAP.md)
+- Stuck on a `good first issue`? Ask in the issue comments — we’re happy to help.
+- Broader questions: [Discussions](https://github.com/CodewithJha/mutiny/discussions) or [SUPPORT.md](./SUPPORT.md)
+- Architecture: [`docs/`](./docs/) — [ARCHITECTURE.md](./docs/ARCHITECTURE.md), [ROADMAP.md](./docs/ROADMAP.md) / [Roadmap issue](https://github.com/CodewithJha/mutiny/issues/11)

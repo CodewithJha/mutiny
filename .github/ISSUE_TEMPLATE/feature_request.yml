@@ -6,7 +6,8 @@ body:
   - type: markdown
     attributes:
       value: |
-        Prefer small, reviewable ideas. Large adapters (LangGraph, CrewAI, …) — open an issue first so we can align on `TargetAdapter`.
+        Prefer small, reviewable ideas with a clear goal. Still brainstorming? Start in [Discussions](https://github.com/CodewithJha/mutiny/discussions/12) first — Issues are for actionable work.
+        Large adapters (LangGraph, CrewAI, …) — discuss, then open an issue so we can align on `TargetAdapter`.
         See [docs/ROADMAP.md](https://github.com/CodewithJha/mutiny/blob/main/docs/ROADMAP.md) and [docs/GOOD_FIRST_ISSUES.md](https://github.com/CodewithJha/mutiny/blob/main/docs/GOOD_FIRST_ISSUES.md).
   - type: dropdown
     id: area

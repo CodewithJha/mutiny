@@ -5,11 +5,12 @@
 | Need | Where |
 |---|---|
 | Bug report | [GitHub Issues](https://github.com/CodewithJha/mutiny/issues/new?template=bug_report.yml) |
-| Feature / adapter idea | [GitHub Issues](https://github.com/CodewithJha/mutiny/issues/new?template=feature_request.yml) |
-| “How do I…?” / design chat | [GitHub Discussions](https://github.com/CodewithJha/mutiny/discussions) (if enabled) or an Issue labeled `question` |
+| Brainstorm / feature ideas | [Discussions → Ideas](https://github.com/CodewithJha/mutiny/discussions/categories/ideas) ([community thread](https://github.com/CodewithJha/mutiny/discussions/12)) |
+| Actionable enhancement (scoped) | [GitHub Issues](https://github.com/CodewithJha/mutiny/issues/new?template=feature_request.yml) |
+| “How do I…?” / design chat | [GitHub Discussions](https://github.com/CodewithJha/mutiny/discussions) |
 | Security vulnerability | [SECURITY.md](./SECURITY.md) — private disclosure only |
 | Contributing workflow | [CONTRIBUTING.md](./CONTRIBUTING.md) |
-| Architecture / product intent | [`docs/`](./docs/README.md) |
+| Architecture / product intent | [`docs/`](./docs/README.md) · [Roadmap issue](https://github.com/CodewithJha/mutiny/issues/11) |
 
 ## Before you open an issue
 
