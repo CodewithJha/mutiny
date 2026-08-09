@@ -1,80 +1,162 @@
 # Mutiny
 
+_Define what your agent must never do. Then prove it can't._
+
 **Mutiny is a behavioral fuzz-testing engine for AI agents.**
 
-The Hackathon MVP ships with support for OpenAI Agents SDK projects through the first adapter. Future adapters (LangGraph, CrewAI, PydanticAI, AutoGen, HTTP, …) are on the [roadmap](./docs/ROADMAP.md)—same Core, new adapters.
+You install it into your agent project, write tool-use policies, and Mutiny searches for conversations that break them — then proves the break on a tool-call trace, minimizes it, and freezes it as a regression test.
 
-> Install Mutiny into your agent project → define what it must never do → discover policy breaks → prove them on tool-call traces → minimize → save permanent regression tests.
+Hackathon MVP ships **Adapter #1: OpenAI Agents SDK**. Same Core; more adapters later ([roadmap](./docs/ROADMAP.md)).
 
-**Documentation:** [`docs/`](./docs/) — start at [`docs/README.md`](./docs/README.md).
+**Docs:** [`docs/`](./docs/) — start at [`docs/README.md`](./docs/README.md).
 
-## Install into your agent project
+---
 
-Primary workflow (intended product path):
+You ship an agent that refunds money, deletes accounts, sends email. Your system prompt says “be careful.” Attackers don’t care about your system prompt.
+
+What actually fails looks like this:
+
+```json
+issue_refund({ "amount": 850, "approved": false })
+delete_account({ "confirmed": false })
+```
+
+That’s not a bad answer. That’s a **policy break in action** — and most eval stacks never see it.
+
+Mutiny treats those invariants like fuzz targets: search, prove, minimize, regress.
+
+## How it works
+
+```
+1. Connect your agent     → adapter (MVP: OpenAI Agents SDK)
+2. Declare invariants     → policy.yaml (deterministic tool rules)
+3. Search                 → evolutionary campaign mutates attack conversations
+4. Prove                  → code evaluates tool calls on the trace (not an LLM judge)
+5. Minimize               → smallest reproduction that still violates
+6. Freeze                 → permanent regression under .mutiny/tests/
+```
+
+**AI proposes. Code proves.**
+
+```
+Your agent project
+        ↑
+OpenAI Agents SDK Adapter   ← Adapter #1 (MVP)
+        ↑
+   Adapter Layer            ← future: LangGraph, CrewAI, PydanticAI, AutoGen, HTTP, …
+        ↑
+   Mutiny Core              ← framework-independent engine
+        ↑
+   CLI (init / run / test)  ← primary
+   Hosted API + UI          ← secondary (lineage / ops)
+```
+
+## Quick start
+
+This repo is a **uv monorepo**. That’s the path that works today.
+
+### 1. Bootstrap the monorepo
 
 ```bash
-# In your agent project (Hackathon MVP: OpenAI Agents SDK)
-pip install mutiny
-
-mutiny init
-# → .mutiny/adapter.py   connect Mutiny to your agent
-# → policy.yaml          tool-use invariants
-# → mutiny.yaml          campaign defaults
-
-# Edit .mutiny/adapter.py to load your agent, then:
-mutiny run
-# discovers tool calls → evolutionary campaign → verified violations
-# → minimize → regression tests
+# Prerequisites: Python ≥ 3.11, uv
+git clone https://github.com/CodewithJha/mutiny.git
+cd mutiny
+uv sync --extra dev
 ```
+
+This installs Core, the OpenAI Agents SDK adapter, and the `mutiny` CLI into the workspace.
+
+### 2. Point Mutiny at an agent project
+
+**Sample project (recommended first run):**
+
+```bash
+cd examples/openai_support_agent
+uv run mutiny init    # scaffolds .mutiny/adapter.py, policy.yaml, mutiny.yaml
+uv run mutiny run --no-hosted
+uv run mutiny test    # replay saved regressions (after a finding is saved)
+```
+
+**Your own OpenAI Agents SDK project:**
+
+```bash
+cd /path/to/your-agent
+# from the Mutiny checkout, with the workspace env active — or install the packages editable
+uv run --directory /path/to/mutiny mutiny init --path .
+# edit .mutiny/adapter.py → AGENT_REF + POLICY_CONTEXT
+# edit policy.yaml        → your tool names and rules
+uv run --directory /path/to/mutiny mutiny run --path . --no-hosted
+uv run --directory /path/to/mutiny mutiny test --path .
+```
+
+`mutiny init` writes:
+
+| File | Role |
+|---|---|
+| `.mutiny/adapter.py` | Wires Adapter #1 to your agent export |
+| `policy.yaml` | Deterministic tool-use invariants |
+| `mutiny.yaml` | Campaign defaults |
+
+### 3. Optional: Hosted UI
+
+For campaign lineage and evidence in a browser:
+
+```bash
+# from repo root
+./scripts/dev.sh
+# API :8000 · UI http://127.0.0.1:3000
+```
+
+Then `mutiny run` (without `--no-hosted`) prefers the Hosted API when reachable.
+
+## Commands
+
+| Command | What it does |
+|---|---|
+| `mutiny init` | Scaffold adapter stub + `policy.yaml` + `mutiny.yaml` |
+| `mutiny run` | Load adapter + policy; run a campaign; minimize / save regressions |
+| `mutiny test` | Replay regressions under `.mutiny/tests/` (PASS / FAIL / SKIPPED) |
+
+## What’s included
 
 | | |
 |---|---|
-| **Hackathon MVP** | ✓ OpenAI Agents SDK adapter (Adapter #1) |
-| **Future** | Additional adapters on the same interface |
+| **Mutiny Core** | Policy oracle, campaign loop, fitness, minimize, regression replay |
+| **Adapter #1** | OpenAI Agents SDK → your local agent |
+| **CLI** | `mutiny init` / `run` / `test` |
+| **Sample project** | [`examples/openai_support_agent/`](./examples/openai_support_agent/) |
+| **Hosted** | Optional API + UI for lineage (secondary) |
+| **Demo harness** | Bundled demo agent used as a reference / reliability target |
 
-## Status
+| Not in MVP | |
+|---|---|
+| LangGraph / CrewAI / PydanticAI / AutoGen / HTTP adapters | [Roadmap](./docs/ROADMAP.md) |
+| PyPI `pip install mutiny` as the primary install | Planned; monorepo `uv` is the working path now |
+| Open-internet attack proxy | Out of scope |
 
-- **Product pivot (2026-08-07):** Mutiny is the engine; adapters connect frameworks. Primary path is *your* local agent via adapter + CLI (`mutiny init` / `mutiny run`). See [ADR-017](./docs/DECISION_LOG.md#adr-017--customer-owned-local-projects-primary-bundled-demo-secondary) and [ADR-018](./docs/DECISION_LOG.md#adr-018--adapter-first-architecture).
-- **Codebase today:** Core loop + Hosted API/UI still exercise a **bundled demo agent** as an interim reference / testing harness. The OpenAI Agents SDK adapter + `mutiny init` CLI surfaces are the planned install path (docs describe intent; see [IMPLEMENTATION_PLAN](./docs/IMPLEMENTATION_PLAN.md)).
-- Design canon: Inngest-inspired dark UI — [`DESIGN.md`](./DESIGN.md)
-- Cold start: [`docs/COLD_START.md`](./docs/COLD_START.md) · Demo: [`docs/DEMO_SCRIPT.md`](./docs/DEMO_SCRIPT.md)
-- Devpost: [`docs/DEVPOST.md`](./docs/DEVPOST.md)
-- Claims freeze: [`docs/COMPETITOR_ANALYSIS.md`](./docs/COMPETITOR_ANALYSIS.md)
-
-## Develop (monorepo)
+## Develop (contributors)
 
 ```bash
 uv sync --extra dev
 uv run pytest tests/ -q
 
-# Reliability smoke against interim demo harness (≥2/3)
+# Reliability smoke against the interim demo harness (≥2/3)
 PYTHONPATH=apps/api/src:apps/demo_agent/src:packages/mutiny_core/src \
   uv run python scripts/smoke_reliability.py
 
-# One-command Hosted (API :8000 + UI :3000) — optional visualization / ops surface
-./scripts/dev.sh
-# open http://127.0.0.1:3000
+./scripts/dev.sh   # Hosted API + UI
 ```
 
-Or two terminals:
+Cold start: [`docs/COLD_START.md`](./docs/COLD_START.md) · Architecture: [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) · System design: [`docs/SYSTEM_DESIGN.md`](./docs/SYSTEM_DESIGN.md).
 
-```bash
-# Hosted API (terminal 1)
-mkdir -p data
-PYTHONPATH=apps/api/src:apps/demo_agent/src:packages/mutiny_core/src \
-  uv run uvicorn mutiny_api.main:app --host 127.0.0.1 --port 8000
+## Status
 
-# Hosted UI (terminal 2) — proxies /api → :8000
-cd apps/web && npm install && npm run dev
-# open http://127.0.0.1:3000
-```
-
-Optional: `docker compose up --build`.
-
-If `next dev --turbopack` 404s every route on macOS (`EMFILE: too many open files`), use the default `npm run dev` script (webpack + polling). Optional: `npm run dev:turbo`.
-
-Pinned demo harness config: [`config/demo_pin.json`](./config/demo_pin.json).
+Hackathon MVP in progress. Product thesis is engine-first + customer project via adapter ([ADR-017](./docs/DECISION_LOG.md#adr-017--customer-owned-local-projects-primary-bundled-demo-secondary), [ADR-018](./docs/DECISION_LOG.md#adr-018--adapter-first-architecture)). Hosted still also exercises a bundled demo agent as an interim harness — useful for demos, not the primary user story.
 
 ## Safety
 
 Authorized testing only. MVP targets are local projects / in-process or localhost with sandboxed mock tools. Mutiny is not an open-internet attack proxy.
+
+## License
+
+License TBD (not yet applied in-repo).
