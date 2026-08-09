@@ -148,7 +148,7 @@ Third-party attack seekers; toxicity-only buyers; day-one enterprise SSO tenants
 ## 8. Primary Use Cases
 
 1. Own an AI agent project (current scope: OpenAI Agents SDK, e.g. `customer-agent/`).  
-2. Install Mutiny (`pip install mutiny-ai`, or git/source until published) → `mutiny init` (adapter, `policy.yaml`, `mutiny.yaml`).  
+2. Install Mutiny (`pip install mutiny-ai`) → `mutiny init` (adapter, `policy.yaml`, `mutiny.yaml`).  
 3. Connect the agent in `.mutiny/adapter.py`.  
 4. `mutiny run` — discover tools, run evolutionary campaign, find deterministic violations.  
 5. Inspect tool-call evidence; minimize; save regression.  
@@ -328,7 +328,7 @@ Milestone DoD: [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md).
 | Web | Next.js, TypeScript, Tailwind, shadcn/ui, React Flow |
 | DB | SQLite (API-owned, Hosted) |
 | Models | Featherless; Ollama/templates fallback |
-| Packaging | Monorepo; user install `pip install mutiny-ai` (CLI `mutiny`); PyPI upload pending — see docs/PUBLISHING.md; optional docker-compose |
+| Packaging | Monorepo; user install `pip install mutiny-ai` (CLI `mutiny`); see docs/PUBLISHING.md; optional docker-compose |
 
 Forbidden without ADR: required Redis/Celery/Kafka, Kubernetes, vector DB, RAG stacks.
 

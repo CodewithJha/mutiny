@@ -10,7 +10,7 @@ Use this on a clean machine. Competitive claims stay frozen to [COMPETITOR_ANALY
 
 **Product path:** Mutiny is a behavioral fuzz-testing engine — install into your agent project (Adapter #1: OpenAI Agents SDK). See root [README](../README.md). Use the **sample harness** below for reliability and Hosted demos; label it as a sample/reference agent.
 
-**Install today:** README git install (three packages) or clone + `uv`. PyPI name is `mutiny-ai` (wheels ready; first upload pending — [PUBLISHING.md](./PUBLISHING.md)). Do **not** use bare `pip install mutiny` or `mutiny-sdk` — those names are different projects.
+**Install:** `pip install mutiny-ai` (CLI: `mutiny`), or clone + `uv` for contributors. Do **not** use bare `pip install mutiny` or `mutiny-sdk` — those names are different projects. See [PUBLISHING.md](./PUBLISHING.md).
 
 ---
 
@@ -43,7 +43,7 @@ uv run mutiny run --no-hosted
 uv run mutiny test
 ```
 
-**When PyPI upload lands** (see [PUBLISHING.md](./PUBLISHING.md)):
+**Customer-style install (PyPI):**
 
 ```bash
 pip install mutiny-ai

@@ -2,25 +2,23 @@
 
 End users install **`mutiny-ai`** (CLI command stays `mutiny`). That meta/CLI wheel depends on:
 
-| PyPI name | Path | Role | Status (2026-08-09) |
+| PyPI name | Path | Role | Status |
 |---|---|---|---|
-| `mutiny-core` | `packages/mutiny_core` | Policy oracle / campaign kernel | **Available** (not yet claimed) |
-| `mutiny-openai-agents` | `packages/mutiny_openai_agents` | Adapter #1 | **Available** (not yet claimed) |
-| `mutiny-ai` | `packages/mutiny_cli` | Console script `mutiny` | **Available** (not yet claimed) — preferred short name |
+| [`mutiny-core`](https://pypi.org/project/mutiny-core/) | `packages/mutiny_core` | Policy oracle / campaign kernel | **Published** (`0.1.0`) |
+| [`mutiny-openai-agents`](https://pypi.org/project/mutiny-openai-agents/) | `packages/mutiny_openai_agents` | Adapter #1 | **Published** (`0.1.0`) |
+| [`mutiny-ai`](https://pypi.org/project/mutiny-ai/) | `packages/mutiny_cli` | Console script `mutiny` | **Published** (`0.1.0`) — preferred short name |
 
 > **Why not `pip install mutiny`?** The name [`mutiny`](https://pypi.org/project/mutiny/) is already taken (unrelated Revolt API wrapper). [`mutiny-sdk`](https://pypi.org/project/mutiny-sdk/) is also taken. We publish as **`mutiny-ai`**.
 
-Other free short names checked (not used): `mutinyai`, `mutiny-cli`, `pymutiny`. Prefer **`mutiny-ai`** — already wired in `packages/mutiny_cli/pyproject.toml`.
-
 Do **not** publish the repo-root `name = "mutiny"` workspace project — it is not a user wheel.
 
-**Wheels build cleanly locally** (`uv build` → `mutiny --help` works from the three `0.1.0` wheels). First upload claims the names.
+End users: `pip install mutiny-ai` then `mutiny init`.
 
 ---
 
-## Blocked until you add credentials
+## Credentials for subsequent releases
 
-There is **no** local `~/.pypirc`, `UV_PUBLISH_TOKEN`, `TWINE_PASSWORD`, or `PYPI_TOKEN` in this environment. Upload cannot proceed without one of the two paths below.
+Use one of the two paths below for version bumps after `0.1.0`.
 
 ### Option A — API token (fastest local publish)
 
@@ -76,7 +74,7 @@ Optional fallback secret: repo secret `UV_PUBLISH_TOKEN` (used if set; otherwise
 
 Always: **mutiny-core** → **mutiny-openai-agents** → **mutiny-ai**.
 
-Bump `version` in each package’s `pyproject.toml` together for a release (keep them aligned at `0.1.0` for the first upload).
+Bump `version` in each package’s `pyproject.toml` together for a release (keep versions aligned).
 
 ---
 
@@ -101,9 +99,7 @@ mutiny init
 
 ---
 
-## Until the first PyPI upload
-
-From an agent project (no monorepo clone):
+## Optional: install from git
 
 ```bash
 pip install \
@@ -111,5 +107,3 @@ pip install \
   "mutiny-openai-agents @ git+https://github.com/CodewithJha/mutiny.git#subdirectory=packages/mutiny_openai_agents" \
   "mutiny-ai @ git+https://github.com/CodewithJha/mutiny.git#subdirectory=packages/mutiny_cli"
 ```
-
-Install all three in one `pip install` so dependency names resolve from the same command.
