@@ -3,8 +3,8 @@
 builder = "nixpacks"
 
 [deploy]
-# .mutiny/ is gitignored; ensure sample adapter exists after each deploy so
-# Hosted Run Campaign (openai_agents + examples/openai_support_agent) works.
-startCommand = "uv sync && mkdir -p data && (test -f examples/openai_support_agent/.mutiny/adapter.py || (cd examples/openai_support_agent && uv run mutiny init)) && uv run uvicorn mutiny_api.main:app --host 0.0.0.0 --port ${PORT:-8000}"
+# Sample .mutiny may be stripped from the image (Docker cannot re-include under
+# an excluded .mutiny/ parent). Always ensure adapter exists before uvicorn.
+startCommand = "uv sync && mkdir -p data && uv run python scripts/ensure_sample_mutiny.py && uv run uvicorn mutiny_api.main:app --host 0.0.0.0 --port ${PORT:-8000}"
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 10
