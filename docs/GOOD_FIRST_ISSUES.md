@@ -16,13 +16,13 @@ Maintainer catalog of **small, realistic** tasks for new contributors. Open GitH
 |---|---|---|---|---|
 | [#1](https://github.com/CodewithJha/mutiny/issues/1) | #1 | Policy operator cheatsheet | S | `docs/POLICY_CHEATSHEET.md`, `docs/README.md`, `tests/unit/test_policy_*` |
 | [#2](https://github.com/CodewithJha/mutiny/issues/2) | #2 | Document CLI flags from `--help` | S | `README.md` Commands, optional `docs/CLI.md` |
-| [#3](https://github.com/CodewithJha/mutiny/issues/3) | #4 | Screenshot placeholders | XS | **Done for SVGs** — remaining: real PNG/GIF under `docs/assets/` |
+| [#3](https://github.com/CodewithJha/mutiny/issues/3) | #4 | Real screenshots / demo GIF (SVGs shipped) | S | `docs/assets/*`, `README.md` Screenshots |
 | [#4](https://github.com/CodewithJha/mutiny/issues/4) | #9 | Skip-to-content / focus order | S | `apps/web` landing routes / layout |
 | [#5](https://github.com/CodewithJha/mutiny/issues/5) | #15 | Policy evaluator edge cases | S | `tests/unit/test_policy_evaluator.py` |
-| [#6](https://github.com/CodewithJha/mutiny/issues/6) | #21 | `mutiny init` next-step hint | XS | `packages/mutiny_cli/`, `tests/unit/test_mutiny_cli_init.py` |
-| [#7](https://github.com/CodewithJha/mutiny/issues/7) | #28 | Comment headers in sample policy | XS | `examples/openai_support_agent/policy.yaml` |
+| [#6](https://github.com/CodewithJha/mutiny/issues/6) | #21 | Strengthen `mutiny init` next-step hint + test | XS | `packages/mutiny_cli/init_cmd.py`, init unit test |
+| [#7](https://github.com/CodewithJha/mutiny/issues/7) | #28 | Richer per-rule comment headers in sample policy | XS | `examples/openai_support_agent/policy.yaml` |
 | [#8](https://github.com/CodewithJha/mutiny/issues/8) | #37 | Document `/api/health` fields | S | `docs/` or `apps/api` README; `HealthResponse` in schemas |
-| [#9](https://github.com/CodewithJha/mutiny/issues/9) | #24 | `dev.sh` node_modules hint | XS | `scripts/dev.sh` (tip may already exist — verify + docs) |
+| [#9](https://github.com/CodewithJha/mutiny/issues/9) | #24 | Verify / harden `dev.sh` node_modules hint | XS | `scripts/dev.sh` (tip exists — verify + harden) |
 | [#10](https://github.com/CodewithJha/mutiny/issues/10) | #27 | Second email-domain policy example | S | `examples/policies/` |
 
 ---
@@ -34,7 +34,7 @@ Maintainer catalog of **small, realistic** tasks for new contributors. Open GitH
 | 1 | Policy.yaml operator cheatsheet | S | Add `docs/POLICY_CHEATSHEET.md` with operators + examples from `tests/unit/test_policy_*` and sample `policy.yaml`; link from `docs/README.md` map; no language redesign | `docs/POLICY_CHEATSHEET.md`, `docs/README.md`, `tests/unit/test_policy_*.py`, `examples/openai_support_agent/policy.yaml` | `docs` `good first issue` |
 | 2 | Document CLI flags from `--help` | S | Expand README Commands or add `docs/CLI.md` listing real flags from `uv run mutiny {init,run,test} --help`; keep install path honest (from source) | `README.md`, optional `docs/CLI.md` | `docs` `cli` |
 | 3 | Honest PyPI wording in pitch docs | XS | Any remaining “`pip install mutiny` as available today” lines say from-source / planned | `docs/DEMO_SCRIPT.md`, `docs/DEVPOST.md`, `docs/PRD.md` | `docs` |
-| 4 | Screenshot / GIF assets | XS–S | SVG placeholders ship under `docs/assets/`; **remaining:** real `*.png` / `mutiny-demo.gif` + README path swap per `docs/assets/README.md` | `docs/assets/*`, `README.md` | `docs` `examples` |
+| 4 | Screenshot / GIF assets | XS–S | SVG placeholders ship under `docs/assets/`; **remaining:** real `*.png` / `mutiny-demo.gif` + README path swap per `docs/assets/README.md` (GH [#3](https://github.com/CodewithJha/mutiny/issues/3)) | `docs/assets/*`, `README.md` | `docs` `examples` |
 | 5 | Cross-link sample vs demo harness | XS | Three short paragraphs linking sample agent ↔ `examples/demo` ↔ COLD_START | `examples/*/README.md`, `docs/COLD_START.md` | `docs` `examples` |
 | 6 | FAQ: Windows / WSL notes | S | 3 bullets in README FAQ for `uv` / venv on Windows + WSL | `README.md` | `docs` |
 | 7 | Adapter-author reading order | XS | 10–15 lines pointer section in ARCHITECTURE (no redesign) | `docs/ARCHITECTURE.md` | `docs` |
@@ -66,10 +66,10 @@ Maintainer catalog of **small, realistic** tasks for new contributors. Open GitH
 
 | # | Title | Difficulty | Acceptance | Affected files | Labels |
 |---|---|---|---|---|---|
-| 21 | `mutiny init` next-step hint | XS | Print edit-adapter → `mutiny run --no-hosted` after success; test if practical | `packages/mutiny_cli/`, init tests | `cli` `good first issue` |
+| 21 | Strengthen `mutiny init` next-step hint | XS | Hint already prints; polish `--no-hosted` + assert in init test (GH [#6](https://github.com/CodewithJha/mutiny/issues/6)) | `packages/mutiny_cli/`, init tests | `cli` `good first issue` |
 | 22 | Friendlier `mutiny test` counts | XS | Clear PASS/FAIL/SKIPPED summary line | CLI test command | `cli` |
 | 23 | Missing `policy.yaml` warning | S | Actionable path in error | `packages/mutiny_cli/` run | `cli` |
-| 24 | `dev.sh` npm install hint | XS | Tip when `node_modules` missing (verify existing tip; improve docs if enough) | `scripts/dev.sh`, `docs/COLD_START.md` | `cli` `docs` |
+| 24 | `dev.sh` npm install hint | XS | Tip already exists; verify on clean tree / harden if missable (GH [#9](https://github.com/CodewithJha/mutiny/issues/9)) | `scripts/dev.sh`, `docs/COLD_START.md` | `cli` `docs` |
 | 25 | Sample README always `uv run mutiny` | XS | Docs-only alignment | `examples/**/README.md` | `docs` `examples` `cli` |
 | 26 | `mutiny --version` | S | Print package version from metadata | `packages/mutiny_cli/` | `cli` |
 
@@ -78,7 +78,7 @@ Maintainer catalog of **small, realistic** tasks for new contributors. Open GitH
 | # | Title | Difficulty | Acceptance | Affected files | Labels |
 |---|---|---|---|---|---|
 | 27 | Email recipient domain policy | S | Example policy + short README; mock-tools only | `examples/policies/` | `examples` `good first issue` |
-| 28 | Comment headers in sample policy | XS | Comments only; YAML still valid for `mutiny run` | `examples/openai_support_agent/policy.yaml` | `examples` `docs` |
+| 28 | Richer comment headers in sample policy | XS | Upgrade one-liners to init-stub style headers; comments only; YAML still valid (GH [#7](https://github.com/CodewithJha/mutiny/issues/7)) | `examples/openai_support_agent/policy.yaml` | `examples` `docs` |
 | 29 | Policy pack stubs | S | refund + delete stubs + README | `examples/policies/` | `examples` |
 | 30 | Annotated violation trace | S | Static JSON + notes | `examples/traces/` | `examples` |
 | 31 | Offline env var table | XS | Document `OPENAI_API_KEY`, `MUTINY_SAMPLE_OFFLINE` | sample README | `examples` `docs` |
@@ -126,4 +126,5 @@ Maintainer catalog of **small, realistic** tasks for new contributors. Open GitH
 - Prefer opening **5–10** GitHub issues from the top of each category with `good first issue` + area label.
 - Use `help wanted` for adapter stubs and CI that need design agreement.
 - Close or unlabel items that ship; keep this file as the long backlog.
-- When editing issues, include **Difficulty**, **Affected files**, **Acceptance**, and a link back here.
+- When editing issues, use a consistent body: **Context**, **Goal**, **Why it matters**, **Acceptance criteria**, **Suggested files**, **Out of scope**, **Hints**, **Difficulty**, **Docs** (link back here).
+- If code already landed (e.g. init hint, `dev.sh` tip), reframe the GitHub issue as verify / polish / test-lock — do not leave a greenfield description that misleads contributors.
