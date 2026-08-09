@@ -14,10 +14,14 @@ Mutiny installs into your agent project, takes deterministic **tool-use policies
 Adapter #1 ships today: **OpenAI Agents SDK**. Same Core for every future adapter — contributions welcome.
 
 ```bash
+git clone https://github.com/CodewithJha/mutiny.git
+cd mutiny
 uv sync --extra dev
 cd examples/openai_support_agent
 uv run mutiny init && uv run mutiny run --no-hosted && uv run mutiny test
 ```
+
+Not on PyPI yet — install from this repo (see [Install](#install)).
 
 ---
 
@@ -26,11 +30,13 @@ uv run mutiny init && uv run mutiny run --no-hosted && uv run mutiny test
 - [Why Mutiny](#why-mutiny)
 - [Features](#features)
 - [Demo](#demo)
+- [Install](#install)
 - [Quick start](#quick-start)
 - [How it works](#how-it-works)
 - [Architecture](#architecture)
 - [Adapters](#adapters)
 - [Commands](#commands)
+- [Troubleshooting](#troubleshooting)
 - [Contributing](#contributing)
 - [Roadmap](#roadmap)
 - [Safety](#safety)
@@ -95,27 +101,84 @@ Hosted lineage (optional): start API + UI with `./scripts/dev.sh`, then run with
 
 ---
 
-## Quick start
+## Install
 
-This repo is a **uv monorepo**. That is the supported install path today  
-(**not** published to PyPI yet — `pip install mutiny` is on the roadmap).
+Mutiny is **not on PyPI yet**. Install from this repository (git / source).  
+The supported path is the **uv workspace**; a per-package `pip install -e` path also works.
 
 ### Prerequisites
 
-- Python **≥ 3.11**
-- [uv](https://docs.astral.sh/uv/)
+| Tool | Required for | Notes |
+|---|---|---|
+| **Python ≥ 3.11** | Everything | Check with `python3 --version` |
+| **[uv](https://docs.astral.sh/uv/)** | Recommended install | Workspace sync + `uv run mutiny …` |
+| **git** | Clone | |
+| **Node.js ≥ 20 + npm** | Optional Hosted UI | Only if you run `apps/web` / `./scripts/dev.sh` |
 
-### 1. Bootstrap the monorepo
+### 1. Clone
 
 ```bash
 git clone https://github.com/CodewithJha/mutiny.git
 cd mutiny
+```
+
+### 2. Bootstrap (recommended)
+
+```bash
 uv sync --extra dev
 ```
 
-This installs Mutiny Core, the OpenAI Agents SDK adapter, and the `mutiny` CLI into the workspace.
+This installs Mutiny Core, the OpenAI Agents SDK adapter, the `mutiny` CLI, and pytest into the workspace. After sync:
 
-### 2. Sample project (recommended first run)
+```bash
+uv run mutiny --help
+```
+
+### 3. Alternate: editable `pip` (per package)
+
+Root `pip install -e .` does **not** work (this repo is a uv workspace without a root wheel). Install the packages in order:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+
+pip install -e packages/mutiny_core
+pip install -e packages/mutiny_openai_agents
+pip install -e packages/mutiny_cli
+
+mutiny --help
+```
+
+Prefer `uv sync --extra dev` unless you already manage a separate venv.
+
+### 4. Optional Hosted (API + UI)
+
+One command from the repo root:
+
+```bash
+./scripts/dev.sh
+# API  http://127.0.0.1:8000
+# UI   http://127.0.0.1:3000
+# Health: GET http://127.0.0.1:8000/api/health
+```
+
+Or manually:
+
+```bash
+# terminal A — API
+uv run uvicorn mutiny_api.main:app --host 127.0.0.1 --port 8000
+
+# terminal B — UI (Node required)
+cd apps/web && npm install && npm run dev
+```
+
+CLI campaigns without Hosted: pass `--no-hosted` to `mutiny run`.
+
+---
+
+## Quick start
+
+### Sample project (recommended first run)
 
 ```bash
 cd examples/openai_support_agent
@@ -124,9 +187,9 @@ uv run mutiny run --no-hosted
 uv run mutiny test    # replay saved regressions after a finding is saved
 ```
 
-The sample agent uses a scripted offline model when `OPENAI_API_KEY` is unset — good for local smoke and CI.
+The sample agent uses a scripted offline model when `OPENAI_API_KEY` is unset — good for local smoke and CI. More detail: [`examples/openai_support_agent/`](./examples/openai_support_agent/).
 
-### 3. Your own OpenAI Agents SDK project
+### Your own OpenAI Agents SDK project
 
 ```bash
 cd /path/to/your-agent
@@ -145,17 +208,25 @@ uv run --directory /path/to/mutiny mutiny test --path .
 | `policy.yaml` | Deterministic tool-use invariants |
 | `mutiny.yaml` | Campaign defaults |
 
-### 4. Optional: Hosted UI
-
-```bash
-# from repo root
-./scripts/dev.sh
-# API :8000 · UI http://127.0.0.1:3000
-```
-
-Then `mutiny run` (without `--no-hosted`) prefers the Hosted API when reachable.
+With Hosted running (`./scripts/dev.sh`), drop `--no-hosted` so `mutiny run` prefers the API when reachable.
 
 **Docs:** [`docs/`](./docs/) — start at [`docs/README.md`](./docs/README.md).
+
+---
+
+## Troubleshooting
+
+| Symptom | What to check |
+|---|---|
+| `mutiny: command not found` | Run via `uv run mutiny …` from the repo after `uv sync --extra dev`, or activate the venv where you `pip install -e`’d the packages |
+| `pip install -e .` at repo root fails | Expected — use `uv sync --extra dev` or the per-package editable installs above |
+| Hosted UI won’t start | Install Node ≥ 20, then `cd apps/web && npm install` |
+| Port already in use | Free **8000** (API) and **3000** (UI), or change the ports in `scripts/dev.sh` / Next |
+| API looks down | `curl -sf http://127.0.0.1:8000/api/health` — expect JSON with a healthy status |
+| Campaign can’t reach Hosted | Start `./scripts/dev.sh`, or use `mutiny run --no-hosted` for local-only |
+| Sample agent needs a live model | Set `OPENAI_API_KEY`; leave unset (or `MUTINY_SAMPLE_OFFLINE=1`) for the offline scripted model |
+
+Cold-start checklist: [`docs/COLD_START.md`](./docs/COLD_START.md).
 
 ---
 

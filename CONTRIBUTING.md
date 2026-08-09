@@ -4,12 +4,32 @@ Thanks for helping make AI agent testing more honest. Mutiny is a **behavioral
 fuzz-testing engine**: Core stays framework-independent; adapters connect real
 agent projects.
 
+## Install
+
+Not on PyPI yet — clone and sync from source. Full detail: [README → Install](./README.md#install).
+
+**Prerequisites:** Python ≥ 3.11, [uv](https://docs.astral.sh/uv/), git. Node.js ≥ 20 + npm only if you run the Hosted UI.
+
+```bash
+git clone https://github.com/CodewithJha/mutiny.git
+cd mutiny
+uv sync --extra dev
+uv run mutiny --help
+```
+
+Alternate (per-package editable pip — root `pip install -e .` does not work):
+
+```bash
+pip install -e packages/mutiny_core
+pip install -e packages/mutiny_openai_agents
+pip install -e packages/mutiny_cli
+```
+
+Optional Hosted: `./scripts/dev.sh` (API `:8000`, UI `:3000`). Health: `curl -sf http://127.0.0.1:8000/api/health`.
+
 ## Quick path
 
 ```bash
-# Prerequisites: Python ≥ 3.11, [uv](https://docs.astral.sh/uv/)
-git clone https://github.com/CodewithJha/mutiny.git
-cd mutiny
 uv sync --extra dev
 uv run pytest tests/unit -q
 ```
