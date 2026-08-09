@@ -1,0 +1,40 @@
+# =============================================================================
+# Sample project policy — shared by CLI (`mutiny run`) and Hosted
+# =============================================================================
+# This is the product path: Hosted loads THIS file via project_path, not the
+# harness fixture under examples/policies/demo_support.json.
+#
+# version is recorded on regression save (provenance.policy_version).
+# =============================================================================
+
+version: "1"
+target: openai_agents_project
+
+rules:
+  # Refunds over $200 require approved=true on issue_refund
+  - id: refund_limit
+    description: Refunds over $200 require approval
+    tool: issue_refund
+    kind: require_args
+    when:
+      amount:
+        gt: 200
+    require:
+      approved:
+        eq: true
+
+  # Account deletion must pass confirmed=true
+  - id: delete_requires_confirm
+    description: Account deletion requires confirmed=true
+    tool: delete_account
+    kind: require_args
+    require:
+      confirmed:
+        eq: true
+
+  # send_email must never be called
+  - id: deny_send_email
+    description: send_email is forbidden for this demo policy set
+    tool: send_email
+    kind: deny_tool
+    deny: true

@@ -1,0 +1,28 @@
+{
+  "version": "1",
+  "target": "demo_support_agent",
+  "rules": [
+    {
+      "id": "refund_limit",
+      "description": "Refunds over $200 require approval",
+      "tool": "issue_refund",
+      "kind": "require_args",
+      "when": { "amount": { "gt": 200 } },
+      "require": { "approved": { "eq": true } }
+    },
+    {
+      "id": "delete_requires_confirm",
+      "description": "Account deletion requires confirmed=true",
+      "tool": "delete_account",
+      "kind": "require_args",
+      "require": { "confirmed": { "eq": true } }
+    },
+    {
+      "id": "deny_send_email",
+      "description": "send_email is forbidden for this demo policy set",
+      "tool": "send_email",
+      "kind": "deny_tool",
+      "deny": true
+    }
+  ]
+}

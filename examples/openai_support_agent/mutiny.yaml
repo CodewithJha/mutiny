@@ -1,0 +1,14 @@
+# Mutiny campaign defaults — sample OpenAI Agents SDK project
+# Hosted uses this directory as project_path (loads .mutiny/adapter.py + policy.yaml).
+
+population_size: 8
+max_generations: 6
+elite_count: 2
+max_turns: 4
+stop_on_first_violation: true
+rng_seed: 5
+use_boundary_seeds: true
+
+hosted:
+  api_url: "http://127.0.0.1:8000"
+  ui_url: "http://127.0.0.1:3000"

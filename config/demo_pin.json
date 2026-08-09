@@ -1,0 +1,17 @@
+{
+  "name": "iris-demo-pin",
+  "description": "Pinned Hosted demo / reliability smoke config. Template mutator fallback is the default gate when LLM key is unset.",
+  "policy_set_id": "demo_support",
+  "target": "in_process_demo",
+  "population_size": 8,
+  "max_generations": 6,
+  "elite_count": 2,
+  "stop_on_first_violation": true,
+  "max_turns": 4,
+  "use_boundary_seeds": true,
+  "mutation_model": "template-fallback",
+  "smoke_seeds": [5, 7, 11],
+  "smoke_required_hits": 2,
+  "smoke_trials": 3,
+  "notes": "Change seeds only after re-running scripts/smoke_reliability.py and updating DEMO_SCRIPT preconditions."
+}

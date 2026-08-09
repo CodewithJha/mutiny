@@ -1,0 +1,55 @@
+[project]
+name = "mutiny"
+version = "0.1.0"
+description = "Mutiny — behavioral fuzz-testing engine for AI agents"
+requires-python = ">=3.11"
+dependencies = [
+    "mutiny-core",
+    "mutiny-openai-agents",
+    "mutiny-cli",
+    "demo-agent",
+    "mutiny-api",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+]
+llm = [
+    "mutiny-core[llm]",
+]
+openai-agents = [
+    "mutiny-openai-agents",
+]
+
+[project.scripts]
+mutiny = "mutiny_cli.main:main"
+
+[tool.uv.sources]
+mutiny-core = { workspace = true }
+mutiny-openai-agents = { workspace = true }
+mutiny-cli = { workspace = true }
+demo-agent = { workspace = true }
+mutiny-api = { workspace = true }
+
+[tool.uv.workspace]
+members = [
+    "packages/mutiny_core",
+    "packages/mutiny_openai_agents",
+    "packages/mutiny_cli",
+    "apps/demo_agent",
+    "apps/api",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = [
+    "packages/mutiny_core/src",
+    "packages/mutiny_openai_agents/src",
+    "packages/mutiny_cli/src",
+    "apps/demo_agent/src",
+    "apps/api/src",
+    "examples/openai_support_agent",
+]
+asyncio_mode = "auto"
