@@ -241,12 +241,12 @@ Add new ADRs at the bottom. Do not rewrite history; supersede with a new ADR.
 **Decision:**
 
 1. **Primary product path:** Developer owns an OpenAI Agents SDK project → `pip install mutiny` → `mutiny init` (`.mutiny/adapter.py`, `policy.yaml`, `mutiny.yaml`) → connect agent → `mutiny run` → campaign → minimize → regression tests.  
-2. **MVP framework lock:** OpenAI Agents SDK **only**. LangGraph, CrewAI, PydanticAI, AutoGen, MCP, HTTP adapters = ROADMAP (Beta/v1).  
+2. **Framework lock (current scope):** OpenAI Agents SDK **only**. LangGraph, CrewAI, PydanticAI, AutoGen, MCP, HTTP adapters = ROADMAP (Beta/v1).  
 3. **Bundled demo agent:** Reclassified as **reference implementation / sample project / docs example / reliability harness** — not the primary user workflow.  
 4. **Architecture preserved:** One Core; `TargetAdapter` port; Hosted API/UI remain valuable secondary surfaces for lineage/ops.  
 5. **Supersedes (product priority only):** ADR-001’s “Hosted first” *product* primacy and ADR-009’s “in-process demo first” *as the product story*. Those ADRs remain historically valid for how the interim codebase was built; new work prioritizes customer-project + OpenAI Agents SDK adapter. Do not delete prior ADRs.
 
-**Alternatives:** Keep demo-as-primary and add “BYO agent” later; CLI-only with no Hosted; multi-framework MVP.
+**Alternatives:** Keep demo-as-primary and add “BYO agent” later; CLI-only with no Hosted; multi-framework initial ship.
 
 **Tradeoffs:** Docs and demo script now lead the intended install path while code may still wire the demo harness until M2–M4 land — requires honest DoD labeling. Stronger long-term product fit; short-term gap between narrative and shipped CLI/adapter surfaces.
 
@@ -260,13 +260,13 @@ Add new ADRs at the bottom. Do not rewrite history; supersede with a new ADR.
 
 **Decision:**
 
-1. **Product hierarchy (never reverse):** Mutiny → behavioral fuzz-testing engine → Adapter Layer → OpenAI Agents SDK (Hackathon MVP first adapter) → future adapters (LangGraph, PydanticAI, CrewAI, AutoGen, HTTP, etc.) → customer project.  
+1. **Product hierarchy (never reverse):** Mutiny → behavioral fuzz-testing engine → Adapter Layer → OpenAI Agents SDK (Adapter #1) → future adapters (LangGraph, PydanticAI, CrewAI, AutoGen, HTTP, etc.) → customer project.  
 2. **Core is framework-independent:** campaign, policy, fitness, minimize, and regression stay free of OpenAI (or any framework) leakage. Adapter interfaces (`TargetAdapter`, `AdapterTurnResult`, ports) are framework-neutral.  
-3. **MVP ships one production-quality adapter:** OpenAI Agents SDK = Adapter #1. That is the first integration, not the product definition.  
+3. **Current scope ships one production-quality adapter:** OpenAI Agents SDK = Adapter #1. That is the first integration, not the product definition.  
 4. **Future frameworks = more adapters:** add implementations on the same interface; Core unchanged.  
 5. **Complements ADR-017:** customer-owned projects remain primary; this ADR locks the *engine vs adapter* positioning and Core boundary.
 
-**Alternatives:** Hard-wire Core to OpenAI Agents SDK for hackathon speed; dual engines per framework; delay any adapter abstraction until after MVP.
+**Alternatives:** Hard-wire Core to OpenAI Agents SDK for speed; dual engines per framework; delay any adapter abstraction until later.
 
 **Tradeoffs:** Slightly more abstraction and packaging work for Adapter #1 vs a direct SDK embed. Prevents positioning drift and Core rewrites when Beta adapters land. Docs must consistently say “engine + first adapter,” not “SDK tool.”
 

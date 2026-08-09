@@ -4,19 +4,19 @@
 |---|---|
 | **Status** | Canonical demo playbook |
 | **Last updated** | 2026-08-07 |
-| **Product surface** | Sample agent project → `mutiny init` → `mutiny run` (MVP via OpenAI Agents SDK adapter); Hosted UI secondary for lineage |
+| **Product surface** | Sample agent project → `mutiny init` → `mutiny run` (via OpenAI Agents SDK adapter); Hosted UI secondary for lineage |
 
 Do not invent a different demo narrative in README or slides without updating this file.
 
-**Honesty:** Until M2–M4 land, live demos may use the interim bundled harness. Say so explicitly (“sample / reference agent”) — do **not** pitch “our vulnerable demo agent” as the product. Do **not** pitch Mutiny as “an OpenAI Agents SDK testing tool.”
+**Honesty:** Live demos may use the bundled sample harness. Say so explicitly (“sample / reference agent”) — do **not** pitch “our vulnerable demo agent” as the product. Do **not** pitch Mutiny as “an OpenAI Agents SDK testing tool.”
 
-**Opening pitch:** Mutiny is a behavioral fuzz-testing engine for AI agents. The Hackathon MVP ships with support for OpenAI Agents SDK projects through the first adapter.
+**Opening pitch:** Mutiny is a behavioral fuzz-testing engine for AI agents. Adapter #1 ships with support for OpenAI Agents SDK projects.
 
 ---
 
 ## 0. Preconditions (T−30 min)
 
-- [ ] Sample agent project ready (MVP: OpenAI Agents SDK; or interim demo labeled as sample)  
+- [ ] Sample agent project ready (OpenAI Agents SDK; or bundled demo labeled as sample)  
 - [ ] `mutiny init` / `mutiny run` available **or** Hosted backup path rehearsed and labeled  
 - [ ] `GET /api/health` green if showing Hosted (API, DB, model probe)  
 - [ ] Smoke: `scripts/smoke_reliability.py` → `SMOKE GATE PASSED` (≥2/3 on pin) when using harness  
@@ -38,7 +38,7 @@ Do not invent a different demo narrative in README or slides without updating th
 |---|---|---|
 | 0:00–0:15 | “Agents don’t just chat—they call tools that move money. Prompts aren’t tests.” | Sample project tree |
 | 0:15–0:30 | “Mutiny is a behavioral fuzz-testing engine. You install it into *your* agent project.” | `pip install mutiny` → `mutiny init` artifacts |
-| 0:30–0:45 | “You connect via an adapter and declare invariants—e.g. refunds over $200 need approval. MVP adapter: OpenAI Agents SDK.” | `.mutiny/adapter.py` + `policy.yaml` / `refund_limit` |
+| 0:30–0:45 | “You connect via an adapter and declare invariants—e.g. refunds over $200 need approval. Adapter #1: OpenAI Agents SDK.” | `.mutiny/adapter.py` + `policy.yaml` / `refund_limit` |
 | 0:45–1:05 | “`mutiny run` fuzzes your agent against those invariants.” | Campaign progress (CLI or Hosted) |
 | 1:05–1:20 | “Violation—deterministic proof from the tool call.” | `issue_refund(amount=…, approved=false)` + rule id |
 | 1:20–1:35 | “Lineage from seed to exploit.” | Hosted graph or CLI parent trail |
@@ -58,7 +58,7 @@ Do not invent a different demo narrative in README or slides without updating th
 Use the 2-minute spine, then deepen:
 
 1. **Problem (45s):** tool-call failures as software defects in *shipped* agents.  
-2. **Install path (45s):** engine + adapter layer; Hackathon Adapter #1 = OpenAI Agents SDK; future adapters same Core.  
+2. **Install path (45s):** engine + adapter layer; Adapter #1 = OpenAI Agents SDK; future adapters same Core.  
 3. **Principles (30s):** AI proposes; code proves.  
 4. **Live campaign (2:00):** init → run → violation.  
 5. **Hosted lineage (30s):** optional.  
@@ -108,7 +108,7 @@ If live search or CLI path fails:
 | Judge says “hardcoded” | Show lineage + near-misses + seed ≠ final |
 | Judge says “just your demo agent?” | Agree sample is a harness; product = engine + adapter into *their* project |
 | Judge says “Promptfoo?” | Agree on overlap; show search+oracle+minimize + install path |
-| Judge says “only OpenAI Agents SDK?” | Agree MVP Adapter #1; Core is framework-neutral; more adapters on roadmap |
+| Judge says “only OpenAI Agents SDK?” | Agree Adapter #1 is OpenAI Agents SDK; Core is framework-neutral; more adapters on roadmap |
 
 ---
 
@@ -119,9 +119,9 @@ If live search or CLI path fails:
 | vs Promptfoo? | Strong overlap on policies/trajectories/CI. Mutiny productizes evolutionary search + deterministic tool oracle + minimize→regress as an installable engine. |
 | vs Garak Agent Breaker? | They attack tools well. We center user invariants, deterministic acceptance, lineage, regression artifacts, local install. |
 | Why no LLM judge? | Tool-arg violations are predicates; judges add flake. |
-| Why only OpenAI Agents SDK? | Hackathon ships Adapter #1. LangGraph/CrewAI/PydanticAI/AutoGen/HTTP are Beta/v1 adapters—same Core. |
+| Why only OpenAI Agents SDK? | Adapter #1 is OpenAI Agents SDK. LangGraph/CrewAI/PydanticAI/AutoGen/HTTP are Beta/v1 adapters—same Core. |
 | Isn’t the sample agent weak on purpose? | Yes—like a fuzz harness. Integrity = real execution + oracle. Product is the engine testing *your* agent. |
-| Production zero-days? | MVP finds breaks of **defined** policies; search is incomplete; false negatives expected. |
+| Production zero-days? | Mutiny finds breaks of **defined** policies; search is incomplete; false negatives expected. |
 | Safety? | Authorized use; local/localhost; mock tools in demos; no open proxy. |
 | Fitness without logits? | Heuristic for search only; acceptance is binary violation. |
 

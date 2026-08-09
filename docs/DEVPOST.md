@@ -1,6 +1,6 @@
-# Mutiny — Devpost submission
+# Mutiny — Short pitch / submission copy
 
-Paste / adapt into Devpost. Keep claims honest; freeze competitive wording to COMPETITOR_ANALYSIS. Align with [ADR-017](./DECISION_LOG.md#adr-017--customer-owned-local-projects-primary-bundled-demo-secondary) and [ADR-018](./DECISION_LOG.md#adr-018--adapter-first-architecture).
+Paste / adapt into event or launch write-ups. Keep claims honest; freeze competitive wording to COMPETITOR_ANALYSIS. Align with [ADR-017](./DECISION_LOG.md#adr-017--customer-owned-local-projects-primary-bundled-demo-secondary) and [ADR-018](./DECISION_LOG.md#adr-018--adapter-first-architecture).
 
 ---
 
@@ -8,7 +8,7 @@ Paste / adapt into Devpost. Keep claims honest; freeze competitive wording to CO
 AFL for AI agent tool policies — a behavioral fuzz-testing engine you install into your agent, find the break, prove it on the tool call, lock it as a test.
 
 ## Elevator (15 seconds)
-AI agents don’t just chat — they call tools that move money and change accounts. Prompts aren’t tests. **Mutiny** is a behavioral fuzz-testing engine for AI agents: `pip install mutiny` → `mutiny init` → `mutiny run`. The Hackathon MVP ships with support for OpenAI Agents SDK projects through the first adapter. It searches until your agent breaks an explicit rule (e.g. refunds over $200 need approval), shows the **real tool-call JSON** as proof, minimizes the conversation, and saves a regression that FAIL→PASS when you fix the agent.
+AI agents don’t just chat — they call tools that move money and change accounts. Prompts aren’t tests. **Mutiny** is a behavioral fuzz-testing engine for AI agents: `pip install mutiny` → `mutiny init` → `mutiny run`. Adapter #1 ships with support for OpenAI Agents SDK projects. It searches until your agent breaks an explicit rule (e.g. refunds over $200 need approval), shows the **real tool-call JSON** as proof, minimizes the conversation, and saves a regression that FAIL→PASS when you fix the agent.
 
 ## The problem
 System prompts say “be careful with refunds.” Agents still do:
@@ -26,12 +26,12 @@ That’s a **software defect in action policy**, invisible to chat-quality evals
 
 Optional **Hosted UI** shows live lineage. A bundled **sample** agent is a reference harness / docs example — not the product.
 
-**MVP scope:** Adapter #1 = OpenAI Agents SDK (other frameworks = future adapters on the same Core).
+**Current scope:** Adapter #1 = OpenAI Agents SDK (other frameworks = future adapters on the same Core).
 
 **Safety:** authorized use; local / localhost; **mock tools** in demos (no live bank). The tool call is real; side effects are sandboxed.
 
-## Demo path (judges)
-1. Clone / open a sample agent project (MVP: OpenAI Agents SDK)  
+## Demo path
+1. Clone / open a sample agent project (OpenAI Agents SDK)  
 2. `mutiny init` → show adapter + `refund_limit` policy  
 3. `mutiny run` → **Policy broken · real tool call** with JSON  
 4. Minimize → Save regression  

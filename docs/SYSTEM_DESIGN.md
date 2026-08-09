@@ -16,9 +16,9 @@ Product intent → PRD. Package rules → ARCHITECTURE. Scheduling → IMPLEMENT
 
 Mutiny runs **campaigns**: bounded evolutionary searches for multi-turn conversations that cause an agent to emit tool calls violating explicit policies.
 
-**Mutiny is a behavioral fuzz-testing engine for AI agents.** The Hackathon MVP ships with support for OpenAI Agents SDK projects through the first adapter.
+**Mutiny is a behavioral fuzz-testing engine for AI agents.** Adapter #1 ships with support for OpenAI Agents SDK projects.
 
-**Primary path:** developer’s agent project, connected via the adapter layer after `mutiny init` (MVP: OpenAI Agents SDK adapter).
+**Primary path:** developer’s agent project, connected via the adapter layer after `mutiny init` (OpenAI Agents SDK adapter).
 
 ```mermaid
 flowchart LR
@@ -64,7 +64,7 @@ sequenceDiagram
 
 | Artifact | Role |
 |---|---|
-| `.mutiny/adapter.py` | Developer implements / wires `TargetAdapter` to their agent (MVP stub: OpenAI Agents SDK) |
+| `.mutiny/adapter.py` | Developer implements / wires `TargetAdapter` to their agent (stub: OpenAI Agents SDK) |
 | `policy.yaml` | Explicit tool-use invariants (`PolicySet`) |
 | `mutiny.yaml` | Campaign defaults (N, Gmax, models, stop conditions) |
 
@@ -191,7 +191,7 @@ sequenceDiagram
   V-->>CE: child genome
 ```
 
-### Operators (MVP)
+### Operators (current)
 
 | Operator | Kind | Intent |
 |---|---|---|
@@ -202,7 +202,7 @@ sequenceDiagram
 | `argument_nudging` | AI | Push numeric args across boundary |
 | `indirect_request` | AI | Ask to draft tool JSON |
 
-No crossover in MVP.
+No crossover in current scope.
 
 `AttackFocus` extracts tools + critical args from selected rules so mutations aim at **policy boundaries**, not generic jailbreaks.
 
@@ -257,7 +257,7 @@ flowchart TD
   F --> Hit
 ```
 
-### MVP primitives
+### Policy primitives (current)
 
 1. `deny_tool`  
 2. `require_args` (+ optional `when`)  
@@ -359,9 +359,9 @@ Typical campaign start when using Hosted:
 6. `POST /api/candidates/{id}/regression`  
 7. `POST /api/tests/run`  
 
-API authenticates nothing multi-tenant in MVP; local single-user trust with attestation flag.
+API authenticates nothing multi-tenant in current scope; local single-user trust with attestation flag.
 
-**Interim code note:** Hosted may still wire the bundled demo adapter until the OpenAI Agents SDK adapter + CLI path lands. Product narrative prefers sample-as-example, not demo-as-product.
+**Note:** Hosted may still wire the bundled demo adapter alongside the OpenAI Agents SDK + CLI path. Product narrative prefers sample-as-example, not demo-as-product.
 
 ---
 
@@ -575,7 +575,7 @@ flowchart TB
     UserAdapter[Customer adapter.py]
   end
 
-  subgraph denied [Out of scope MVP]
+  subgraph denied [Out of current scope]
     Internet[Arbitrary remote hosts]
   end
 
@@ -702,13 +702,13 @@ Minimization local state: `idle → running → step → verified → done | fai
 
 `{ id, parent_id?, generation, strategy, mutations[], target_rule_ids[], messages[{role, content}], metadata }`
 
-These names are normative for MVP. Field additions must be backward compatible in stored JSON.
+These names are normative for current scope. Field additions must be backward compatible in stored JSON.
 
 ---
 
 ## 25. Sample / demo target design (system-level)
 
-The bundled support agent remains part of system design as a **reference harness** (reliability, docs, Hosted interim wiring)—not as the primary user workflow.
+The bundled support agent remains part of system design as a **reference harness** (reliability, docs, Hosted sample wiring)—not as the primary user workflow.
 
 - Tools include `issue_refund(order_id, amount, approved)` among others.  
 - Policy under test: `amount > 200 ⇒ approved == true`.  

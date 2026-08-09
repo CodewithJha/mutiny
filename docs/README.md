@@ -4,15 +4,15 @@
 
 **Mutiny is a behavioral fuzz-testing engine for AI agents.** Developers install it into their own agent project via an adapter:
 
-> `pip install mutiny` → `mutiny init` → connect adapter → `mutiny run` → search for policy breaks → prove on traces → minimize → save permanent regression tests.
+> `mutiny init` → connect adapter → `mutiny run` → search for policy breaks → prove on traces → minimize → save permanent regression tests.
 
-The Hackathon MVP ships with support for OpenAI Agents SDK projects through the first adapter. Bundled/sample agents are reference harnesses, not the primary product. See [ADR-017](./DECISION_LOG.md#adr-017--customer-owned-local-projects-primary-bundled-demo-secondary) and [ADR-018](./DECISION_LOG.md#adr-018--adapter-first-architecture).
+**What's included today:** OpenAI Agents SDK projects through Adapter #1. Bundled/sample agents are reference harnesses, not the primary product. See [ADR-017](./DECISION_LOG.md#adr-017--customer-owned-local-projects-primary-bundled-demo-secondary) and [ADR-018](./DECISION_LOG.md#adr-018--adapter-first-architecture).
 
 These documents are the **source of truth for implementation**. Prefer updating docs before changing architecture in code.
 
-**Safety:** Authorized testing only. MVP targets are local projects / in-process / localhost with sandboxed mock tools for demos.
+**Safety:** Authorized testing only. Current targets are local projects / in-process / localhost with sandboxed mock tools for demos.
 
-**Status:** Product pivot 2026-08-07 — docs describe engine-first + customer-project primary; codebase still has bundled demo as interim harness. See [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) and [COLD_START.md](./COLD_START.md).
+**Status:** Engine-first + customer-project primary. The monorepo `uv` path is supported today; PyPI publish is on the roadmap. See [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) and [COLD_START.md](./COLD_START.md).
 
 ## Document map
 
@@ -24,10 +24,10 @@ These documents are the **source of truth for implementation**. Prefer updating 
 | [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) | Milestones, DoD, sequencing | Product vision, long-term roadmap |
 | [DEMO_SCRIPT.md](./DEMO_SCRIPT.md) | Live demo scripts, backup, Q&A | System internals |
 | [COLD_START.md](./COLD_START.md) | Clean-machine bootstrap + smoke gate | Product narrative |
-| [DEVPOST.md](./DEVPOST.md) | Hackathon submission copy | Live demo choreography |
+| [DEVPOST.md](./DEVPOST.md) | Short public submission / pitch copy | Live demo choreography |
 | [COMPETITOR_ANALYSIS.md](./COMPETITOR_ANALYSIS.md) | Competitive landscape (claims freeze) | Mutiny feature specs |
 | [DECISION_LOG.md](./DECISION_LOG.md) | Architecture Decision Records | Ongoing task lists |
-| [ROADMAP.md](./ROADMAP.md) | Phased future work | MVP execution detail |
+| [ROADMAP.md](./ROADMAP.md) | Phased future work | Near-term execution detail |
 | [DESIGN.md](./DESIGN.md) | Pointer to Hosted visual canon | Product requirements |
 
 ## Conflict resolution
@@ -54,7 +54,7 @@ If docs disagree, fix the docs in that order—do not silently pick a convenient
 ```
 Customer agent project
         ↑
-OpenAI Agents SDK Adapter   ← Hackathon MVP (Adapter #1)
+OpenAI Agents SDK Adapter   ← Adapter #1 (shipped)
         ↑
    Adapter Layer            ← future: LangGraph, CrewAI, PydanticAI, AutoGen, HTTP, …
         ↑

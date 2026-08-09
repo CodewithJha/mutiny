@@ -18,7 +18,7 @@ Mutiny is a **behavioral fuzz-testing engine**: a **small trusted kernel** wrapp
 - The **adapter layer** is the only place framework-specific glue lives. Additional adapters (LangGraph, CrewAI, …) do not change Core.
 - The **CLI** (`mutiny init` / `mutiny run`) is the primary developer surface for installing Mutiny into a customer agent project.
 - The **Hosted platform** (`apps/api`, `apps/web`) makes campaigns operable and visible (lineage, SSE, persistence).
-- **Adapters** bridge Core to targets. Hackathon MVP Adapter #1: **OpenAI Agents SDK** → developer’s local agent. Bundled demo agent = example adapter target / harness.
+- **Adapters** bridge Core to targets. Adapter #1: **OpenAI Agents SDK** → developer’s local agent. Bundled demo agent = example adapter target / harness.
 - **Integrations** (Skills, MCP, CI, future framework adapters) invoke the same kernel or Hosted API. They do not fork logic.
 
 We optimize for:
@@ -28,7 +28,7 @@ We optimize for:
 3. A clean path from customer project → adapter layer → Core campaign  
 4. Future OSS extensibility without rewriting the kernel  
 
-We explicitly do **not** optimize for microservice sprawl, multi-cloud topology, or shipping every framework adapter in MVP (**one production-quality adapter: OpenAI Agents SDK**).
+We explicitly do **not** optimize for microservice sprawl, multi-cloud topology, or shipping every framework adapter in current scope (**one production-quality adapter: OpenAI Agents SDK**).
 
 ---
 
@@ -48,7 +48,7 @@ These principles are binding. New features must not violate them without an ADR 
 | **Every exploit becomes a permanent test** | Minimized reproductions are first-class artifacts, not chat logs. |
 | **Human-readable evidence** | Tool-call JSON, rule IDs, and lineage must be inspectable (CLI and/or Hosted UI). |
 | **Small trusted kernel** | Core stays free of FastAPI, React, and DB drivers. |
-| **Safety by construction** | MVP targets are local projects / in-process / localhost; authorized-use expectations required. |
+| **Safety by construction** | Current targets are local projects / in-process / localhost; authorized-use expectations required. |
 
 ---
 
@@ -65,7 +65,7 @@ These principles are binding. New features must not violate them without an ADR 
 │                   (framework-independent engine)         │
 ├──────────────────────────────────────────────────────────┤
 │  Adapter Layer    TargetAdapter port + implementations   │
-│                   • OpenAI Agents SDK Adapter (MVP #1)   │
+│                   • OpenAI Agents SDK Adapter (#1)      │
 │                   • Future: LangGraph, CrewAI, …         │
 │                   • Example: demo_agent adapter          │
 ├──────────────────────────────────────────────────────────┤
@@ -80,7 +80,7 @@ These principles are binding. New features must not violate them without an ADR 
 
 ```
 CLI / web → (api optional) → mutiny_core → Adapter Layer → OpenAI Agents SDK Adapter → Customer project
-                                              ↘ example: demo_agent (interim harness)
+                                              ↘ example: demo_agent (reference harness)
                                               ↘ future adapters (same port; Core unchanged)
 integrations/* → api (preferred) or mutiny_core (offline replay)
 ```
@@ -90,7 +90,7 @@ Canonical product hierarchy (never reverse):
 ```
 Mutiny (behavioral fuzz-testing engine)
   → Adapter Layer
-    → OpenAI Agents SDK Adapter   (Hackathon MVP first adapter)
+    → OpenAI Agents SDK Adapter   (Adapter #1)
     → Future adapters             (LangGraph, PydanticAI, CrewAI, AutoGen, HTTP, …)
       → Customer Project
 ```
@@ -144,7 +144,7 @@ Persistence is **not** Core’s job. The API or CLI persists what Core returns.
 
 Placement may be `integrations/cli` or a published `mutiny` package entrypoint; Core remains the engine.
 
-### OpenAI Agents SDK adapter (MVP — planned)
+### OpenAI Agents SDK adapter (Adapter #1)
 
 **Owns**
 
@@ -165,7 +165,7 @@ Placement may be `integrations/cli` or a published `mutiny` package entrypoint; 
 - Mapping DB rows ↔ Core objects  
 - Campaign task supervision (`asyncio`)  
 - Authz attestation checks, rate limits, target allowlisting  
-- Wiring concrete adapters and LLM clients (including interim demo adapter)
+- Wiring concrete adapters and LLM clients (including sample/demo reference adapter)
 
 **Must not contain**
 
@@ -191,7 +191,7 @@ Placement may be `integrations/cli` or a published `mutiny` package entrypoint; 
 
 - Deliberately vulnerable support agent used as **example project**, docs target, and reliability harness  
 - Mock tools and soft system prompt  
-- Optional HTTP chat surface used by Hosted interim path  
+- Optional HTTP chat surface used by Hosted sample path  
 
 **Must not contain**
 
@@ -203,7 +203,7 @@ Placement may be `integrations/cli` or a published `mutiny` package entrypoint; 
 | Path | Role |
 |---|---|
 | LangGraph / CrewAI / PydanticAI / HTTP adapters | Roadmap (Beta/v1) — see [ROADMAP](./ROADMAP.md) |
-| `integrations/mcp` | MCP tool wrappers around API/Core (post-MVP) |
+| `integrations/mcp` | MCP tool wrappers around API/Core (roadmap) |
 | `integrations/skills` | Instructional Skill markdown |
 
 **Must not contain** mutation, policy, or fitness logic.
@@ -238,7 +238,7 @@ Unit tests prefer Core. Integration tests may boot API + sample/demo adapter. Re
 ## 6. Dependency rules (enforce in review)
 
 1. `mutiny_core` must not import `apps.*` or `integrations.*`.  
-2. `apps.web` must not import `mutiny_core` directly in MVP (talk to API only)—keeps browser boundary clean.  
+2. `apps.web` must not import `mutiny_core` directly in current scope (talk to API only)—keeps browser boundary clean.  
 3. `apps.api` is the only layer that speaks SQL for Hosted.  
 4. Integrations / CLI must not import `apps.web`.  
 5. No circular imports between campaign ↔ mutate ↔ fitness; use unidirectional calls from campaign.  
@@ -258,7 +258,7 @@ Unit tests prefer Core. Integration tests may boot API + sample/demo adapter. Re
 | Hosted UX | `apps/web` |
 | Persistence / SSE | `apps/api` |
 | Sample/demo reliability | `apps/demo_agent` + campaign config (harness only) |
-| Future adapters / MCP | `integrations/*` after MVP adapter is green |
+| Future adapters / MCP | `integrations/*` after Adapter #1 is green |
 
 Cross-cutting changes to acceptance oracles require ADR + Core tests before UI work.
 
@@ -270,7 +270,7 @@ These exist to prevent demo failure and architecture drift. Override only via AD
 
 ### Campaign search budget
 
-| Constraint | MVP default | Hard max |
+| Constraint | Current default | Hard max |
 |---|---|---|
 | Concurrent campaigns per process | 1 | 1 |
 | Population size `N` | 8 | 12 |
@@ -297,7 +297,7 @@ These exist to prevent demo failure and architecture drift. Override only via AD
 | Max message chars per turn | 4_000 |
 | Max trace JSON size per candidate | 512 KB |
 | Max events retained per campaign | 10_000 |
-| Assumed memory (single machine) | ≤ 2 GB process RSS for MVP demos |
+| Assumed memory (single machine) | ≤ 2 GB process RSS for local demos |
 
 ### Model / token budget
 
@@ -311,17 +311,17 @@ These exist to prevent demo failure and architecture drift. Override only via AD
 
 | Constraint | Rule |
 |---|---|
-| Allowed targets (MVP) | Local customer project via adapter; in-process sample/demo; `http://127.0.0.1` / `localhost` only |
-| Open internet targets | Forbidden in MVP |
+| Allowed targets (current) | Local customer project via adapter; in-process sample/demo; `http://127.0.0.1` / `localhost` only |
+| Open internet targets | Forbidden in current scope |
 | Real side-effecting tools | Forbidden in demos (mocks); customer projects must attest authorized testing |
 | Authorization attestation | Required to start Hosted campaign; CLI documents authorized use |
 
-### Framework scope (MVP)
+### Framework scope (current)
 
 | Constraint | Rule |
 |---|---|
-| Supported MVP adapter | Adapter #1: OpenAI Agents SDK (Core supports more via same interface) |
-| LangGraph, CrewAI, PydanticAI, AutoGen, MCP targets | Out of MVP — ROADMAP |
+| Supported adapter | Adapter #1: OpenAI Agents SDK (Core supports more via same interface) |
+| LangGraph, CrewAI, PydanticAI, AutoGen, MCP targets | Out of current scope — ROADMAP |
 
 ---
 
@@ -334,7 +334,7 @@ These exist to prevent demo failure and architecture drift. Override only via AD
 | Dual engines waste time | One Core; CLI + Hosted clients |
 | UI logic drifting into “soft” security claims | Web cannot evaluate policies |
 | Persistence coupling blocking tests | Core pure; API owns SQLite |
-| Framework sprawl | Hard MVP lock to OpenAI Agents SDK |
+| Framework sprawl | Hard current-scope lock to OpenAI Agents SDK |
 | Future CLI/MCP forks | Clients call Core/API; no logic copy |
 
 ---
@@ -363,7 +363,7 @@ Detailed behavior lives in [SYSTEM_DESIGN.md](./SYSTEM_DESIGN.md).
 
 ## 11. Explicit non-architecture (do not add)
 
-Without a new ADR and a concrete MVP need:
+Without a new ADR and a concrete current-scope need:
 
 - Vector databases / RAG “attack memory”  
 - Kafka / Celery / Redis-required queues  
@@ -371,7 +371,7 @@ Without a new ADR and a concrete MVP need:
 - Multi-tenant control planes  
 - Second policy engine in the agent under test for the vulnerable sample path  
 - LLM-as-judge acceptance path  
-- Multiple framework adapters in MVP  
+- Multiple framework adapters in current scope  
 
 ---
 
@@ -382,4 +382,4 @@ Without a new ADR and a concrete MVP need:
 3. New Hosted pages → API contracts first.  
 4. New integrations → call existing API/Core; no logic copy.  
 5. Softening sample/demo agent for reliability → document in demo config; never fake violations in DB.  
-6. Customer-project path remains primary even when Hosted still wires the interim demo adapter in code.
+6. Customer-project path remains primary even when Hosted still wires the sample/demo reference adapter in code.

@@ -6,8 +6,8 @@
 | **Product** | Mutiny |
 | **Status** | Active |
 | **Last updated** | 2026-08-07 |
-| **Build window** | Hackathon MVP |
-| **Primary surface** | Local install into the developer’s AI agent project (CLI: `mutiny init` / `mutiny run`); Hackathon MVP via OpenAI Agents SDK adapter |
+| **Build window** | Current open-source scope |
+| **Primary surface** | Local install into the developer’s AI agent project (CLI: `mutiny init` / `mutiny run`); Adapter #1 = OpenAI Agents SDK |
 | **Secondary surfaces** | Hosted API + UI (lineage / ops); bundled sample project as reference |
 
 ### Related engineering docs
@@ -48,10 +48,10 @@ Agents are becoming the control plane for software actions: refunds, emails, acc
 
 > **Mutiny is a behavioral fuzz-testing engine for AI agents.** Developers install it into their own project, connect via an adapter, and fuzz explicit tool-use invariants until verified failures become permanent regressions.
 
-The Hackathon MVP ships with support for OpenAI Agents SDK projects through the first adapter. Future frameworks plug in as additional adapters on the same Core.
+**What's included today:** support for OpenAI Agents SDK projects through Adapter #1. Future frameworks plug in as additional adapters on the same Core.
 
 ```
-INSTALL into your agent project (MVP: OpenAI Agents SDK via Adapter #1)
+INSTALL into your agent project (Adapter #1: OpenAI Agents SDK)
   → INIT adapter + policy + config
   → DEFINE invariants
   → RUN campaign (discover tools → evolve attacks)
@@ -63,7 +63,7 @@ INSTALL into your agent project (MVP: OpenAI Agents SDK via Adapter #1)
 
 **AI proposes. Code proves.**
 
-Hackathon MVP: **one production-quality adapter** — OpenAI Agents SDK. Other frameworks are roadmap adapters (same engine).
+**Current scope:** **one production-quality adapter** — OpenAI Agents SDK. Other frameworks are roadmap adapters (same engine).
 
 ---
 
@@ -71,7 +71,7 @@ Hackathon MVP: **one production-quality adapter** — OpenAI Agents SDK. Other f
 
 ### The shift
 
-LLM apps are increasingly **agents**: systems that call tools, mutate state, and take irreversible actions—usually built with a framework. Primary user: a developer building an AI agent. MVP assumption: their project uses the OpenAI Agents SDK (first adapter).
+LLM apps are increasingly **agents**: systems that call tools, mutate state, and take irreversible actions—usually built with a framework. Primary user: a developer building an AI agent. Current-scope assumption: their project uses the OpenAI Agents SDK (first adapter).
 
 ### What breaks
 
@@ -111,7 +111,7 @@ Existing tools are valuable; they are not this product.
 
 **Full analysis:** [COMPETITOR_ANALYSIS.md](./COMPETITOR_ANALYSIS.md).
 
-**Approved positioning:** Mutiny is *AFL for agent tool policies*—a behavioral fuzz-testing **engine** you install into **your agent**—not an OpenAI Agents SDK testing tool, not a hosted vulnerable-demo product, not the first agent red-teaming system. The OpenAI Agents SDK adapter is the Hackathon MVP integration, not the product definition.
+**Approved positioning:** Mutiny is *AFL for agent tool policies*—a behavioral fuzz-testing **engine** you install into **your agent**—not an OpenAI Agents SDK testing tool, not a hosted vulnerable-demo product, not the first agent red-teaming system. The OpenAI Agents SDK adapter is Adapter #1 (first integration), not the product definition.
 
 ---
 
@@ -131,9 +131,9 @@ Do not claim invention of multi-turn attacks, custom policies, evolutionary prom
 
 | Persona | Need |
 |---|---|
-| Developer building an AI agent | Fuzz *their* agent’s tool policies without rewriting the stack (MVP: OpenAI Agents SDK projects) |
+| Developer building an AI agent | Fuzz *their* agent’s tool policies without rewriting the stack (current scope: OpenAI Agents SDK projects) |
 | AI engineer on a product team | Turn verified failures into lasting regressions in-repo |
-| OSS / hackathon developer | Extend a small, real security loop via adapters |
+| OSS contributor | Extend the engine loop via adapters |
 
 ### Secondary (later)
 
@@ -147,7 +147,7 @@ Third-party attack seekers; toxicity-only buyers; day-one enterprise SSO tenants
 
 ## 8. Primary Use Cases
 
-1. Own an AI agent project (MVP assumption: OpenAI Agents SDK, e.g. `customer-agent/`).  
+1. Own an AI agent project (current scope: OpenAI Agents SDK, e.g. `customer-agent/`).  
 2. `pip install mutiny` → `mutiny init` (adapter, `policy.yaml`, `mutiny.yaml`).  
 3. Connect the agent in `.mutiny/adapter.py`.  
 4. `mutiny run` — discover tools, run evolutionary campaign, find deterministic violations.  
@@ -161,7 +161,7 @@ Third-party attack seekers; toxicity-only buyers; day-one enterprise SSO tenants
 
 1. Run against the **bundled sample / demo project** as a docs example or reliability harness.  
 2. CLI regression replay in CI.  
-3. Skills / MCP invoking the same API/Core (post-MVP).  
+3. Skills / MCP invoking the same API/Core (roadmap).  
 4. Human-approved policy suggestions from a known layout.  
 5. Additional framework adapters (LangGraph, CrewAI, …) — roadmap.  
 6. Human-readable finding export.
@@ -174,8 +174,8 @@ Third-party attack seekers; toxicity-only buyers; day-one enterprise SSO tenants
 - LLM judges as acceptance for tool-arg policies  
 - Open-internet attack-as-a-service  
 - Static-only “vulnerabilities” without dynamic proof  
-- Every agent framework on day one (**MVP = one production-quality adapter: OpenAI Agents SDK**)  
-- Kubernetes-scale fuzz infra for MVP  
+- Every agent framework on day one (**current scope = one production-quality adapter: OpenAI Agents SDK**)  
+- Kubernetes-scale fuzz infra in current scope  
 - Replacing Promptfoo/Garak wholesale  
 - Treating the bundled demo agent as the primary product  
 - Defining Mutiny as an OpenAI Agents SDK testing tool  
@@ -197,17 +197,17 @@ Binding product principles (engineering elaboration in ARCHITECTURE):
 8. **Safety by default**  
 9. **Honesty compounds**  
 10. **Demo reliability is a feature** (sample project / harness OK; never fake violations)  
-11. **Simplicity wins** — one production-quality adapter for MVP; architecture supports more without Core changes  
+11. **Simplicity wins** — one production-quality adapter in current scope; architecture supports more without Core changes  
 
 ---
 
 ## 12. Success Metrics
 
-### Hackathon MVP
+### Current scope
 
 | Metric | Target |
 |---|---|
-| Real policy violation via search against an adapter-connected target (MVP: OpenAI Agents SDK sample or user project) | Yes |
+| Real policy violation via search against an adapter-connected target (OpenAI Agents SDK sample or user project) | Yes |
 | Install path comprehensible | `pip install` → `mutiny init` → `mutiny run` |
 | Smoke reliability (harness) | ≥ 2 / 3 runs |
 | Time to first violation (warm) | ≤ 10 minutes |
@@ -215,7 +215,7 @@ Binding product principles (engineering elaboration in ARCHITECTURE):
 | FAIL → PASS after documented fix | Live |
 | Thesis comprehensible | ≤ 30s (CLI story + optional Hosted) |
 
-### Directional (post-hackathon)
+### Directional (next)
 
 Time-to-first-policy ↓ · findings→regressions % ↑ · false positives on predicates ~0 · repeat breaks after fix ↓ · additional framework adapters without Core forks
 
@@ -226,7 +226,7 @@ Time-to-first-policy ↓ · findings→regressions % ↑ · false positives on p
 ```
 Customer agent project
         ↑
-OpenAI Agents SDK Adapter   ← Hackathon MVP (Adapter #1)
+OpenAI Agents SDK Adapter   ← Adapter #1 (shipped)
         ↑
    Adapter Layer            ← future adapters without Core changes
         ↑
@@ -248,7 +248,7 @@ Package ownership and hard limits: [ARCHITECTURE.md](./ARCHITECTURE.md).
 
 Canonical diagrams and dependency rules live in ARCHITECTURE and SYSTEM_DESIGN.
 
-MVP runtime defaults: single machine · Adapter #1 (OpenAI Agents SDK) · CLI init/run · FastAPI + Next.js Hosted (optional) · SQLite (Hosted) · Featherless models · sample/demo project as reference harness.
+Current runtime defaults: single machine · Adapter #1 (OpenAI Agents SDK) · CLI init/run · FastAPI + Next.js Hosted (optional) · SQLite (Hosted) · Featherless models · sample/demo project as reference harness.
 
 ---
 
@@ -261,7 +261,7 @@ MVP runtime defaults: single machine · Adapter #1 (OpenAI Agents SDK) · CLI in
 | Trace Engine | Evidence |
 | Minimizer + Regression | Permanent tests |
 | Adapter Layer | Framework-neutral port; framework glue lives only in adapter impls |
-| OpenAI Agents SDK Adapter | Hackathon MVP Adapter #1 — bridge Core ↔ developer’s agent |
+| OpenAI Agents SDK Adapter | Adapter #1 — bridge Core ↔ developer’s agent |
 | CLI (`mutiny init` / `mutiny run`) | Primary developer entrypoint |
 | Hosted API + Web | Lineage, ops, optional campaign UX |
 | Sample / demo agent | Reference implementation + testing harness |
@@ -273,7 +273,7 @@ MVP runtime defaults: single machine · Adapter #1 (OpenAI Agents SDK) · CLI in
 
 **Canonical phased roadmap:** [ROADMAP.md](./ROADMAP.md).
 
-- **MVP:** behavioral fuzz engine + Adapter #1 (OpenAI Agents SDK) + CLI (+ sample project); Hosted as secondary visualization/ops  
+- **Current scope:** behavioral fuzz engine + Adapter #1 (OpenAI Agents SDK) + CLI (+ sample project); Hosted as secondary visualization/ops  
 - **Beta:** LangGraph / CrewAI / PydanticAI / AutoGen / HTTP adapters on the same interface; MCP/Skills; history/reports  
 - **v1:** single-tenant Hosted, CI Action, stable APIs  
 - **Long-term:** teams, connectors, policy pack ecosystem  
@@ -286,8 +286,8 @@ Detail in ROADMAP.
 
 | Stage | Integration |
 |---|---|
-| MVP P0 | CLI `mutiny init` / `mutiny run` + Adapter #1 (OpenAI Agents SDK) |
-| MVP P1 | CLI regression replay (`mutiny test`) |
+| P0 | CLI `mutiny init` / `mutiny run` + Adapter #1 (OpenAI Agents SDK) |
+| P1 | CLI regression replay (`mutiny test`) |
 | Stretch | One Skill |
 | Beta | Additional framework adapters; MCP + multi-environment skills |
 | v1 | GitHub Action |
@@ -323,7 +323,7 @@ Milestone DoD: [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md).
 | Area | Requirement |
 |---|---|
 | Core/CLI | Python 3.11+, Pydantic v2; Typer (or equivalent) for CLI |
-| Adapter MVP | Adapter #1 = OpenAI Agents SDK; Core remains framework-neutral |
+| Adapter scope | Adapter #1 = OpenAI Agents SDK; Core remains framework-neutral |
 | Hosted API | FastAPI |
 | Web | Next.js, TypeScript, Tailwind, shadcn/ui, React Flow |
 | DB | SQLite (API-owned, Hosted) |
@@ -337,7 +337,7 @@ Forbidden without ADR: required Redis/Celery/Kafka, Kubernetes, vector DB, RAG s
 ## 20. Functional Requirements
 
 1. Scaffold project files via `mutiny init`  
-2. Load developer agent through the adapter layer (MVP: OpenAI Agents SDK adapter)  
+2. Load developer agent through the adapter layer (OpenAI Agents SDK adapter)  
 3. View/edit policies (`policy.yaml`)  
 4. Start campaign after attestation (where Hosted) / local authorized-use expectations (CLI)  
 5. Generate and evolve attack population  
@@ -347,7 +347,7 @@ Forbidden without ADR: required Redis/Celery/Kafka, Kubernetes, vector DB, RAG s
 9. Inspect evidence and lineage  
 10. Minimize with re-exec  
 11. Save and replay regressions (PASS/FAIL)  
-12. Refuse unsafe MVP target classes  
+12. Refuse unsafe target classes (current scope)  
 
 ---
 
@@ -378,13 +378,13 @@ Detailed algorithms and lifecycles are normative in SYSTEM_DESIGN. Product requi
 | **Campaign** | Bounded generations; evented; stop conditions defined |
 | **Trace** | Persist evidence; fail loudly if tools unobservable |
 | **Regression** | Same oracle as live; FAIL until fixed |
-| **Adapter** | Stable framework-neutral `TargetAdapter` port; OpenAI Agents SDK impl = Adapter #1 for MVP |
+| **Adapter** | Stable framework-neutral `TargetAdapter` port; OpenAI Agents SDK impl = Adapter #1 |
 
 ---
 
 ## 29. Security Model (product)
 
-- MVP targets: local customer project via adapter; sample/demo in-process or localhost  
+- Current targets: local customer project via adapter; sample/demo in-process or localhost  
 - Explicit authorization attestation (Hosted) / authorized-use messaging (CLI)  
 - SSRF denials for non-allowlisted destinations  
 - Redact secrets in traces  
@@ -406,7 +406,7 @@ Normative layout: [ARCHITECTURE.md](./ARCHITECTURE.md) §4.
 
 ## 32. Deployment Strategy
 
-Hackathon: local CLI against sample or user project; optional local Hosted. Beta+: published package + single-tenant Hosted. Complexity only when it improves reliability or onboarding.
+Today: local CLI against sample or user project; optional local Hosted. Beta+: published package + single-tenant Hosted. Complexity only when it improves reliability or onboarding.
 
 ---
 
@@ -422,10 +422,10 @@ Phased product roadmap: [ROADMAP.md](./ROADMAP.md).
 | Risk | Mitigation |
 |---|---|
 | No live violation | Reliability milestone; guided mode; sample project softness |
-| Docs claim adapter that code lacks | Honest IMPLEMENTATION_PLAN DoD; interim demo harness labeled |
+| Docs claim adapter that code lacks | Honest IMPLEMENTATION_PLAN DoD; sample/demo harness labeled as reference |
 | Model outage | Fallbacks; backup recording |
 | “Just Promptfoo/Garak” | Honest COMPETITOR_ANALYSIS; show oracle+lineage+install path |
-| Scope creep to many frameworks | Hard MVP lock: one production-quality adapter (OpenAI Agents SDK); more via ROADMAP |
+| Scope creep to many frameworks | Hard current-scope lock: one production-quality adapter (OpenAI Agents SDK); more via ROADMAP |
 | Fake-looking exploit | Real traces + lineage required |
 | Overbuilt infra | Non-goals + ADRs |
 
@@ -458,7 +458,7 @@ Permissive license at init · clean Core boundaries · good first issues on oper
 
 ---
 
-## 40. Post-Hackathon Vision
+## 40. Longer-term Vision
 
 Mutiny as the default local behavioral fuzz-testing engine for agent builders; Core embeddable in CI; framework adapters expanding carefully on the same interface; integrations making “security-test this agent” natural inside coding agents; shared policy language for agent action safety.
 

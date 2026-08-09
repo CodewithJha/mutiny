@@ -162,7 +162,7 @@ Then `mutiny run` (without `--no-hosted`) prefers the Hosted API when reachable.
 ## How it works
 
 ```
-1. Connect your agent     → adapter (MVP: OpenAI Agents SDK)
+1. Connect your agent     → adapter (Adapter #1: OpenAI Agents SDK)
 2. Declare invariants     → policy.yaml (deterministic tool rules)
 3. Search                 → evolutionary campaign mutates attack conversations
 4. Prove                  → code evaluates tool calls on the trace (not an LLM judge)
@@ -250,8 +250,8 @@ If this engine is useful, a star helps other agent builders find it. Forks and i
 
 | Phase | Focus |
 |---|---|
-| **Now** | Engine-first MVP · Adapter #1 (OpenAI Agents SDK) · CLI · minimize / regress · optional Hosted |
-| **Next** | OSS hygiene · clearer package story · demos / screenshots · good-first-issue labeling |
+| **Current scope** | Engine-first Core · Adapter #1 (OpenAI Agents SDK) · CLI · minimize / regress · optional Hosted |
+| **Next** | Package publish story · demos / screenshots · good-first-issue labeling |
 | **Beta** | LangGraph / CrewAI / PydanticAI / HTTP adapters · policy packs · exportable reports |
 | **v1** | Stable contracts · CI GitHub Action for regression replay · authenticated Hosted |
 
@@ -263,7 +263,7 @@ Full detail: [`docs/ROADMAP.md`](./docs/ROADMAP.md).
 
 ## Safety
 
-Authorized testing only. MVP targets are local projects / in-process or localhost with sandboxed mock tools. Mutiny is **not** an open-internet attack proxy.
+Authorized testing only. Current targets are local projects / in-process or localhost with sandboxed mock tools. Mutiny is **not** an open-internet attack proxy.
 
 ---
 
@@ -273,6 +273,6 @@ Authorized testing only. MVP targets are local projects / in-process or localhos
 
 ---
 
-### Status (honest)
+### Current scope & limitations
 
-Hackathon-era MVP in active development. Product thesis is engine-first + customer project via adapter. Hosted also exercises a bundled demo agent as an interim harness — useful for demos, **not** the primary user story. PyPI publish is planned; monorepo `uv` is the path that works today.
+Mutiny is an open-source, engine-first project: install into **your** agent via an adapter, fuzz tool-use policies, prove breaks on traces, minimize, and freeze regressions. Adapter #1 is the **OpenAI Agents SDK**; additional frameworks are on the roadmap. The bundled sample/demo agent is a **reference harness** for docs and reliability — not the primary user story. PyPI publish is planned; the monorepo `uv` workflow is the supported install path today.

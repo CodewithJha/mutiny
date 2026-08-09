@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | Canonical engineering execution plan |
 | **Last updated** | 2026-08-07 |
-| **Build window** | Hackathon MVP |
+| **Build window** | Current open-source scope |
 | **Verdict** | Pivot in progress — docs ahead of install-path code |
 | **Related** | [PRD](./PRD.md) · [ARCHITECTURE](./ARCHITECTURE.md) · [SYSTEM_DESIGN](./SYSTEM_DESIGN.md) · [ROADMAP](./ROADMAP.md) · [DEMO_SCRIPT](./DEMO_SCRIPT.md) · [ADR-017](./DECISION_LOG.md#adr-017--customer-owned-local-projects-primary-bundled-demo-secondary) · [ADR-018](./DECISION_LOG.md#adr-018--adapter-first-architecture) |
 
@@ -12,7 +12,7 @@ This plan is **milestone-driven**. Calendar days only allocate work; they do not
 
 Behavioral contracts → SYSTEM_DESIGN. Boundaries → ARCHITECTURE. Product intent → PRD.
 
-**Honest codebase note:** The repo currently implements Core + Hosted against a **bundled demo agent** (interim reference / harness). **Adapter #1** (OpenAI Agents SDK) and `mutiny init` / `mutiny run` product path are **planned**—DoD boxes below reflect that. Do not treat unchecked boxes as done. Architecture already supports additional adapters; they are **not** Hackathon critical path.
+**Honest codebase note:** The repo implements Core + Hosted against a **bundled demo agent** (reference harness) and the OpenAI Agents SDK customer-project path. DoD boxes below reflect shipped vs remaining work. Architecture already supports additional adapters; they are **not** on the current critical path.
 
 ---
 
@@ -32,7 +32,7 @@ Behavioral contracts → SYSTEM_DESIGN. Boundaries → ARCHITECTURE. Product int
 | ID | Milestone | Primary outcome | Status (2026-08-07) |
 |---|---|---|---|
 | M1 | Core | Models + policy evaluator + kernel ports tested | **Done** (existing) |
-| M2 | Adapter #1 (OpenAI Agents SDK) | `TargetAdapter` impl loads a real OpenAI Agents SDK agent | **Planned** (interim: demo adapter) |
+| M2 | Adapter #1 (OpenAI Agents SDK) | `TargetAdapter` impl loads a real OpenAI Agents SDK agent | **Planned** (also: demo reference adapter) |
 | M3 | Policy generation | `mutiny init` scaffolds adapter stub + `policy.yaml` + `mutiny.yaml` | **Planned** |
 | M4 | Campaign | Generational search runs via Adapter #1 | **Partial** — Core campaign exists vs demo; customer-path pending |
 | M5 | Regression | Minimize + save + PASS/FAIL replay on adapter target | **Partial** — Core engines done vs demo; customer-path pending |
@@ -40,7 +40,7 @@ Behavioral contracts → SYSTEM_DESIGN. Boundaries → ARCHITECTURE. Product int
 | M7 | Hosted UI | Campaign → exploit → tests UX | **Done** for demo harness; narrative/wiring TBD |
 | M8 | Demo | Sample project story: init → run → Hosted; reliability | **Rework needed** for new narrative |
 
-Optional after M8 green: **M9 Integrations** (CLI `mutiny test`; Skill/MCP stretch). LangGraph/CrewAI/etc. are **roadmap adapters** — not MVP milestones — see ROADMAP. Architecture can support them without Core changes.
+Optional after M8 green: **M9 Integrations** (CLI `mutiny test`; Skill/MCP stretch). LangGraph/CrewAI/etc. are **roadmap adapters** — not current-scope milestones — see ROADMAP. Architecture can support them without Core changes.
 
 ---
 
@@ -68,7 +68,7 @@ Optional after M8 green: **M9 Integrations** (CLI `mutiny test`; Skill/MCP stret
 
 ### M2 — Adapter #1 (OpenAI Agents SDK)
 
-**Intent:** Hackathon builds **Adapter #1** so Mutiny talks to a developer’s (or sample) OpenAI Agents SDK agent with observable tool calls. Future adapters are roadmap; the architecture already supports more via the same `TargetAdapter` port.
+**Intent:** Ship **Adapter #1** so Mutiny talks to a developer’s (or sample) OpenAI Agents SDK agent with observable tool calls. Future adapters are roadmap; the architecture already supports more via the same `TargetAdapter` port.
 
 **Build**
 
@@ -78,7 +78,7 @@ Optional after M8 green: **M9 Integrations** (CLI `mutiny test`; Skill/MCP stret
 - Explicit failure if tools cannot be observed  
 - Keep all OpenAI-specific imports inside this adapter — none in Core  
 
-**Interim (today):** `InProcessDemoAdapter` + `apps/demo_agent` remain as reference harness only.
+**Reference harness (today):** `InProcessDemoAdapter` + `apps/demo_agent` remain as sample/docs targets only.
 
 **Definition of Done**
 
@@ -222,7 +222,7 @@ Optional after M8 green: **M9 Integrations** (CLI `mutiny test`; Skill/MCP stret
 **Definition of Done**
 
 - [ ] Demo script path works without claiming demo-agent-as-product  
-- [x] Smoke gate green on pinned models (interim demo harness)  
+- [x] Smoke gate green on pinned models (demo reference harness)  
 - [ ] 2-minute script timed ≤2:00 under new narrative  
 - [x] Backup recording / fixture path exists for harness  
 - [x] Safety banner + attestation present (Hosted)  
@@ -248,7 +248,7 @@ Optional after M8 green: **M9 Integrations** (CLI `mutiny test`; Skill/MCP stret
 
 - One Skill markdown  
 - MCP wrapper  
-- Additional framework adapters — **not** part of MVP critical path  
+- Additional framework adapters — **not** part of current critical path  
 
 **Definition of Done (CLI subset)**
 
@@ -274,7 +274,7 @@ Optional after M8 green: **M9 Integrations** (CLI `mutiny test`; Skill/MCP stret
 |---|---|
 | No OpenAI Agents SDK adapter | Keep Core+demo harness for reliability; do not claim `pip install` path in live demos without labeling WIP |
 | No `mutiny init` | Hand-authored sample `policy.yaml` + adapter for demo; still no fake violations |
-| No Hosted retarget | Demo Hosted against sample via interim wiring; CLI story first |
+| No Hosted retarget | Demo Hosted against sample via reference wiring; CLI story first |
 | Smoke red | Backup fixture + recording; still no fake DB writes |
 
 ---
@@ -296,18 +296,18 @@ Unsafe parallel: two writers changing policy semantics; UI inventing event shape
 ## 5. Engineering checklist (cross-cutting)
 
 - Respect hard limits in ARCHITECTURE §8  
-- MVP adapter lock: Adapter #1 = OpenAI Agents SDK only; Core stays framework-neutral  
+- Adapter lock (current): Adapter #1 = OpenAI Agents SDK only; Core stays framework-neutral  
 - Future adapters (LangGraph, CrewAI, PydanticAI, AutoGen, HTTP) are ROADMAP — architecture supports them without Core forks  
 - Pin models in config after first green adapter campaign  
 - Redact secrets in traces  
 - Unit-test oracle and minimizer preferentially  
-- Label interim demo wiring clearly in UX/docs  
+- Label sample/demo wiring clearly in UX/docs  
 
 ---
 
 ## 6. Out of scope for this plan
 
-See ROADMAP stages beyond Hackathon MVP (LangGraph, CrewAI, PydanticAI, AutoGen, HTTP adapters, MCP, multi-tenant). Those are **new adapters on the same interface**. Do not schedule them into the MVP critical path.
+See ROADMAP stages beyond current scope (LangGraph, CrewAI, PydanticAI, AutoGen, HTTP adapters, MCP, multi-tenant). Those are **new adapters on the same interface**. Do not schedule them into the current critical path.
 
 ---
 

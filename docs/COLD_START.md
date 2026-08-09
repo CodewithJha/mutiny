@@ -8,7 +8,7 @@
 
 Use this on a clean machine. Competitive claims stay frozen to [COMPETITOR_ANALYSIS.md](./COMPETITOR_ANALYSIS.md).
 
-**Product path (intended):** Mutiny is a behavioral fuzz-testing engine — install into your agent project (Hackathon MVP: OpenAI Agents SDK via Adapter #1). See root [README](../README.md) and [DEMO_SCRIPT](./DEMO_SCRIPT.md). Until M2–M3 land, use the **interim harness** below for reliability and Hosted demos; label it as a sample/reference agent.
+**Product path (intended):** Mutiny is a behavioral fuzz-testing engine — install into your agent project (Adapter #1: OpenAI Agents SDK). See root [README](../README.md) and [DEMO_SCRIPT](./DEMO_SCRIPT.md). Use the **sample harness** below for reliability and Hosted demos; label it as a sample/reference agent.
 
 ---
 
@@ -33,7 +33,7 @@ cd apps/web && npm install && cd ../..
 
 ```bash
 pip install mutiny
-cd your-agent-project   # MVP: OpenAI Agents SDK
+cd your-agent-project   # OpenAI Agents SDK (Adapter #1)
 mutiny init
 # edit .mutiny/adapter.py
 mutiny run

@@ -103,7 +103,7 @@ High on adaptive/tree search concepts.
 
 ### Mutiny response
 
-Mutiny is not trying to replace PyRIT for specialist red teams. It productizes a narrower loop for builders of tool-using AI agents (Hackathon MVP: OpenAI Agents SDK via Adapter #1).
+Mutiny is not trying to replace PyRIT for specialist red teams. It productizes a narrower loop for builders of tool-using AI agents (current scope: OpenAI Agents SDK via Adapter #1).
 
 ---
 
@@ -158,7 +158,7 @@ Conceptual (fuzzing LLMs), not product parity.
 
 ### Overlap
 
-Marketing category overlap only for MVP.
+Marketing category overlap only for current scope.
 
 ---
 
@@ -187,7 +187,7 @@ Composable wedge—not single-bullet novelty:
 ## 10. Positioning statement (approved)
 
 > Mutiny is a behavioral fuzz-testing engine for AI agents—AFL for agent tool policies: install it into your agent project, define invariants, search for breaks, prove them on traces, minimize, and freeze them as tests.  
-> The Hackathon MVP ships with support for OpenAI Agents SDK projects through the first adapter. Future frameworks are additional adapters on the same Core.  
+> Adapter #1 ships with support for OpenAI Agents SDK projects. Future frameworks are additional adapters on the same Core.  
 > It is not the first agent red-teaming system. It is not an OpenAI Agents SDK testing tool. It is centered on deterministic tool-use invariants and permanent regressions—not a hosted demo-agent showcase.
 
 ---
@@ -203,7 +203,7 @@ Composable wedge—not single-bullet novelty:
 | Minimize → regression loop | Weak | Eval-centric | DIY | Weak | **Core** |
 | Install into your agent project | Partial | Suite/config | DIY | No | **Primary** |
 | Adapter layer (framework plug-in) | N/A | Possible | DIY | No | **Architecture** |
-| OpenAI Agents SDK adapter | N/A | Possible | DIY | No | **MVP Adapter #1** |
+| OpenAI Agents SDK adapter | N/A | Possible | DIY | No | **Adapter #1** |
 | Hosted lineage | No | Partial | No | No | Secondary |
 
 ---

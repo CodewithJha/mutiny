@@ -3,20 +3,20 @@
 | Field | Value |
 |---|---|
 | **Status** | Canonical phased roadmap |
-| **Last updated** | 2026-08-07 |
-| **Rule** | Do not mix future work into MVP execution. MVP detail lives in [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md). |
+| **Last updated** | 2026-08-09 |
+| **Rule** | Do not mix future work into current-scope execution. Near-term detail lives in [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md). |
 
 ---
 
-## 1. Hackathon MVP (now)
+## 1. Current scope
 
-**Goal:** Ship Mutiny as a **behavioral fuzz-testing engine** installable into a developer’s agent project: init → run → prove → minimize → regress. Hackathon MVP Adapter #1 = **OpenAI Agents SDK**. Hosted UI optional for lineage. Bundled/sample agent is a **reference**, not the product.
+**Goal:** Mutiny as a **behavioral fuzz-testing engine** installable into a developer’s agent project: init → run → prove → minimize → regress. Adapter #1 = **OpenAI Agents SDK**. Hosted UI optional for lineage. Bundled/sample agent is a **reference**, not the product.
 
-In scope:
+**What's included:**
 
 - Mutiny Core search + deterministic policy oracle (framework-independent)  
 - **Adapter #1: OpenAI Agents SDK only**  
-- CLI: `mutiny init` / `mutiny run` (+ regression replay P1)  
+- CLI: `mutiny init` / `mutiny run` (+ regression replay)  
 - Sample / demo project as docs example + reliability harness  
 - Hosted API + SSE + campaign UI (secondary)  
 - Minimize + regression save/replay  
@@ -24,7 +24,7 @@ In scope:
 - Reliability smoke (≥2/3 on harness)  
 - Docs matching engine-first + customer-project primary  
 
-Out of scope (explicit):
+**Limitations / out of scope (explicit):**
 
 - LangGraph, CrewAI, PydanticAI, AutoGen, HTTP adapters (Beta/v1 — same interface)  
 - MCP (unless stretch after green)  
@@ -35,18 +35,17 @@ Out of scope (explicit):
 - Treating bundled demo as the primary user workflow  
 - Defining Mutiny as an OpenAI Agents SDK testing tool  
 
-**Exit:** See IMPLEMENTATION_PLAN milestone “Demo” (M8) under the new narrative.
+**Exit:** See IMPLEMENTATION_PLAN milestones under the customer-project narrative.
 
 ---
 
-## 2. Post Hackathon (cleanup + OSS hygiene)
+## 2. Next (OSS polish)
 
-- Public README aligned to PRD (`pip install` / init / run; engine-first pitch)  
+- Public README aligned to PRD (engine-first pitch; honest install path)  
 - License chosen and applied  
 - Package publish story for `mutiny`  
 - Recorded demo + screenshots  
 - Issue templates; “good first issues” on operators/adapters  
-- Retire Iris-only sharp edges without breaking the thesis  
 - Clarify sample vs customer-project paths in UX copy  
 
 ---
@@ -95,7 +94,7 @@ New adapters on the **same** `TargetAdapter` interface (Core unchanged):
 
 ## 6. Explicit parking lot
 
-Ideas that must not leak into MVP:
+Ideas that must not leak into current scope:
 
 - Vector attack memory  
 - NL policies judged solely by LLMs  
