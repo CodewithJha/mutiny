@@ -8,7 +8,7 @@ import { GitHubStarLink } from "@/components/GitHubStarLink";
 import { Button, CopyButton } from "@/components/ui";
 
 const JOURNEY: { label: string; detail: string; tone?: "pass" | "fail" }[] = [
-  { label: "Install", detail: "pip + init" },
+  { label: "Install", detail: "git + init" },
   { label: "Define Rules", detail: "policy.yaml" },
   { label: "Run Campaign", detail: "evolve prompts" },
   { label: "Find Violation", detail: "tool call breaks", tone: "fail" },
@@ -22,8 +22,11 @@ const INSTALL_CMDS = [
   {
     id: "install",
     title: "Install",
-    command: "pip install mutiny-ai",
-    hint: "Package name on PyPI; CLI command stays mutiny",
+    command: `pip install \\
+  "mutiny-core @ git+https://github.com/CodewithJha/mutiny.git#subdirectory=packages/mutiny_core" \\
+  "mutiny-openai-agents @ git+https://github.com/CodewithJha/mutiny.git#subdirectory=packages/mutiny_openai_agents" \\
+  "mutiny-ai @ git+https://github.com/CodewithJha/mutiny.git#subdirectory=packages/mutiny_cli"`,
+    hint: "PyPI name will be mutiny-ai (not yet published). CLI command is mutiny.",
   },
   {
     id: "init",

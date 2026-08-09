@@ -3,18 +3,21 @@
 **PyPI package:** `mutiny-ai`  
 **CLI command:** `mutiny`
 
-Install into *your* agent project (not by cloning this monorepo):
+Install into *your* agent project (not by cloning this monorepo). Until PyPI is live, install all three packages from git:
 
 ```bash
-pip install mutiny-ai
+pip install \
+  "mutiny-core @ git+https://github.com/CodewithJha/mutiny.git#subdirectory=packages/mutiny_core" \
+  "mutiny-openai-agents @ git+https://github.com/CodewithJha/mutiny.git#subdirectory=packages/mutiny_openai_agents" \
+  "mutiny-ai @ git+https://github.com/CodewithJha/mutiny.git#subdirectory=packages/mutiny_cli"
 mutiny init
 mutiny run
 mutiny test
 ```
 
-> `mutiny` on PyPI is an unrelated project. The Mutiny fuzz engine publishes as **`mutiny-ai`**; the console script remains `mutiny`.
+> PyPI name will be **`mutiny-ai`** (not yet published). CLI command is **`mutiny`**. Do not use bare `pip install mutiny` or `mutiny-sdk` — those are unrelated projects.
 
-This package pulls in **mutiny-core** and the **mutiny-openai-agents** adapter so one install covers init / run / test for OpenAI Agents SDK projects.
+This package depends on **mutiny-core** and **mutiny-openai-agents**, so install siblings together until they are published.
 
 ## Source / editable (contributors)
 

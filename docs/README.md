@@ -9,9 +9,9 @@ and contributor onboarding.
 
 > `mutiny init` → connect adapter → `mutiny run` → search for policy breaks → prove on traces → minimize → save permanent regression tests.
 
-**Shipped today:** Adapter #1 — **OpenAI Agents SDK**. Install with
-**`pip install mutiny-ai`** (CLI stays `mutiny`), or from source / git until the
-first PyPI upload. Sample/demo agents are **reference harnesses**, not the
+**Shipped today:** Adapter #1 — **OpenAI Agents SDK**. Install from git today
+(see root README); PyPI name will be **`mutiny-ai`** (not yet published; CLI
+stays `mutiny`). Sample/demo agents are **reference harnesses**, not the
 primary product.
 
 **Safety:** Authorized testing only. Targets are local / in-process / localhost
@@ -69,7 +69,7 @@ Community files at repo root: [CONTRIBUTING](../CONTRIBUTING.md),
 
 If docs disagree, fix the docs in that order—do not silently pick a convenient interpretation in code.
 
-**Install claims:** Prefer the root README. User path is **`pip install mutiny-ai`** (CLI stays `mutiny`). Until PyPI upload, use the git install or clone + `uv sync` — never claim bare `pip install mutiny` (that name is taken).
+**Install claims:** Prefer the root README. Until PyPI upload, primary path is the **git install** (CLI stays `mutiny`). PyPI name will be `mutiny-ai` — never claim `pip install mutiny-ai` works today, and never recommend bare `pip install mutiny` / `mutiny-sdk` (those names are taken by other projects).
 
 ---
 

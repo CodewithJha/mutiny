@@ -18,13 +18,16 @@ _Define what your agent must never do. Then prove it can't._
 Adapter #1 ships today: **OpenAI Agents SDK**. Same Core for every future adapter — contributions welcome.
 
 ```bash
-pip install mutiny-ai   # PyPI name; CLI command stays `mutiny`
+pip install \
+  "mutiny-core @ git+https://github.com/CodewithJha/mutiny.git#subdirectory=packages/mutiny_core" \
+  "mutiny-openai-agents @ git+https://github.com/CodewithJha/mutiny.git#subdirectory=packages/mutiny_openai_agents" \
+  "mutiny-ai @ git+https://github.com/CodewithJha/mutiny.git#subdirectory=packages/mutiny_cli"
 mutiny init
 mutiny run
 mutiny test
 ```
 
-> Bare `mutiny` on PyPI is a different project. We ship as **`mutiny-ai`**. Until the first upload, use the [git install](#install) below or clone for contributing.
+> PyPI name will be **`mutiny-ai`** (not yet published). CLI command is **`mutiny`**. Do not use bare `pip install mutiny` or `mutiny-sdk` — those are unrelated projects.
 
 ---
 
@@ -127,19 +130,7 @@ The [sample project](./examples/openai_support_agent/) runs offline without an A
 
 ## Install
 
-**For your agent project** — one package pulls Core + OpenAI Agents adapter + the `mutiny` CLI:
-
-```bash
-pip install mutiny-ai
-mutiny --help
-```
-
-Package name on PyPI is **`mutiny-ai`**; the console script stays **`mutiny`**.  
-(`pip install mutiny` installs an unrelated Revolt API library.)
-
-### Not on PyPI yet? Install from git
-
-Until wheels are published ([docs/PUBLISHING.md](./docs/PUBLISHING.md)), install the three packages from this repo in one command:
+**For your agent project** — install Core + OpenAI Agents adapter + the `mutiny` CLI from git (PyPI upload pending):
 
 ```bash
 pip install \
@@ -150,12 +141,17 @@ pip install \
 mutiny --help
 ```
 
+Install all three in one `pip install` so sibling deps resolve (installing `mutiny_cli` alone cannot see `mutiny-core` / `mutiny-openai-agents` until they are on PyPI).
+
+PyPI name will be **`mutiny-ai`** (not yet published); the console script stays **`mutiny`**.  
+Do not use bare `pip install mutiny` or `mutiny-sdk` — those are unrelated projects. See [docs/PUBLISHING.md](./docs/PUBLISHING.md).
+
 ### Prerequisites
 
 | Tool | Required for | Notes |
 |---|---|---|
 | **Python ≥ 3.11** | Everything | Check with `python3 --version` |
-| **pip** (or **[uv](https://docs.astral.sh/uv/)**) | Agent-project install | `pip install mutiny-ai` |
+| **pip** (or **[uv](https://docs.astral.sh/uv/)**) | Agent-project install | Git install above until PyPI |
 | **[uv](https://docs.astral.sh/uv/)** | Contributing / Hosted | Workspace sync + `uv run mutiny …` |
 | **git** | Clone / git install | |
 | **Node.js ≥ 20 + npm** | Optional Hosted UI | Only if you run `apps/web` / `./scripts/dev.sh` |
@@ -371,7 +367,7 @@ If this engine is useful, a star helps other agent builders find it. Fork the re
 ## FAQ
 
 **Is Mutiny on PyPI?**  
-The intended package is **`mutiny-ai`** (not bare `mutiny` — that name is taken). First upload: [docs/PUBLISHING.md](./docs/PUBLISHING.md). Until then use the [git install](#install) or clone + `uv sync`.
+Not yet. PyPI name will be **`mutiny-ai`** (not bare `mutiny` / `mutiny-sdk` — those are other projects). Until the first upload ([docs/PUBLISHING.md](./docs/PUBLISHING.md)), use the [git install](#install) or clone + `uv sync`. CLI command is **`mutiny`**.
 
 **Which agent frameworks work today?**  
 **Adapter #1: OpenAI Agents SDK** only. Others (LangGraph, CrewAI, PydanticAI, AutoGen, HTTP) are roadmap / contribution targets on the same `TargetAdapter` port.
