@@ -61,7 +61,7 @@ New adapters on the **same** `TargetAdapter` interface (Core unchanged):
 - Exportable finding reports  
 - Second reference target template  
 - MCP server wrapping Hosted API / Core  
-- Skills published for Cursor / Claude Code / Codex-shaped workflows  
+- Skills published for common coding-agent workflows  
 
 ---
 
