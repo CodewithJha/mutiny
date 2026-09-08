@@ -12,14 +12,21 @@ Maintainer catalog of **small, realistic** tasks for new contributors. Open GitH
 
 ## Open on GitHub (labeled)
 
+**Shipped:** [#6](https://github.com/CodewithJha/mutiny/issues/6) init `--no-hosted` hint (PR [#13](https://github.com/CodewithJha/mutiny/pull/13) by [@kkkhs](https://github.com/kkkhs)) · [#2](https://github.com/CodewithJha/mutiny/issues/2) CLI flag docs (`docs/CLI.md`) · [#3](https://github.com/CodewithJha/mutiny/issues/3) real screenshots / demo GIF.
+
+**Next picks (claim in the issue comments first):**
+
+| GH | Catalog | Title | Difficulty | Why it’s a good next PR |
+|---|---|---|---|---|
+| [#9](https://github.com/CodewithJha/mutiny/issues/9) | #24 | Verify / harden `dev.sh` node_modules hint | XS | Same shape as #6 — confirm existing tip, tighten only if missable |
+| [#7](https://github.com/CodewithJha/mutiny/issues/7) | #28 | Richer per-rule comment headers in sample policy | XS | Comments-only in one YAML file; no behavior change |
+| [#5](https://github.com/CodewithJha/mutiny/issues/5) | #15 | Policy evaluator edge cases | S | Tests only; mirror existing classes in `test_policy_evaluator.py` |
+
 | GH | Catalog | Title | Difficulty | Primary files |
 |---|---|---|---|---|
 | [#1](https://github.com/CodewithJha/mutiny/issues/1) | #1 | Policy operator cheatsheet | S | `docs/POLICY_CHEATSHEET.md`, `docs/README.md`, `tests/unit/test_policy_*` |
-| [#2](https://github.com/CodewithJha/mutiny/issues/2) | #2 | Document CLI flags from `--help` | S | `README.md` Commands, optional `docs/CLI.md` |
-| [#3](https://github.com/CodewithJha/mutiny/issues/3) | #4 | Real screenshots / demo GIF (SVGs shipped) | S | `docs/assets/*`, `README.md` Screenshots |
 | [#4](https://github.com/CodewithJha/mutiny/issues/4) | #9 | Skip-to-content / focus order | S | `apps/web` landing routes / layout |
 | [#5](https://github.com/CodewithJha/mutiny/issues/5) | #15 | Policy evaluator edge cases | S | `tests/unit/test_policy_evaluator.py` |
-| [#6](https://github.com/CodewithJha/mutiny/issues/6) | #21 | Strengthen `mutiny init` next-step hint + test | XS | `packages/mutiny_cli/init_cmd.py`, init unit test |
 | [#7](https://github.com/CodewithJha/mutiny/issues/7) | #28 | Richer per-rule comment headers in sample policy | XS | `examples/openai_support_agent/policy.yaml` |
 | [#8](https://github.com/CodewithJha/mutiny/issues/8) | #37 | Document `/api/health` fields | S | `docs/` or `apps/api` README; `HealthResponse` in schemas |
 | [#9](https://github.com/CodewithJha/mutiny/issues/9) | #24 | Verify / harden `dev.sh` node_modules hint | XS | `scripts/dev.sh` (tip exists — verify + harden) |
@@ -66,7 +73,7 @@ Maintainer catalog of **small, realistic** tasks for new contributors. Open GitH
 
 | # | Title | Difficulty | Acceptance | Affected files | Labels |
 |---|---|---|---|---|---|
-| 21 | Strengthen `mutiny init` next-step hint | XS | Hint already prints; polish `--no-hosted` + assert in init test (GH [#6](https://github.com/CodewithJha/mutiny/issues/6)) | `packages/mutiny_cli/`, init tests | `cli` `good first issue` |
+| 21 | Strengthen `mutiny init` next-step hint | XS | **Done** — PR [#13](https://github.com/CodewithJha/mutiny/pull/13) / GH [#6](https://github.com/CodewithJha/mutiny/issues/6) (`--no-hosted` + init test asserts) | `packages/mutiny_cli/`, init tests | `cli` |
 | 22 | Friendlier `mutiny test` counts | XS | Clear PASS/FAIL/SKIPPED summary line | CLI test command | `cli` |
 | 23 | Missing `policy.yaml` warning | S | Actionable path in error | `packages/mutiny_cli/` run | `cli` |
 | 24 | `dev.sh` npm install hint | XS | Tip already exists; verify on clean tree / harden if missable (GH [#9](https://github.com/CodewithJha/mutiny/issues/9)) | `scripts/dev.sh`, `docs/COLD_START.md` | `cli` `docs` |

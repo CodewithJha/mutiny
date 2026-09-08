@@ -355,7 +355,8 @@ uv run pytest tests/unit -q
 ```
 
 - **Guide (30-min path):** [CONTRIBUTING.md](./CONTRIBUTING.md)
-- **Good first issues catalog:** [`docs/GOOD_FIRST_ISSUES.md`](./docs/GOOD_FIRST_ISSUES.md)
+- **Good first issues:** [open labeled issues](https://github.com/CodewithJha/mutiny/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) · catalog [`docs/GOOD_FIRST_ISSUES.md`](./docs/GOOD_FIRST_ISSUES.md)
+- **Recent contributors:** thanks [@kkkhs](https://github.com/kkkhs) for the `mutiny init` `--no-hosted` hint ([#13](https://github.com/CodewithJha/mutiny/pull/13))
 - **Ideas & brainstorming:** [Discussions](https://github.com/CodewithJha/mutiny/discussions/12)
 - **Changelog / releases:** [CHANGELOG.md](./CHANGELOG.md)
 - **Conduct / Security / Support:** [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) · [SECURITY.md](./SECURITY.md) · [SUPPORT.md](./SUPPORT.md)
