@@ -10,8 +10,12 @@ from mutiny_core import PolicySet
 import yaml
 
 
-def test_mutiny_init_creates_artifacts(tmp_path: Path) -> None:
+def test_mutiny_init_creates_artifacts(tmp_path: Path, capsys) -> None:
     assert run_init(project_root=tmp_path) == 0
+    output = capsys.readouterr().out
+    assert "Edit .mutiny/adapter.py" in output
+    assert "Start Hosted (optional)" in output
+    assert "mutiny run --no-hosted" in output
     adapter = tmp_path / ".mutiny" / "adapter.py"
     policy = tmp_path / "policy.yaml"
     config = tmp_path / "mutiny.yaml"

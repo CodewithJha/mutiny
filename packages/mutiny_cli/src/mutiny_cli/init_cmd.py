@@ -168,7 +168,7 @@ def run_init(*, project_root: Path, force: bool = False) -> int:
     print("  1. Edit .mutiny/adapter.py  → set AGENT_REF + POLICY_CONTEXT")
     print("  2. Review policy.yaml       → match YOUR tool names (version field)")
     print("  3. Start Hosted (optional)  → ./scripts/dev.sh  from Mutiny repo")
-    print("  4. mutiny run               → campaign uses THIS project's policy")
+    print("  4. mutiny run --no-hosted   → campaign uses THIS project's policy")
     print()
     print("Authorized testing only. Mock / sandbox tools recommended.")
     return 0
