@@ -42,6 +42,7 @@ mutiny test
 - [Troubleshooting](#troubleshooting)
 - [Roadmap](#roadmap)
 - [Contributing](#contributing)
+- [Contributors](#contributors)
 - [FAQ](#faq)
 - [Known limitations](#known-limitations)
 - [Safety](#safety)
@@ -356,7 +357,6 @@ uv run pytest tests/unit -q
 
 - **Guide (30-min path):** [CONTRIBUTING.md](./CONTRIBUTING.md)
 - **Good first issues:** [open labeled issues](https://github.com/CodewithJha/mutiny/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) · catalog [`docs/GOOD_FIRST_ISSUES.md`](./docs/GOOD_FIRST_ISSUES.md)
-- **Recent contributors:** thanks [@kkkhs](https://github.com/kkkhs) for the `mutiny init` `--no-hosted` hint ([#13](https://github.com/CodewithJha/mutiny/pull/13))
 - **Ideas & brainstorming:** [Discussions](https://github.com/CodewithJha/mutiny/discussions/12)
 - **Changelog / releases:** [CHANGELOG.md](./CHANGELOG.md)
 - **Conduct / Security / Support:** [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) · [SECURITY.md](./SECURITY.md) · [SUPPORT.md](./SUPPORT.md)
@@ -364,6 +364,16 @@ uv run pytest tests/unit -q
 - **Issues:** [github.com/CodewithJha/mutiny/issues](https://github.com/CodewithJha/mutiny/issues)
 
 If this engine is useful, a star helps other agent builders find it. Fork the repo and open a PR — we’re glad to help in the comments.
+
+---
+
+## Contributors
+
+Thanks to everyone who has contributed. New faces welcome — pick up a [`good first issue`](https://github.com/CodewithJha/mutiny/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).
+
+<a href="https://github.com/CodewithJha/mutiny/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=CodewithJha/mutiny" alt="Contributors to Mutiny" />
+</a>
 
 ---
 
