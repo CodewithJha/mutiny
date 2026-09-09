@@ -178,6 +178,8 @@ Placement may be `integrations/cli` or a published `mutiny` package entrypoint; 
 **M-PR7 (current):** Optional single-tenant Bearer auth via `MUTINY_API_TOKEN` (ADR-021). When set, protected `/api/*` routes require `Authorization: Bearer <token>`. Public: `/api/health`, `/api/meta`. Auth does not bypass M-PR1 and is not multi-tenant identity.
 
 **ADR-019 (decision; M-PR8 not yet implemented):** Target Hosted role for customer projects is **observe/lineage** — persist campaigns, SSE, artifacts; customer Python runs on Local CLI. Production Hosted must not execute arbitrary customer `.mutiny/adapter.py` in the shared API process. Trusted `in_process_demo` harness may remain. See DECISION_LOG ADR-019.
+
+**M-PR8A (contract defined; runtime unchanged):** CLI → Hosted ingest contract — identity, redaction-before-upload, idempotency, planned `/api/ingest/v1/*`, SSE reuse, `--hosted` → local exec + sync — lives in [HOSTED_INGESTION.md](./HOSTED_INGESTION.md). Implementation is M-PR8B+.
 ### `apps/web` — Hosted presentation
 
 **Owns**

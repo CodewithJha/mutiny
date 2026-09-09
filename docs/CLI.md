@@ -44,7 +44,7 @@ opt-in only.
 | Flag | Default | Meaning |
 |---|---|---|
 | `--path PATH` | cwd | Project root |
-| `--hosted` | off | Explicitly run via Hosted API |
+| `--hosted` | off | Explicit Hosted opt-in (**today:** interim API create/start path; **planned ADR-019 / M-PR8C:** local exec + ingest sync — see [HOSTED_INGESTION.md](./HOSTED_INGESTION.md)) |
 | `--hosted-url HOSTED_URL` | from `mutiny.yaml` | Hosted API base URL (implies `--hosted`; overrides `mutiny.yaml`) |
 | `--no-hosted` | off | Force local (default behavior; kept for compatibility; conflicts with `--hosted` / `--hosted-url`) |
 | `--attestation` / `--no-attestation` | attestation on | Confirm authorized testing (`--no-attestation` fails closed) |

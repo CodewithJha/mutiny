@@ -25,6 +25,8 @@ Operators who accept the risk on a **single-operator localhost** machine may set
 
 **Target architecture (ADR-019 accepted; M-PR8 not implemented):** Hosted is **observe/lineage only** for customer projects — customer `.mutiny/adapter.py` executes on the Local CLI trust domain; the shared API process must not `exec_module` customer trees in Production Hosted. Until M-PR8, treat any Hosted customer exec path as localhost-only opt-in debt.
 
+**Ingestion contract (M-PR8A, docs only):** Future CLI → Hosted uploads must send **already-redacted** JSON evidence (data, not executable). See [docs/HOSTED_INGESTION.md](./docs/HOSTED_INGESTION.md). Upload endpoints are **not** implemented yet.
+
 ## Hosted authentication (M-PR7)
 
 Single-tenant shared Bearer token for the Hosted **control plane** (not multi-user accounts, OAuth, sessions, or RBAC).

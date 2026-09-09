@@ -503,7 +503,17 @@ Order is dependency-aware. Each milestone is independently testable.
 | **DoD** | Threat model satisfied for single-tenant observe-only Hosted |
 | **Rollback** | Safe-mode only Hosted (M-PR1) |
 | **Release** | 0.4.0 → leads to 1.0.0 |
-| **Status** | **Not implemented** — decision only in this docs revision |
+| **Status** | **Partial (docs):** **M-PR8A** ingestion contract in [HOSTED_INGESTION.md](./HOSTED_INGESTION.md). **M-PR8B+** (ingest API, CLI sync, remove production customer `exec_module`) **not implemented** |
+
+#### M-PR8 staging
+
+| Stage | Deliverable | Status |
+|---|---|---|
+| **M-PR8A** | CLI → Hosted ingestion contract (identity, events, artifacts, redaction, idempotency, API/CLI semantics) | **Done (docs)** |
+| **M-PR8B** | Hosted `/api/ingest/v1/*` + persistence + contract tests | Planned |
+| **M-PR8C** | CLI local exec + sync for `--hosted` | Planned |
+| **M-PR8D** | SSE hub wiring + Web observe copy | Planned |
+| **M-PR8E** | Remove/disable Production Hosted customer `project_path` `exec_module` | Planned |
 
 ### Later (P3/P4) — packaging verify fix, Dependabot, project_id on regressions, adapters, Postgres
 
@@ -596,7 +606,7 @@ Scheduled after Target A gate; do not block 0.2.0.
 
 ### ADR-019 — Hosted must not execute customer Python in-process
 
-**Status:** **Accepted** — see DECISION_LOG ADR-019 (Option A: observe/lineage Hosted; CLI executes customer adapters). **M-PR8 not implemented** in this revision.
+**Status:** **Accepted** — see DECISION_LOG ADR-019 (Option A: observe/lineage Hosted; CLI executes customer adapters). **M-PR8A** contract: [HOSTED_INGESTION.md](./HOSTED_INGESTION.md). **M-PR8B+ runtime not implemented** in this revision.
 
 **Current code (interim):** Hosted can still load `.mutiny/adapter.py` via `load_adapter_factory` when `MUTINY_ALLOW_PROJECT_EXEC=1` (M-PR1). Default remains refuse. Trusted `in_process_demo` harness unchanged.
 
@@ -699,6 +709,7 @@ See checklists under [Definition of Done](#definition-of-done) for Target A and 
 
 - **Created:** `docs/PRODUCTION_READINESS.md` (this file)  
 - **Updated for consistency pointers / ADR proposals / stale-status notes:** `docs/README.md`, `docs/ARCHITECTURE.md`, `docs/ROADMAP.md`, `docs/DECISION_LOG.md`, `docs/IMPLEMENTATION_PLAN.md`, `SECURITY.md`  
-- **ADR-019 acceptance (docs-only):** `docs/DECISION_LOG.md`, `docs/ARCHITECTURE.md`, `docs/SYSTEM_DESIGN.md`, `docs/ROADMAP.md`, `docs/PRODUCTION_READINESS.md`, `SECURITY.md` — **M-PR8 not implemented**
+- **ADR-019 acceptance (docs-only):** `docs/DECISION_LOG.md`, `docs/ARCHITECTURE.md`, `docs/SYSTEM_DESIGN.md`, `docs/ROADMAP.md`, `docs/PRODUCTION_READINESS.md`, `SECURITY.md` — **M-PR8 runtime not implemented**  
+- **M-PR8A (docs-only):** `docs/HOSTED_INGESTION.md` (+ pointers in DECISION_LOG / ARCHITECTURE / ROADMAP / PRODUCTION_READINESS / SECURITY / SYSTEM_DESIGN / docs/README) — contract defined; **M-PR8B+ not implemented**
 
-**STOP:** No application or test code changes in this ADR-019 workstream. Implementation waits for explicit M-PR8 approval.
+**STOP:** No application or test code changes in this M-PR8A workstream. Ingest implementation waits for explicit M-PR8B approval.

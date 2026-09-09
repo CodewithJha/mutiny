@@ -338,3 +338,5 @@ Add new ADRs at the bottom. Do not rewrite history; supersede with a new ADR.
 **Tradeoffs:** Clear trust boundary and reuse of Local CLI security model; Hosted “Run against my project” UX must become “run locally, observe in Hosted” (UI/API redesign in M-PR8). Weaker “push button cloud fuzz” story until/unless Option B is reconsidered.
 
 **Reconsider when:** A concrete multi-tenant or CI-remote requirement forces server-side customer execution with a written worker threat model (new ADR superseding this one toward Option B); or observe-only ingest proves insufficient for the primary Hosted UX.
+
+**M-PR8A follow-up (contract only, no new ADR):** The CLI → Hosted ingestion envelope, identity reuse (campaign ≡ run), redact-before-upload gate, idempotency keys, size limits, failure isolation, planned `/api/ingest/v1/*` surface, and future `--hosted` = local exec + sync semantics are specified in [HOSTED_INGESTION.md](./HOSTED_INGESTION.md). That document elaborates this ADR; it does **not** supersede ADR-020/021 and does **not** claim M-PR8B+ is implemented.
