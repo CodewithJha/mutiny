@@ -1,9 +1,9 @@
-# Hosted Ingestion Contract (M-PR8A / M-PR8B)
+# Hosted Ingestion Contract (M-PR8A / M-PR8B / M-PR8C)
 
 | Field | Value |
 |---|---|
-| **Status** | **Partial** — **M-PR8B Hosted ingest API implemented**; **CLI sync (M-PR8C) still pending** |
-| **Milestone** | M-PR8A (contract) + M-PR8B (server ingest). CLI sync starts at **M-PR8C** |
+| **Status** | **Partial** — **M-PR8A–C implemented** (contract + Hosted ingest API + CLI local-exec sync). **M-PR8D/E pending** |
+| **Milestone** | M-PR8A (contract) + M-PR8B (server ingest) + **M-PR8C (CLI sync)** |
 | **Anchors** | ADR-019 (Option A observe-only), ADR-021 (Bearer auth), M-PR3 (redaction), M-PR1 (kill-switch) |
 | **Last updated** | 2026-09-09 |
 
@@ -41,7 +41,7 @@ CampaignSupervisor (in-process) → SQLite → SSE → Web
 
 Trusted `in_process_demo` may still run in-process without customer `project_path`.
 
-### Target (ADR-019 / this contract — **Planned**)
+### Target (ADR-019 / this contract — **Implemented** through M-PR8C)
 
 ```text
 Local CLI (mutiny run / mutiny test)
@@ -61,6 +61,8 @@ Existing SSE + Web lineage UI
 ```
 
 Hosted **observes**; it does not `exec_module` customer trees for Production Hosted.
+
+**M-PR8C decision — end-of-run sync:** `mutiny run --hosted` finishes the local Core campaign first, then uploads open → batch → (regression) → complete. No mid-run event streaming in this milestone (simpler reliability; Hosted is never required for local correctness).
 
 ---
 
@@ -239,17 +241,18 @@ Hosted upload fails / times out
         ↓
 CLI still reports local success/failure as today
         ↓
-warn on stderr; optionally write .mutiny/hosted-pending/<campaign_id>.json  (Planned)
+warn on stderr; write .mutiny/hosted-pending/<campaign_id>.json (sanitized)
         ↓
-retry later (manual or future `mutiny sync`) — NOT implemented in M-PR8A
+retry later (manual or future `mutiny sync`) — **not** auto-retried in M-PR8C
 ```
 
 **Rules:**
 
 1. Hosted unavailability **must not** flip a successful local campaign to failure.
-2. When `--hosted` sync is requested and auth/config is invalid **before** execution, fail closed (config error) — same spirit as today’s explicit Hosted selection.
-3. When sync fails **after** local execution, warn + non-zero **only for the sync aspect** if a dedicated sync exit channel exists later; default proposal: local exit code unchanged, sync warning printed (final CLI UX locked in M-PR8B).
+2. When `--hosted` sync is requested and Hosted config is invalid **before** execution (e.g. missing `api_url`), fail closed (config error exit 2) — same spirit as today’s explicit Hosted selection. Hosted reachability is **not** a prerequisite for local execution.
+3. When sync fails **after** local success: warn on stderr and exit **`3`** (`SYNC_FAILED_EXIT`) so automation can distinguish sync failure from local campaign failure (`1`). Local failure still returns `1` even if sync also fails/succeeds.
 4. No Hosted round-trip inside Core evaluation loops.
+5. `MUTINY_DISABLE_SECRET_REDACTION=1` refuses Hosted upload (sync exit 3 after local success); local persistence still allowed.
 
 ---
 
@@ -314,18 +317,25 @@ Hosted stores:
 
 ---
 
-## 15. CLI behavior (**Planned** semantics — not implemented)
+## 15. CLI behavior (**Implemented** — M-PR8C)
 
 | Command | Behavior |
 |---|---|
 | `mutiny run` | Local execution only (M-PR2). No upload. |
-| `mutiny run --hosted` / `--hosted-url` | **Local execution**, then ingest to Hosted (stream and/or end-of-run). **Does not** mean “run adapter inside Hosted.” |
+| `mutiny run --hosted` / `--hosted-url` | **Local Core execution**, then **end-of-run** redacted ingest to Hosted. **Does not** mean “run adapter inside Hosted.” |
 | `mutiny test` | Local replay only by default. |
-| `mutiny test --hosted` | Local replay, then upload `test_run` (+ ensure regression artifact present). **Planned.** |
+| `mutiny test --hosted` | **Not implemented in M-PR8C** (payload helper exists; CLI flag deferred). |
 
-Until M-PR8C ships CLI sync, today’s CLI `--hosted` still drives the **interim** Hosted supervisor path (create/start campaign on API). Docs and UX must label that path **deprecated interim**; the ingest API (M-PR8B) is the replacement upload surface.
+**Semantics:**
 
-Auth header: send `MUTINY_API_TOKEN` when set (already true for explicit Hosted).
+```text
+mutiny run              = local
+mutiny run --hosted     = local + Hosted sync (observe-only ingest)
+```
+
+`hosted.api_url` in `mutiny.yaml` alone never activates sync (M-PR2). Auth header: `Authorization: Bearer` from `MUTINY_API_TOKEN` when set.
+
+The interim Hosted supervisor create/start path remains available to API clients/`in_process_demo` until **M-PR8E**; the CLI `--hosted` path no longer calls it.
 
 ---
 
@@ -367,7 +377,7 @@ Prefer **campaign-centric** routes over a parallel `/runs` resource. New write p
 - Do not overload `POST /api/campaigns/{id}/start` to mean “execute customer project” for Production Hosted.
 - Trusted `in_process_demo` may keep a Hosted-executed path separately labeled.
 - Minimize/regression **execution** endpoints that call `_make_adapter` on customer `project_path` remain interim debt until removed/disabled for Production Hosted (M-PR8E).
-- **CLI sync** (`mutiny run --hosted` = local exec + upload) is **M-PR8C** — not claimed here.
+- Web observe-only UX copy is **M-PR8D**.
 
 Validation on ingest: schema_version, required IDs, known event types, artifact kinds, payload shape (Pydantic), size limits, duplicate IDs, `redaction.applied`, Bearer auth.
 
@@ -408,10 +418,10 @@ CLI ingest batch
 |---|---|---|
 | **M-PR8A** | This contract + doc consistency | **Done (docs)** |
 | **M-PR8B** | Hosted ingest endpoints + persistence wiring + contract tests (no customer exec required) | **Done (server)** |
-| **M-PR8C** | CLI local-exec + sync for `--hosted`; pending-file / retry UX | Planned |
+| **M-PR8C** | CLI local-exec + end-of-run sync for `--hosted`; pending-file on sync fail | **Done (CLI)** |
 | **M-PR8D** | Web copy “run locally, observe here” (SSE already wired from ingest) | Planned |
 | **M-PR8E** | Remove/disable Production Hosted customer `project_path` `exec_module` path; keep `in_process_demo` | Planned |
-| **Later** | Optional `mutiny sync`; size-limit tuning; regression `project_id` column if join proves insufficient | Deferred |
+| **Later** | Optional `mutiny sync` / `mutiny test --hosted`; size-limit tuning; regression `project_id` column if join proves insufficient | Deferred |
 
 Each stage ships behind tests; no silent claim that Target B is done until M-PR8E DoD in PRODUCTION_READINESS.
 
@@ -419,16 +429,17 @@ Each stage ships behind tests; no silent claim that Target B is done until M-PR8
 
 ## Compatibility checklist
 
-Preserved by M-PR8B (additive ingest; no CLI sync yet):
+Preserved by M-PR8C (CLI local + ingest sync; supervisor path retained for API/demo):
 
 - Local `mutiny run` / `mutiny test`
 - Deterministic `PolicyEvaluator`, minimize, regression semantics
-- M-PR1–M-PR7 behavior
+- M-PR1–M-PR8B behavior
 - ADR-020 (policy-general seeds), ADR-021 (Bearer), ADR-019 (observe-only decision)
-- Interim Hosted supervisor / `in_process_demo` path unchanged until M-PR8E
+- Interim Hosted supervisor / `in_process_demo` path unchanged until M-PR8E (CLI `--hosted` no longer uses it)
 
-### Current limitations (post M-PR8B)
+### Current limitations (post M-PR8C)
 
-- CLI does **not** yet upload via ingest (`mutiny run --hosted` still interim supervisor path) — **M-PR8C**
+- `mutiny test --hosted` not wired (payload builder only) — remaining CLI sync work / later
+- Automatic retry / `mutiny sync` command deferred (pending JSON written on sync failure)
 - Production Hosted customer `exec_module` path still exists behind M-PR1 — **M-PR8E**
 - Web UX copy for observe-only still pending — **M-PR8D**

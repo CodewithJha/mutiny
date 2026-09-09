@@ -46,13 +46,16 @@ def main(argv: list[str] | None = None) -> int:
     run_p.add_argument(
         "--hosted",
         action="store_true",
-        help="Explicitly run via Hosted API (opt-in; default is local)",
+        help=(
+            "Local Core execution + redacted Hosted ingest sync (opt-in; "
+            "does not execute the adapter on Hosted)"
+        ),
     )
     run_p.add_argument(
         "--hosted-url",
         default=None,
         help=(
-            "Hosted API base URL (implies --hosted; overrides mutiny.yaml). "
+            "Hosted API base URL (implies --hosted sync; overrides mutiny.yaml). "
             "Config alone never selects Hosted."
         ),
     )

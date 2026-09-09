@@ -135,7 +135,7 @@ Persistence is **not** Core’s job. The API or CLI persists what Core returns.
 **Owns (planned)**
 
 - `mutiny init` — generate `.mutiny/adapter.py`, `policy.yaml`, `mutiny.yaml` in the customer project  
-- `mutiny run` — load adapter + policy + config; drive **local** Core campaign by default; write regressions; Hosted only with `--hosted` / `--hosted-url`
+- `mutiny run` — load adapter + policy + config; drive **local** Core campaign by default; write regressions; `--hosted` = local + Hosted ingest sync (M-PR8C)
 - `mutiny test` — regression replay (P1)  
 
 **Must not contain**
@@ -179,7 +179,7 @@ Placement may be `integrations/cli` or a published `mutiny` package entrypoint; 
 
 **ADR-019 (decision; M-PR8 not yet implemented):** Target Hosted role for customer projects is **observe/lineage** — persist campaigns, SSE, artifacts; customer Python runs on Local CLI. Production Hosted must not execute arbitrary customer `.mutiny/adapter.py` in the shared API process. Trusted `in_process_demo` harness may remain. See DECISION_LOG ADR-019.
 
-**M-PR8A/B:** CLI → Hosted ingest contract + Hosted `/api/ingest/v1/*` observe-only API — identity, redaction-before-upload, idempotency, SSE reuse — in [HOSTED_INGESTION.md](./HOSTED_INGESTION.md). **CLI sync (M-PR8C)** and **remove production customer exec (M-PR8E)** remain.
+**M-PR8A–C:** CLI → Hosted ingest contract + Hosted `/api/ingest/v1/*` + CLI `--hosted` local-exec sync — identity, redaction-before-upload, idempotency, SSE reuse — in [HOSTED_INGESTION.md](./HOSTED_INGESTION.md). **Remove production customer exec (M-PR8E)** and **Web observe copy (M-PR8D)** remain.
 ### `apps/web` — Hosted presentation
 
 **Owns**

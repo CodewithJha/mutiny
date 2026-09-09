@@ -44,15 +44,12 @@ opt-in only.
 | Flag | Default | Meaning |
 |---|---|---|
 | `--path PATH` | cwd | Project root |
-| `--hosted` | off | Explicit Hosted opt-in (**today:** interim API create/start path; **planned ADR-019 / M-PR8C:** local exec + ingest sync — see [HOSTED_INGESTION.md](./HOSTED_INGESTION.md)) |
-| `--hosted-url HOSTED_URL` | from `mutiny.yaml` | Hosted API base URL (implies `--hosted`; overrides `mutiny.yaml`) |
+| `--hosted` | off | Explicit opt-in: **local Core exec + redacted Hosted ingest sync** (ADR-019 / M-PR8C — does **not** execute the adapter on Hosted; see [HOSTED_INGESTION.md](./HOSTED_INGESTION.md)) |
+| `--hosted-url HOSTED_URL` | from `mutiny.yaml` | Hosted API base URL (implies `--hosted` sync; overrides `mutiny.yaml`) |
 | `--no-hosted` | off | Force local (default behavior; kept for compatibility; conflicts with `--hosted` / `--hosted-url`) |
 | `--attestation` / `--no-attestation` | attestation on | Confirm authorized testing (`--no-attestation` fails closed) |
 
-**Hosted auth (M-PR7):** Explicit Hosted runs send `Authorization: Bearer` from
-`MUTINY_API_TOKEN` when set. If the API has auth enabled and the token is
-missing or wrong, the CLI exits with an error (no silent local fallback).
-Default local `mutiny run` does not require a Hosted token.
+**Hosted sync (M-PR8C):** After local campaign completion, CLI POSTs to `/api/ingest/v1/*` with `schema_version=1` and `redaction.applied=true`. Bearer from `MUTINY_API_TOKEN` when set. Local success + sync failure → exit **3** (local result remains authoritative). Missing `api_url` with `--hosted` → exit 2. Config URL alone never selects Hosted.
 
 **Precedence:** CLI flags decide mode. `hosted.api_url` in `mutiny.yaml` only
 supplies the URL when Hosted is explicitly selected — it never auto-selects Hosted.

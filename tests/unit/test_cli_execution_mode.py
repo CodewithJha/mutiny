@@ -1,4 +1,4 @@
-"""M-PR2: CLI execution-mode contract — local default, explicit Hosted."""
+"""M-PR2 + M-PR8C: CLI execution-mode — local default; ``--hosted`` = local + sync."""
 
 from __future__ import annotations
 
@@ -12,7 +12,9 @@ import yaml
 from mutiny_cli.init_cmd import run_init
 from mutiny_cli.main import main
 from mutiny_cli import run_cmd
+from mutiny_cli.hosted_sync import SYNC_FAILED_EXIT, LocalRunBundle, SyncOutcome
 from mutiny_cli.test_cmd import run_tests
+from mutiny_core.campaign.engine import CampaignResult
 
 
 POLICY_MIN = """\
@@ -67,6 +69,26 @@ def _scaffold(tmp: Path, *, api_url: str = "http://127.0.0.1:8000") -> Path:
     return tmp
 
 
+def _ok_outcome(root: Path) -> run_cmd.LocalRunOutcome:
+    result = CampaignResult(
+        status="completed",
+        reason="gmax",
+        generations_completed=1,
+        candidates=[],
+        best=None,
+        violated=False,
+        events_emitted=0,
+    )
+    return run_cmd.LocalRunOutcome(
+        exit_code=0,
+        campaign_id="11111111-1111-1111-1111-111111111111",
+        result=result,
+        events=[],
+        started_at="2026-01-01T00:00:00Z",
+        completed_at="2026-01-01T00:00:01Z",
+    )
+
+
 # —— Test A: default is local ——
 
 
@@ -74,18 +96,20 @@ def test_a_default_run_is_local_even_with_hosted_config(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     _scaffold(tmp_path)
-    hosted_calls: list[dict[str, Any]] = []
+    sync_calls: list[Any] = []
     local_calls: list[Path] = []
 
-    def fake_hosted(**kwargs: Any) -> int | None:
-        hosted_calls.append(kwargs)
+    def fake_sync(**kwargs: Any) -> int:
+        sync_calls.append(kwargs)
         return 0
 
-    def fake_local(root: Path, config: dict[str, Any], policy: Any) -> int:
+    def fake_local(
+        root: Path, config: dict[str, Any], policy: Any, **kwargs: Any
+    ) -> run_cmd.LocalRunOutcome:
         local_calls.append(root)
-        return 0
+        return _ok_outcome(root)
 
-    monkeypatch.setattr(run_cmd, "_run_via_hosted", fake_hosted)
+    monkeypatch.setattr(run_cmd, "_run_local_with_hosted_sync", fake_sync)
     monkeypatch.setattr(run_cmd, "_run_local", fake_local)
     monkeypatch.setenv("MUTINY_API_URL", "http://evil.example:9999")
 
@@ -93,125 +117,119 @@ def test_a_default_run_is_local_even_with_hosted_config(
     out = capsys.readouterr().out
 
     assert code == 0
-    assert hosted_calls == []
+    assert sync_calls == []
     assert len(local_calls) == 1
     assert local_calls[0] == tmp_path.resolve()
     assert "Execution mode: local" in out
 
 
-# —— Test B: explicit Hosted uses Hosted ——
+# —— Test B: explicit Hosted uses local + sync ——
 
 
-def test_b_hosted_flag_selects_hosted_path(
+def test_b_hosted_flag_selects_local_plus_sync(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     _scaffold(tmp_path)
-    hosted_calls: list[dict[str, Any]] = []
-    local_calls: list[Path] = []
+    sync_calls: list[dict[str, Any]] = []
 
-    def fake_hosted(**kwargs: Any) -> int:
-        hosted_calls.append(kwargs)
+    def fake_sync(**kwargs: Any) -> int:
+        sync_calls.append(kwargs)
         return 0
 
-    def fake_local(root: Path, config: dict[str, Any], policy: Any) -> int:
-        local_calls.append(root)
-        return 0
-
-    monkeypatch.setattr(run_cmd, "_run_via_hosted", fake_hosted)
-    monkeypatch.setattr(run_cmd, "_run_local", fake_local)
+    monkeypatch.setattr(run_cmd, "_run_local_with_hosted_sync", fake_sync)
+    monkeypatch.setattr(
+        run_cmd,
+        "_run_local",
+        lambda *a, **k: (_ for _ in ()).throw(AssertionError("plain local")),
+    )
 
     code = main(["run", "--path", str(tmp_path), "--hosted"])
     out = capsys.readouterr().out
 
     assert code == 0
-    assert len(hosted_calls) == 1
-    assert hosted_calls[0]["api_url"] == "http://127.0.0.1:8000"
-    assert local_calls == []
-    assert "Execution mode: hosted" in out
+    assert len(sync_calls) == 1
+    assert sync_calls[0]["api_url"] == "http://127.0.0.1:8000"
+    assert "Execution mode: local + Hosted sync" in out
 
 
-def test_b_hosted_url_flag_also_selects_hosted(
+def test_b_hosted_url_flag_also_selects_sync(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """CLI ``--hosted-url`` is explicit Hosted intent (URL override)."""
+    """CLI ``--hosted-url`` is explicit Hosted sync intent (URL override)."""
     _scaffold(tmp_path)
-    hosted_calls: list[dict[str, Any]] = []
+    sync_calls: list[dict[str, Any]] = []
 
-    def fake_hosted(**kwargs: Any) -> int:
-        hosted_calls.append(kwargs)
+    def fake_sync(**kwargs: Any) -> int:
+        sync_calls.append(kwargs)
         return 0
 
-    monkeypatch.setattr(run_cmd, "_run_via_hosted", fake_hosted)
-    monkeypatch.setattr(run_cmd, "_run_local", lambda *a, **k: 99)
+    monkeypatch.setattr(run_cmd, "_run_local_with_hosted_sync", fake_sync)
 
     code = main(
         ["run", "--path", str(tmp_path), "--hosted-url", "http://127.0.0.1:18000"]
     )
     assert code == 0
-    assert len(hosted_calls) == 1
-    assert hosted_calls[0]["api_url"] == "http://127.0.0.1:18000"
+    assert len(sync_calls) == 1
+    assert sync_calls[0]["api_url"] == "http://127.0.0.1:18000"
 
 
-# —— Test C: no accidental fallback ——
+# —— Test C: no silent fallback from --hosted ——
 
 
-def test_c_explicit_hosted_unavailable_does_not_fallback(
+def test_c_explicit_hosted_sync_fail_does_not_pretend_local_only(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
+    """Local still runs; sync failure is visible (exit 3), not silent local-only."""
     _scaffold(tmp_path)
-    local_calls: list[Path] = []
 
-    def fake_hosted(**kwargs: Any) -> int:
-        print("error: Hosted API unreachable at http://127.0.0.1:8000", file=__import__("sys").stderr)
-        return 1
+    def fake_local(
+        root: Path, config: dict[str, Any], policy: Any, **kwargs: Any
+    ) -> run_cmd.LocalRunOutcome:
+        return _ok_outcome(root)
 
-    monkeypatch.setattr(run_cmd, "_run_via_hosted", fake_hosted)
-    monkeypatch.setattr(
-        run_cmd,
-        "_run_local",
-        lambda root, config, policy: local_calls.append(root) or 0,
-    )
+    def fake_sync_fail(bundle: LocalRunBundle, **kwargs: Any) -> SyncOutcome:
+        return SyncOutcome(ok=False, message="Hosted unreachable", error_code="hosted_unavailable")
+
+    monkeypatch.setattr(run_cmd, "_run_local", fake_local)
+    monkeypatch.setattr(run_cmd, "sync_local_campaign", fake_sync_fail)
 
     code = main(["run", "--path", str(tmp_path), "--hosted"])
     err = capsys.readouterr().err
 
-    assert code == 1
-    assert local_calls == []
-    assert "Hosted" in err or code == 1
+    assert code == SYNC_FAILED_EXIT
+    assert "synchronization failed" in err.lower() or "Hosted" in err
 
 
-def test_c_run_via_hosted_explicit_no_silent_fallback(
+def test_c_hosted_unavailable_still_runs_local(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """When Hosted is explicit, connectivity failures must return an error code."""
     _scaffold(tmp_path)
+    local_called = {"n": 0}
 
-    class BoomClient:
-        def __init__(self, *a: Any, **k: Any) -> None:
-            raise ConnectionError("refused")
+    def fake_local(
+        root: Path, config: dict[str, Any], policy: Any, **kwargs: Any
+    ) -> run_cmd.LocalRunOutcome:
+        local_called["n"] += 1
+        return _ok_outcome(root)
 
-        def __enter__(self) -> BoomClient:
-            return self
+    monkeypatch.setattr(run_cmd, "_run_local", fake_local)
+    monkeypatch.setattr(
+        run_cmd,
+        "sync_local_campaign",
+        lambda *a, **k: SyncOutcome(ok=False, message="refused", error_code="hosted_unavailable"),
+    )
 
-        def __exit__(self, *a: Any) -> None:
-            return None
-
-    fake_httpx = MagicMock()
-    fake_httpx.Client = BoomClient
-    monkeypatch.setitem(__import__("sys").modules, "httpx", fake_httpx)
-
-    code = run_cmd._run_via_hosted(
+    code = run_cmd._run_local_with_hosted_sync(
+        root=tmp_path,
         config={"population_size": 2},
-        hosted_cfg={"api_url": "http://127.0.0.1:8000"},
+        policy=MagicMock(version="1", target="t"),
         api_url="http://127.0.0.1:8000",
         ui_url="http://127.0.0.1:3000",
-        project_root=tmp_path,
-        explicit=True,
     )
+    assert local_called["n"] == 1
+    assert code == SYNC_FAILED_EXIT
     err = capsys.readouterr().err
-    assert code == 1
-    assert "fallback" not in err.lower()
-    assert "Hosted" in err or "unreachable" in err.lower() or "refused" in err.lower()
+    assert "authoritative" in err.lower() or "synchronization failed" in err.lower()
 
 
 # —— Test D: local works without Hosted ——
@@ -226,11 +244,17 @@ def test_d_local_run_without_hosted_url(
     (tmp_path / "mutiny.yaml").write_text(yaml.dump(cfg), encoding="utf-8")
 
     local_calls: list[Path] = []
-    monkeypatch.setattr(run_cmd, "_run_via_hosted", lambda **k: (_ for _ in ()).throw(AssertionError("hosted")))
+    monkeypatch.setattr(
+        run_cmd,
+        "_run_local_with_hosted_sync",
+        lambda **k: (_ for _ in ()).throw(AssertionError("hosted")),
+    )
     monkeypatch.setattr(
         run_cmd,
         "_run_local",
-        lambda root, config, policy: local_calls.append(root) or 0,
+        lambda root, config, policy, **kw: (
+            local_calls.append(root) or _ok_outcome(root)
+        ),
     )
 
     code = main(["run", "--path", str(tmp_path)])
@@ -240,11 +264,11 @@ def test_d_local_run_without_hosted_url(
     assert "Execution mode: local" in out
 
 
-# —— Test E: mutiny test stays local ——
+# —— Test E: mutiny test stays local (no --hosted in M-PR8C) ——
 
 
 def test_e_mutiny_test_has_no_hosted_mode() -> None:
-    """``mutiny test`` must not grow a Hosted path merely for consistency."""
+    """``mutiny test --hosted`` deferred; help must not advertise it yet."""
     import io
     from contextlib import redirect_stderr, redirect_stdout
 
@@ -265,7 +289,6 @@ def test_e_mutiny_test_runs_local_adapter(
     """Smoke: run_tests still loads local adapter (no Hosted client)."""
     _scaffold(tmp_path)
     (tmp_path / ".mutiny" / "tests").mkdir(parents=True, exist_ok=True)
-    # empty suite → exit 0 locally
     code = run_tests(project_root=tmp_path, write_report=False)
     assert code == 0
 
@@ -278,11 +301,13 @@ def test_f_no_hosted_remains_local(
 ) -> None:
     _scaffold(tmp_path)
     local_calls: list[Path] = []
-    monkeypatch.setattr(run_cmd, "_run_via_hosted", lambda **k: 0)
+    monkeypatch.setattr(run_cmd, "_run_local_with_hosted_sync", lambda **k: 0)
     monkeypatch.setattr(
         run_cmd,
         "_run_local",
-        lambda root, config, policy: local_calls.append(root) or 0,
+        lambda root, config, policy, **kw: (
+            local_calls.append(root) or _ok_outcome(root)
+        ),
     )
     code = main(["run", "--path", str(tmp_path), "--no-hosted"])
     out = capsys.readouterr().out
@@ -307,22 +332,25 @@ def test_f_init_hint_prefers_plain_run(
     assert run_init(project_root=tmp_path) == 0
     out = capsys.readouterr().out
     assert "mutiny run" in out
-    # Default path is local; hint should not require --no-hosted
     assert "mutiny run --no-hosted" not in out
 
 
 def test_f_reachable_api_does_not_auto_select_hosted(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Even if Hosted would succeed, default must not call it."""
+    """Even if Hosted sync would succeed, default must not call it."""
     _scaffold(tmp_path)
-    called = {"hosted": False}
+    called = {"sync": False}
 
     def would_succeed(**kwargs: Any) -> int:
-        called["hosted"] = True
+        called["sync"] = True
         return 0
 
-    monkeypatch.setattr(run_cmd, "_run_via_hosted", would_succeed)
-    monkeypatch.setattr(run_cmd, "_run_local", lambda *a, **k: 0)
+    monkeypatch.setattr(run_cmd, "_run_local_with_hosted_sync", would_succeed)
+    monkeypatch.setattr(
+        run_cmd,
+        "_run_local",
+        lambda *a, **k: _ok_outcome(tmp_path),
+    )
     assert main(["run", "--path", str(tmp_path)]) == 0
-    assert called["hosted"] is False
+    assert called["sync"] is False

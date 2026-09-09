@@ -236,14 +236,16 @@ def test_k_sse_requires_auth(client: TestClient) -> None:
     assert ok.json()["error"]["code"] == "campaign_not_found"
 
 
-# —— Test L: CLI Hosted auth headers ——
+# —— Test L: CLI Hosted auth headers (M-PR8C ingest sync) ——
 
 
 def test_l_cli_hosted_sends_token(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
+    from mutiny_cli import hosted_sync
+
     monkeypatch.setenv(API_TOKEN_ENV, FAKE_TOKEN)
-    headers = run_cmd._hosted_auth_headers()
+    headers = hosted_sync.auth_headers_from_env()
     assert headers == {"Authorization": f"Bearer {FAKE_TOKEN}"}
 
     seen: dict[str, Any] = {}
@@ -267,95 +269,80 @@ def test_l_cli_hosted_sends_token(
         def __exit__(self, *args: Any) -> None:
             return None
 
-        def get(self, path: str) -> FakeResp:
-            if path == "/api/health":
-                return FakeResp(200, {"api": True})
-            if path == "/api/meta":
-                return FakeResp(
-                    200,
-                    {"safety": {"auth_required": True}},
-                )
-            return FakeResp(200, {"status": "completed", "metrics": {}})
-
         def post(self, path: str, json: dict[str, Any] | None = None) -> FakeResp:
-            if path == "/api/campaigns":
-                return FakeResp(201, {"id": "camp-1"})
-            if path.endswith("/start"):
-                return FakeResp(200, {"status": "running"})
-            return FakeResp(200, {})
-
-    monkeypatch.setattr(run_cmd, "_poll_campaign", lambda *a, **k: {
-        "status": "completed",
-        "metrics": {},
-    })
+            seen["path"] = path
+            return FakeResp(201, {"campaign_id": "camp-1", "created": True})
 
     import httpx
 
     monkeypatch.setattr(httpx, "Client", FakeClient)
-
-    code = run_cmd._run_via_hosted(
-        config={"population_size": 2, "max_generations": 1},
-        hosted_cfg={},
-        api_url="http://127.0.0.1:8000",
-        ui_url="http://127.0.0.1:3000",
-        project_root=tmp_path,
+    client = hosted_sync.HostedIngestClient(
+        "http://127.0.0.1:8000", headers=headers
     )
-    assert code == 0
+    client.open_campaign(
+        {
+            "schema_version": 1,
+            "redaction": {"applied": True},
+            "campaign_id": "camp-1",
+            "local_project_key": "cli:test",
+            "attestation": True,
+            "config": {},
+        }
+    )
     assert seen["headers"].get("Authorization") == f"Bearer {FAKE_TOKEN}"
+    assert "ingest" in seen["path"]
 
 
 def test_l_cli_hosted_missing_token_when_required(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
+    """After local success, missing token yields sync failure (exit 3), not silent local-only."""
+    from mutiny_cli.hosted_sync import SYNC_FAILED_EXIT, SyncOutcome
+    from mutiny_core.campaign.engine import CampaignResult
+
     monkeypatch.delenv(API_TOKEN_ENV, raising=False)
 
-    class FakeResp:
-        def __init__(self, status_code: int, body: dict[str, Any] | None = None):
-            self.status_code = status_code
-            self._body = body or {}
-            self.text = json.dumps(self._body)
+    def fake_local(
+        root: Path, config: dict[str, Any], policy: Any, **kwargs: Any
+    ) -> run_cmd.LocalRunOutcome:
+        return run_cmd.LocalRunOutcome(
+            exit_code=0,
+            campaign_id="camp-auth-miss",
+            result=CampaignResult(
+                status="completed",
+                reason="gmax",
+                generations_completed=1,
+                candidates=[],
+                best=None,
+                violated=False,
+                events_emitted=0,
+            ),
+            events=[],
+        )
 
-        def json(self) -> dict[str, Any]:
-            return self._body
+    monkeypatch.setattr(run_cmd, "_run_local", fake_local)
+    monkeypatch.setattr(
+        run_cmd,
+        "sync_local_campaign",
+        lambda *a, **k: SyncOutcome(
+            ok=False,
+            message="Hosted authentication failed (set a valid MUTINY_API_TOKEN)",
+            error_code="unauthorized",
+            http_status=401,
+        ),
+    )
 
-    class FakeClient:
-        def __init__(self, *args: Any, **kwargs: Any) -> None:
-            pass
-
-        def __enter__(self) -> FakeClient:
-            return self
-
-        def __exit__(self, *args: Any) -> None:
-            return None
-
-        def get(self, path: str) -> FakeResp:
-            if path == "/api/health":
-                return FakeResp(200, {"api": True})
-            if path == "/api/meta":
-                return FakeResp(200, {"safety": {"auth_required": True}})
-            return FakeResp(200, {})
-
-        def post(self, *args: Any, **kwargs: Any) -> FakeResp:
-            raise AssertionError("must not create campaign without token")
-
-    import httpx
-
-    monkeypatch.setattr(httpx, "Client", FakeClient)
-    local = MagicMock(return_value=0)
-    monkeypatch.setattr(run_cmd, "_run_local", local)
-
-    code = run_cmd._run_via_hosted(
+    code = run_cmd._run_local_with_hosted_sync(
+        root=tmp_path,
         config={},
-        hosted_cfg={},
+        policy=MagicMock(version="1", target="t"),
         api_url="http://127.0.0.1:8000",
         ui_url="http://127.0.0.1:3000",
-        project_root=tmp_path,
     )
     err = capsys.readouterr().err
-    assert code == 1
-    assert "MUTINY_API_TOKEN" in err
-    assert "refusing silent local fallback" in err
-    local.assert_not_called()
+    assert code == SYNC_FAILED_EXIT
+    assert "MUTINY_API_TOKEN" in err or "authentication" in err.lower()
+    assert "synchronization failed" in err.lower()
 
 
 # —— Test M: CLI local unchanged ——
@@ -382,16 +369,29 @@ def test_m_cli_local_no_hosted_token(
         encoding="utf-8",
     )
 
-    hosted = MagicMock(return_value=0)
-    local = MagicMock(return_value=0)
-    monkeypatch.setattr(run_cmd, "_run_via_hosted", hosted)
+    sync = MagicMock(return_value=0)
+    from mutiny_core.campaign.engine import CampaignResult
+
+    local = MagicMock(
+        return_value=run_cmd.LocalRunOutcome(
+            exit_code=0,
+            campaign_id="local-only",
+            result=CampaignResult(
+                status="completed",
+                reason="gmax",
+                generations_completed=0,
+                candidates=[],
+            ),
+        )
+    )
+    monkeypatch.setattr(run_cmd, "_run_local_with_hosted_sync", sync)
     monkeypatch.setattr(run_cmd, "_run_local", local)
 
     code = run_cmd.run_campaign(project_root=tmp_path)
     out = capsys.readouterr().out
     assert code == 0
     assert "Execution mode: local" in out
-    hosted.assert_not_called()
+    sync.assert_not_called()
     local.assert_called_once()
 
 

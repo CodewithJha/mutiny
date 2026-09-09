@@ -339,4 +339,4 @@ Add new ADRs at the bottom. Do not rewrite history; supersede with a new ADR.
 
 **Reconsider when:** A concrete multi-tenant or CI-remote requirement forces server-side customer execution with a written worker threat model (new ADR superseding this one toward Option B); or observe-only ingest proves insufficient for the primary Hosted UX.
 
-**M-PR8A/B follow-up:** The CLI → Hosted ingestion envelope and Hosted `/api/ingest/v1/*` observe-only API are specified/implemented per [HOSTED_INGESTION.md](./HOSTED_INGESTION.md). **CLI sync (`--hosted` = local exec + upload) is M-PR8C** and is **not** claimed here. This does **not** supersede ADR-020/021.
+**M-PR8A/B/C follow-up:** The CLI → Hosted ingestion envelope, Hosted `/api/ingest/v1/*` observe-only API, and CLI `--hosted` = local exec + end-of-run sync are specified/implemented per [HOSTED_INGESTION.md](./HOSTED_INGESTION.md). **Web observe copy (M-PR8D)** and **remove production customer exec (M-PR8E)** remain. This does **not** supersede ADR-020/021.

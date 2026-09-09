@@ -363,7 +363,7 @@ Typical campaign start when using Hosted:
 
 API uses optional single-tenant Bearer auth (`MUTINY_API_TOKEN`, ADR-021 / M-PR7) on protected control/data routes; not multi-tenant identity. Attestation remains a product safety acknowledgement, not authentication.
 
-**Execution (ADR-019 target):** Customer project campaigns belong on Local CLI; Hosted’s production role is lineage/ops. **M-PR8B** adds observe-only `/api/ingest/v1/*` (no customer `exec_module`). Today’s Hosted start path still *can* construct adapters in-process for the trusted harness, and for customer `project_path` only under M-PR1 opt-in — CLI sync and production exec removal are **M-PR8C/E**. Contract: [HOSTED_INGESTION.md](./HOSTED_INGESTION.md).
+**Execution (ADR-019 target):** Customer project campaigns belong on Local CLI; Hosted’s production role is lineage/ops. **M-PR8B** observe-only `/api/ingest/v1/*` + **M-PR8C** CLI local-exec sync persist sanitized lineage without customer `exec_module` on the CLI path. Today’s Hosted start path still *can* construct adapters in-process for the trusted harness, and for customer `project_path` only under M-PR1 opt-in — production exec removal is **M-PR8E**. Contract: [HOSTED_INGESTION.md](./HOSTED_INGESTION.md).
 
 **Note:** Hosted may still wire the bundled demo adapter alongside the OpenAI Agents SDK + CLI path. Product narrative prefers sample-as-example, not demo-as-product.
 
@@ -603,7 +603,7 @@ flowchart TB
 - Target allowlist enforced in API before adapter construction (Hosted).  
 - **M-PR1:** Hosted does **not** execute arbitrary customer `.mutiny/adapter.py` by default. Only the trusted `in_process_demo` harness runs in-process without opt-in. Customer `project_path` execution requires `MUTINY_ALLOW_PROJECT_EXEC=1` (localhost / single-operator risk acceptance — not isolation). Local CLI remains the supported path for customer adapters.  
 - **M-PR7:** When `MUTINY_API_TOKEN` is set, protected Hosted control/data routes require Bearer auth (ADR-021). Authentication is not execution isolation.  
-- **ADR-019 (target; M-PR8 in progress):** Production Hosted is observe/lineage for customer projects — CLI executes customer Python; **M-PR8B** Hosted ingest API persists sanitized lineage without `exec_module`. CLI sync and removal of production customer exec remain **M-PR8C/E**. Contract: [HOSTED_INGESTION.md](./HOSTED_INGESTION.md). §12 diagram below describes the **current interim** supervisor path (demo harness + kill-switched opt-in), not the Target B end state.
+- **ADR-019 (target; M-PR8 in progress):** Production Hosted is observe/lineage for customer projects — CLI executes customer Python; **M-PR8B** Hosted ingest API + **M-PR8C** CLI sync persist sanitized lineage without `exec_module` on the CLI path. Removal of production customer exec remains **M-PR8E**. Contract: [HOSTED_INGESTION.md](./HOSTED_INGESTION.md). §12 diagram below describes the **current interim** supervisor path (demo harness + kill-switched opt-in), not the Target B end state.
 
 ---
 

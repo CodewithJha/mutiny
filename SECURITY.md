@@ -25,7 +25,7 @@ Operators who accept the risk on a **single-operator localhost** machine may set
 
 **Target architecture (ADR-019 accepted; M-PR8 in progress):** Hosted is **observe/lineage only** for customer projects — customer `.mutiny/adapter.py` executes on the Local CLI trust domain; the shared API process must not `exec_module` customer trees in Production Hosted. **M-PR8B** ships authenticated `/api/ingest/v1/*` (data only). Until M-PR8E, treat any Hosted customer exec path as localhost-only opt-in debt.
 
-**Ingestion (M-PR8A contract + M-PR8B API):** CLI → Hosted uploads must send **already-redacted** JSON evidence (data, not executable). See [docs/HOSTED_INGESTION.md](./docs/HOSTED_INGESTION.md). Hosted ingest endpoints are implemented; **CLI sync is not** (M-PR8C).
+**Ingestion (M-PR8A–C):** CLI → Hosted uploads send **already-redacted** JSON evidence (data, not executable). See [docs/HOSTED_INGESTION.md](./docs/HOSTED_INGESTION.md). Hosted ingest API + CLI `--hosted` local-exec sync are implemented; production customer `exec_module` removal remains M-PR8E.
 
 ## Hosted authentication (M-PR7)
 
