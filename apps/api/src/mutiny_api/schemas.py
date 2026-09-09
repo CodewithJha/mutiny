@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 
 
 class ProjectCreateRequest(BaseModel):
-    """Register a local customer project directory as a first-class entity."""
+    """Register opaque customer project_path metadata (Hosted never opens the path)."""
 
     path: str = Field(..., min_length=1)
     name: str | None = None
@@ -36,7 +36,7 @@ class CampaignCreateRequest(BaseModel):
 
 
 class PolicyContentSaveRequest(BaseModel):
-    """Save raw YAML/JSON policy text to the project policy file."""
+    """Retired on Hosted (P0-3) — body accepted for schema compat; route returns 410."""
 
     content: str = Field(..., min_length=1)
 
@@ -116,6 +116,7 @@ class MetaResponse(BaseModel):
             "project_path_required_for": ["openai_agents"],
             "hosted_customer_adapter_exec": False,
             "hosted_customer_execution": "removed",
+            "hosted_customer_filesystem": "removed",
             "hosted_customer_adapter_exec_env": "MUTINY_ALLOW_PROJECT_EXEC",
             "hosted_customer_adapter_exec_env_effect": "ignored",
             # M-PR7: True when MUTINY_API_TOKEN is configured (never the token value).

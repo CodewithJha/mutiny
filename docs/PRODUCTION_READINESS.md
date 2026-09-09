@@ -19,7 +19,7 @@
 
 Mutiny **v0.1.0** is a credible **alpha OSS behavioral fuzz engine**: Core oracle, Adapter #1 (OpenAI Agents SDK), CLI (`init` / `run` / `test`), sample project, and a local Hosted lineage UI/API. Unit tests are green (`126` passed in this audit). PyPI packages are published.
 
-It is **not** production-ready as a **public or multi-tenant Hosted** service. With **M-PR8E**, customer `project_path` adapter `exec_module` is **permanently removed** from Hosted (`410 hosted_customer_execution_removed`; `MUTINY_ALLOW_PROJECT_EXEC` ignored). With M-PR7, optional Bearer auth exists when `MUTINY_API_TOKEN` is set. Residual Hosted risks: attestation is not authorization, rate limits are missing, deploy templates may bind `0.0.0.0`, and policies/`project` registration may still resolve local paths for YAML metadata (not adapter exec). Public multi-tenant Hosted remains out of scope.
+It is **not** production-ready as a **public or multi-tenant Hosted** service. With **M-PR8E**, customer `project_path` adapter `exec_module` is **permanently removed** from Hosted (`410 hosted_customer_execution_removed`; `MUTINY_ALLOW_PROJECT_EXEC` ignored). With **P0-3**, customer `project_path` is also **filesystem-inert** on Hosted (`410 hosted_filesystem_access_removed` — no resolve/read/write of customer trees or policy files). With M-PR7, optional Bearer auth exists when `MUTINY_API_TOKEN` is set. Residual Hosted risks: attestation is not authorization, rate limits are missing, and deploy templates may bind `0.0.0.0`. Public multi-tenant Hosted remains out of scope.
 
 **Target A — Production Local CLI** is approachable with a focused hardening sequence (default local `mutiny run`, secret hygiene, policy-general seeds/mutators, CI completeness).
 
@@ -151,7 +151,7 @@ MVP limitations are labeled as such, not “bugs.”
 |---|---|---|---|
 | P0-1 | **Unauthenticated Hosted API** — any client can create/start campaigns, read traces, write policies, delete regressions | `apps/api/src/mutiny_api/app.py` — no auth middleware/deps; SYSTEM_DESIGN §10 admits no multi-tenant auth | Hosted |
 | P0-2 | **In-process RCE via `project_path`** — Hosted resolves arbitrary paths and `exec_module`s `.mutiny/adapter.py` | ~~`resolve_project_root`, `load_adapter_factory`, `_make_adapter`~~ **Mitigated (M-PR8E):** customer path returns `410`; no `load_adapter_factory` in Hosted API | Hosted (was fatal if network-exposed) |
-| P0-3 | **Arbitrary policy file write** on server FS via `PUT /api/policies/content` after path resolve | `save_policy_content` in `app.py` | Hosted |
+| P0-3 | **Arbitrary policy file write** on server FS via `PUT /api/policies/content` after path resolve | ~~`save_policy_content` in `app.py`~~ **Mitigated (P0-3):** Hosted customer `project_path` is filesystem-inert (`410 hosted_filesystem_access_removed`); no resolve/read/write of customer trees | Hosted |
 | P0-4 | **Public bind without auth** — Railway `0.0.0.0` + nixpacks start; compose publishes `8000:8000` | `railway.toml`, `docker-compose.yml` | Hosted |
 
 ### P1 — Production blockers
@@ -221,7 +221,7 @@ MVP limitations are labeled as such, not “bugs.”
 |---|---|---|
 | AuthN | OS user | Optional Bearer (`MUTINY_API_TOKEN`, M-PR7); unset = open local demo |
 | AuthZ | Operator discipline | Checkbox attestation (not identity) |
-| Target isolation | Same process as developer agent | **M-PR8E:** customer adapter exec permanently removed from Hosted; trusted `in_process_demo` only. **ADR-019 observe-only implemented** |
+| Target isolation | Same process as developer agent | **M-PR8E + P0-3:** customer adapter exec + customer FS access permanently removed from Hosted; trusted `in_process_demo` only. **ADR-019 observe-only implemented** |
 | Network bind | N/A (CLI) | `0.0.0.0` in deploy templates |
 | Rate limit | N/A | **Missing** (error code only) |
 | Secret redaction | Pass (M-PR3) | Pass (M-PR3; Hosted persist/SSE) |
@@ -233,7 +233,7 @@ MVP limitations are labeled as such, not “bugs.”
 1. AuthN (at least API token / session) on all non-health routes.
 2. AuthZ: project ownership; no cross-tenant reads.
 3. Execution: **ADR-019 accepted (Option A observe-only)** — implement via **M-PR8** (not yet). Isolate by relocating customer Python to CLI; do not claim workers unless a superseding ADR chooses Option B.
-4. Filesystem: chroot/allowlisted roots or no server-side project paths.
+4. Filesystem: customer `project_path` is opaque on Hosted (P0-3); no server-side project tree access.
 5. Abuse: rate limits, campaign concurrency, payload size caps (ARCHITECTURE numbers → enforced).
 6. Secrets: redact before persist/SSE; never log API keys.
 7. Threat model doc updated in SECURITY.md when Hosted leaves localhost-only.
@@ -279,7 +279,7 @@ MVP limitations are labeled as such, not “bugs.”
 | Core correctness via API | Works |
 | AuthN/AuthZ | **Fail** |
 | Safe customer code execution | **Fail** |
-| FS sandbox | **Fail** |
+| FS sandbox | **Pass (P0-3)** — customer `project_path` filesystem-inert |
 | Rate limits | **Fail** |
 | Durable multi-user data | **Fail** (SQLite + no backup story) |
 | Internet deploy | **Unsafe** with current architecture |

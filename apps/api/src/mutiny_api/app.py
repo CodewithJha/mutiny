@@ -19,10 +19,6 @@ from mutiny_core import (
     DEFAULT_MUTATION_MODEL,
     PolicyValidationError,
     load_llm_config_from_env,
-    load_project_policy,
-    parse_policy_text,
-    policy_set_to_public,
-    resolve_policy_path,
 )
 from mutiny_core.regress import RegressionNotReproducibleError
 
@@ -57,13 +53,12 @@ from mutiny_api.schemas import (
     TestsRunRequest,
 )
 from mutiny_api.supervisor import (
-    DEFAULT_SAMPLE_PROJECT,
     HARNESS_POLICY_PATH,
     CampaignSupervisor,
     EventHub,
     HostedCustomerExecutionRemoved,
-    project_policy_payload,
-    resolve_project_root,
+    HostedFilesystemAccessRemoved,
+    require_hosted_filesystem_access_removed,
 )
 
 log = logging.getLogger("mutiny_api")
@@ -106,9 +101,10 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
             "and observe-only ingest (/api/ingest/v1). "
             "AI proposes; deterministic PolicyEvaluator proves. "
             "Trusted harness: in_process_demo. "
-            "Customer openai_agents + project_path execution is removed (ADR-019 / M-PR8E); "
+            "Customer openai_agents + project_path execution and filesystem access "
+            "are removed (ADR-019 / M-PR8E / P0-3); "
             "use mutiny run / mutiny run --hosted (local exec + ingest sync). "
-            "MUTINY_ALLOW_PROJECT_EXEC no longer restores customer execution. "
+            "MUTINY_ALLOW_PROJECT_EXEC no longer restores customer execution or FS access. "
             "Ingest never executes customer adapters. "
             "When MUTINY_API_TOKEN is set, protected /api routes require "
             "Authorization: Bearer <token> (M-PR7). Auth is not a sandbox."
@@ -130,6 +126,22 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
             status_code=410,
             content=error_body(
                 code="hosted_customer_execution_removed",
+                message=str(exc),
+                status=410,
+                request_id=request_id,
+            ),
+            headers={"X-Request-Id": request_id} if request_id else None,
+        )
+
+    @app.exception_handler(HostedFilesystemAccessRemoved)
+    async def hosted_filesystem_access_removed_handler(
+        request: Request, exc: HostedFilesystemAccessRemoved
+    ) -> JSONResponse:
+        request_id = getattr(request.state, "request_id", None)
+        return JSONResponse(
+            status_code=410,
+            content=error_body(
+                code="hosted_filesystem_access_removed",
                 message=str(exc),
                 status=410,
                 request_id=request_id,
@@ -185,6 +197,7 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
                 "project_path_required_for": ["openai_agents"],
                 "hosted_customer_adapter_exec": False,
                 "hosted_customer_execution": "removed",
+                "hosted_customer_filesystem": "removed",
                 "hosted_customer_adapter_exec_env": "MUTINY_ALLOW_PROJECT_EXEC",
                 "hosted_customer_adapter_exec_env_effect": "ignored",
                 "auth_required": auth_required(),
@@ -228,96 +241,60 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
             adapter_loading="trusted_demo_only",
         )
 
-    def _resolve_policies_project(project_path: str | None) -> str:
-        return (project_path or DEFAULT_SAMPLE_PROJECT).strip()
-
     @app.get("/api/policies", tags=["policies"])
     def list_policies(
         project_path: str | None = Query(
             None,
             description=(
-                "Customer project directory (absolute or relative to Mutiny repo). "
-                f"Defaults to {DEFAULT_SAMPLE_PROJECT} for local Hosted."
+                "Customer project_path is opaque metadata only on Hosted (P0-3). "
+                "Policy filesystem read/write is removed — use local CLI."
             ),
         ),
     ) -> dict[str, Any]:
-        try:
-            payload = project_policy_payload(_resolve_policies_project(project_path))
-        except (ValueError, PolicyValidationError, FileNotFoundError) as exc:
-            raise_api(400, "invalid_policy", str(exc))
-        return {"policies": [payload], "project_path": payload["project_path"]}
+        _ = project_path
+        require_hosted_filesystem_access_removed()
+        raise AssertionError("unreachable")  # pragma: no cover
 
     @app.get("/api/policies/content", tags=["policies"])
     def get_policy_content(
         project_path: str | None = Query(None),
     ) -> dict[str, Any]:
-        """Raw policy file content for View / Edit in Hosted."""
-        try:
-            root = resolve_project_root(_resolve_policies_project(project_path))
-            path = resolve_policy_path(root)
-            content = path.read_text(encoding="utf-8")
-            policy = parse_policy_text(content, source=path)
-        except (ValueError, PolicyValidationError, FileNotFoundError) as exc:
-            raise_api(400, "invalid_policy", str(exc))
-        return {
-            "project_path": str(root),
-            "path": str(path),
-            "format": path.suffix.lstrip(".").lower() or "yaml",
-            "content": content,
-            "version": policy.version,
-            "policy_set": policy_set_to_public(policy),
-        }
+        """Retired: Hosted does not read customer policy files (P0-3)."""
+        _ = project_path
+        require_hosted_filesystem_access_removed()
+        raise AssertionError("unreachable")  # pragma: no cover
 
     @app.put("/api/policies/content", tags=["policies"])
     def save_policy_content(
         body: PolicyContentSaveRequest,
         project_path: str | None = Query(None),
     ) -> dict[str, Any]:
-        """Validate + write policy YAML/JSON to the project policy file."""
-        try:
-            root = resolve_project_root(_resolve_policies_project(project_path))
-            try:
-                path = resolve_policy_path(root)
-            except PolicyValidationError:
-                path = root / "policy.yaml"
-            policy = parse_policy_text(body.content, source=path)
-            path.write_text(body.content, encoding="utf-8")
-        except (ValueError, PolicyValidationError, FileNotFoundError, OSError) as exc:
-            raise_api(400, "invalid_policy", str(exc))
-        return {
-            "ok": True,
-            "project_path": str(root),
-            "path": str(path),
-            "version": policy.version,
-            "policy_set": policy_set_to_public(policy),
-        }
+        """Retired: Hosted does not write customer policy files (P0-3)."""
+        _ = body
+        _ = project_path
+        require_hosted_filesystem_access_removed()
+        raise AssertionError("unreachable")  # pragma: no cover
 
     @app.get("/api/policies/{policy_id}", tags=["policies"])
     def get_policy(
         policy_id: str,
         project_path: str | None = Query(None),
     ) -> dict[str, Any]:
-        # Product: load from project (id is typically the project directory name).
-        # Harness fixture kept for in_process_demo tooling only.
+        # Trusted harness fixture only — not customer project_path FS access.
         if policy_id == "demo_support" and not project_path:
             data = json.loads(HARNESS_POLICY_PATH.read_text())
             return {
                 "id": "demo_support",
                 "path": str(HARNESS_POLICY_PATH),
                 "policy_set": data,
-                "note": "harness fixture — product path uses project policy.yaml",
+                "note": (
+                    "harness fixture for in_process_demo — "
+                    "customer project policies are local-CLI only (P0-3)"
+                ),
             }
-        try:
-            payload = project_policy_payload(_resolve_policies_project(project_path))
-        except (ValueError, PolicyValidationError, FileNotFoundError) as exc:
-            raise_api(400, "invalid_policy", str(exc))
-        if policy_id not in {payload["id"], "project", payload["target"]}:
-            raise_api(
-                404,
-                "policy_not_found",
-                f"unknown policy_id={policy_id}; project policy id={payload['id']}",
-            )
-        return payload
+        _ = project_path
+        require_hosted_filesystem_access_removed()
+        raise AssertionError("unreachable")  # pragma: no cover
 
     @app.get("/api/projects", tags=["projects"])
     def list_projects() -> dict[str, Any]:
@@ -333,13 +310,19 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
         campaigns = repo.list_campaigns(project_id=project_id, limit=10)
         regressions = repo.list_regressions(project_id=project_id, limit=10)
         last_run = campaigns[0] if campaigns else None
-        try:
-            policy = project_policy_payload(project["path"])
-        except (ValueError, PolicyValidationError, FileNotFoundError) as exc:
-            policy = {"error": str(exc)}
+        # Opaque metadata only — never resolve/read project["path"] (P0-3).
+        policies = {
+            "project_path": project["path"],
+            "filesystem_access": "removed",
+            "code": "hosted_filesystem_access_removed",
+            "note": (
+                "Hosted does not load customer policy files. "
+                "Edit policies locally and use mutiny run --hosted."
+            ),
+        }
         return {
             **project,
-            "policies": policy,
+            "policies": policies,
             "recent_campaigns": campaigns,
             "recent_regressions": regressions,
             "last_run": last_run,
@@ -348,26 +331,20 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
 
     @app.post("/api/projects", status_code=201, tags=["projects"])
     def create_project(body: ProjectCreateRequest) -> dict[str, Any]:
+        """Register opaque project_path metadata — no filesystem access (P0-3)."""
         repo: Repository = app.state.repo
-        try:
-            root = resolve_project_root(body.path)
-            # Ensure project policy is loadable (same bar as campaign create).
-            load_project_policy(root)
-        except (
-            ValueError,
-            PolicyValidationError,
-            FileNotFoundError,
-            AttributeError,
-            ImportError,
-        ) as exc:
-            raise_api(400, "invalid_project", str(exc))
-        existing = repo.get_project_by_path(str(root))
+        raw = body.path.strip()
+        if not raw:
+            raise_api(400, "invalid_project", "path must not be empty")
+        existing = repo.get_project_by_path(raw)
         if existing:
             return existing
-        name = (body.name or root.name).strip() or root.name
+        # Path.name is string parsing only — never resolve/stat/read the tree.
+        derived = Path(raw).name or "project"
+        name = (body.name or derived).strip() or derived
         return repo.create_project(
             name=name,
-            path=str(root),
+            path=raw,
             adapter=body.adapter,
         )
 

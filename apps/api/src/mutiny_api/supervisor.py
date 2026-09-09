@@ -20,7 +20,6 @@ from mutiny_core import (
     PolicyValidationError,
     default_policy_seeds,
     load_policy_file,
-    load_project_policy,
     minimize_genome,
     replay_regression,
     save_regression,
@@ -32,18 +31,16 @@ from demo_agent import DemoSupportAgent, InProcessDemoAdapter
 
 from mutiny_api.repository import Repository
 
-REPO_ROOT = Path(__file__).resolve().parents[4]
-
-# Customer openai_agents + project_path execution is retired on Hosted (M-PR8E /
-# ADR-019). Trusted in_process_demo remains an optional local harness.
+# Customer openai_agents + project_path execution and filesystem access are
+# retired on Hosted (M-PR8E / P0-3 / ADR-019). Trusted in_process_demo remains.
 HARNESS_TARGET = "in_process_demo"
 PRODUCT_TARGET = "openai_agents"
 SUPPORTED_TARGETS = frozenset({HARNESS_TARGET, PRODUCT_TARGET})
-# Local Hosted default — same sample project as Milestone A UI (policies metadata).
+# Opaque label only — Hosted never resolves this as a filesystem root (P0-3).
 DEFAULT_SAMPLE_PROJECT = "examples/openai_support_agent"
 HARNESS_POLICY_ID = "demo_support"
 
-# Historical M-PR1 env name — ignored; cannot restore customer Hosted exec (M-PR8E).
+# Historical M-PR1 env name — ignored; cannot restore customer Hosted exec or FS (P0-3).
 ALLOW_PROJECT_EXEC_ENV = "MUTINY_ALLOW_PROJECT_EXEC"
 HOSTED_CUSTOMER_EXECUTION_REMOVED_MSG = (
     "Hosted customer project execution has been removed (ADR-019 / M-PR8E). "
@@ -52,10 +49,21 @@ HOSTED_CUSTOMER_EXECUTION_REMOVED_MSG = (
     "The trusted in_process_demo harness remains available. "
     "MUTINY_ALLOW_PROJECT_EXEC no longer restores customer adapter execution."
 )
+HOSTED_FILESYSTEM_ACCESS_REMOVED_MSG = (
+    "Hosted customer project filesystem access has been removed (ADR-019 / P0-3). "
+    "Customer project_path is opaque metadata only — Hosted does not resolve, "
+    "read, or write project trees. Define and edit policies locally, run via "
+    "`mutiny run` or `mutiny run --hosted` (local exec + Hosted ingest). "
+    "MUTINY_ALLOW_PROJECT_EXEC does not restore filesystem access."
+)
 
 
 class HostedCustomerExecutionRemoved(RuntimeError):
     """Hosted refused customer ``.mutiny/adapter.py`` execution (M-PR8E / ADR-019)."""
+
+
+class HostedFilesystemAccessRemoved(RuntimeError):
+    """Hosted refused customer project_path filesystem ops (P0-3 / ADR-019)."""
 
 
 # Back-compat alias for M-PR1-era imports/tests.
@@ -71,6 +79,11 @@ def hosted_project_exec_allowed() -> bool:
 def require_hosted_customer_execution_removed() -> None:
     """Fail closed: Hosted never ``load_adapter_factory`` / ``exec_module`` customer trees."""
     raise HostedCustomerExecutionRemoved(HOSTED_CUSTOMER_EXECUTION_REMOVED_MSG)
+
+
+def require_hosted_filesystem_access_removed() -> None:
+    """Fail closed: Hosted never resolves/reads/writes customer project_path."""
+    raise HostedFilesystemAccessRemoved(HOSTED_FILESYSTEM_ACCESS_REMOVED_MSG)
 
 
 def require_hosted_project_exec() -> None:
@@ -94,23 +107,16 @@ DEMO_POLICY_PATH = HARNESS_POLICY_PATH
 
 
 def resolve_project_root(project_path: str | Path) -> Path:
-    """Resolve and validate a customer project directory.
+    """Hosted must not resolve customer ``project_path`` (P0-3).
 
-    Absolute paths are used as-is; relative paths resolve against the Mutiny
-    repo root (handy for the sample under ``examples/…``). Requires
-    ``.mutiny/adapter.py``.
+    Historically resolved absolute/relative trees and required
+    ``.mutiny/adapter.py``. That capability is permanently removed: any call
+    raises ``HostedFilesystemAccessRemoved``. Local CLI uses its own path
+    helpers and does not call this function.
     """
-    raw = Path(project_path).expanduser()
-    root = raw.resolve() if raw.is_absolute() else (REPO_ROOT / raw).resolve()
-    if not root.is_dir():
-        raise ValueError(f"project_path is not a directory: {root}")
-    adapter_file = root / ".mutiny" / "adapter.py"
-    if not adapter_file.is_file():
-        raise ValueError(
-            f"missing {adapter_file}; expected customer Mutiny project "
-            "(run `mutiny init` or point at a directory with .mutiny/adapter.py)"
-        )
-    return root
+    _ = project_path  # accepted for call-site compatibility; never inspected on FS
+    require_hosted_filesystem_access_removed()
+    raise AssertionError("unreachable")  # pragma: no cover
 
 
 def validate_campaign_config(cfg: dict[str, Any]) -> dict[str, Any]:
@@ -160,19 +166,10 @@ def load_policy_for_config(cfg: dict[str, Any]) -> PolicySet:
 
 
 def project_policy_payload(project_path: str | Path) -> dict[str, Any]:
-    """Structured policy payload for Hosted Policies API."""
-    from mutiny_core import policy_set_to_public
-
-    root = resolve_project_root(project_path)
-    policy, path = load_project_policy(root)
-    return {
-        "id": root.name,
-        "project_path": str(root),
-        "path": str(path),
-        "version": policy.version,
-        "target": policy.target,
-        "policy_set": policy_set_to_public(policy),
-    }
+    """Hosted Policies API — customer project trees are filesystem-inert (P0-3)."""
+    _ = project_path
+    require_hosted_filesystem_access_removed()
+    raise AssertionError("unreachable")  # pragma: no cover
 
 
 def _make_adapter(cfg: dict[str, Any], *, fixed_agent: bool = False):
@@ -244,19 +241,16 @@ class CampaignSupervisor:
                 raise ValueError(f"unknown project_id={project_id}")
             if not cfg.get("target"):
                 cfg["target"] = project.get("adapter") or PRODUCT_TARGET
-            # Refuse customer Hosted execution before any path resolve / import.
+            # Refuse customer Hosted execution before any path handling.
             if cfg.get("target") == PRODUCT_TARGET:
                 require_hosted_customer_execution_removed()
             incoming = cfg.get("project_path")
             if incoming and str(incoming).strip():
-                try:
-                    incoming_root = resolve_project_root(str(incoming))
-                except (ValueError, FileNotFoundError) as exc:
-                    raise ValueError(str(exc)) from exc
-                if str(incoming_root) != project["path"]:
+                # Opaque string compare only — never Path.resolve / FS inspect (P0-3).
+                if str(incoming).strip() != str(project["path"]):
                     raise ValueError(
                         "project_path does not match registered project "
-                        f"(got {incoming_root}, project has {project['path']})"
+                        f"(got {incoming!r}, project has {project['path']!r})"
                     )
             cfg["project_path"] = project["path"]
         try:
@@ -705,13 +699,9 @@ class CampaignSupervisor:
             "openai_agents",
             "openai_support_agent",
         }:
-            # Orphan regression: fall back to sample project path
-            cfg = {
-                "target": PRODUCT_TARGET,
-                "project_path": str(
-                    REPO_ROOT / "examples" / "openai_support_agent"
-                ),
-            }
+            # Orphan customer-target regression — Hosted never rebuilds adapters
+            # or opens sample/customer trees (M-PR8E / P0-3).
+            require_hosted_customer_execution_removed()
         elif not cfg:
             cfg = {"target": HARNESS_TARGET}
 

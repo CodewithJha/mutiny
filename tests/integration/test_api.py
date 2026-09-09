@@ -59,75 +59,62 @@ def test_meta_project_path_model(client: TestClient):
     assert safety["hosted_customer_adapter_exec"] is False
     assert safety["hosted_customer_adapter_exec_env"] == "MUTINY_ALLOW_PROJECT_EXEC"
     assert safety["hosted_customer_execution"] == "removed"
+    assert safety["hosted_customer_filesystem"] == "removed"
     assert safety["hosted_customer_adapter_exec_env_effect"] == "ignored"
     assert safety["auth_required"] is False
     assert safety["auth_env"] == "MUTINY_API_TOKEN"
 
 def test_policies_load_from_project(client: TestClient):
+    """Customer policy filesystem endpoints are retired (P0-3)."""
     r = client.get(
         "/api/policies",
         params={"project_path": "examples/openai_support_agent"},
     )
-    assert r.status_code == 200
-    body = r.json()
-    assert body["policies"][0]["id"] == "openai_support_agent"
-    assert body["policies"][0]["version"] == "1"
-    assert "refund_limit" in json.dumps(body)
-    assert any(
-        "explanation" in rule
-        for rule in body["policies"][0]["policy_set"]["rules"]
-    )
+    assert r.status_code == 410
+    assert r.json()["error"]["code"] == "hosted_filesystem_access_removed"
 
     r2 = client.get(
         "/api/policies/openai_support_agent",
         params={"project_path": "examples/openai_support_agent"},
     )
-    assert r2.status_code == 200
-    assert "refund_limit" in json.dumps(r2.json())
+    assert r2.status_code == 410
+    assert r2.json()["error"]["code"] == "hosted_filesystem_access_removed"
 
-    # Default project_path = sample (local Hosted UX)
+    # Default / list without path also refuses customer FS (no sample tree read).
     r3 = client.get("/api/policies")
-    assert r3.status_code == 200
-    assert r3.json()["policies"][0]["id"] == "openai_support_agent"
+    assert r3.status_code == 410
+    assert r3.json()["error"]["code"] == "hosted_filesystem_access_removed"
+
+    # Trusted harness fixture remains.
+    demo = client.get("/api/policies/demo_support")
+    assert demo.status_code == 200
+    assert demo.json()["id"] == "demo_support"
 
 
 def test_policy_content_get_put_reload(client: TestClient, tmp_path: Path):
-    """View / Edit / Save / Reload against a temp project copy."""
+    """Hosted policy content GET/PUT must not touch customer trees (P0-3)."""
     import shutil
 
     sample = Path(__file__).resolve().parents[2] / "examples" / "openai_support_agent"
     project = tmp_path / "cust"
     shutil.copytree(sample, project)
+    marker = project / "MUTINY_P03_MARKER"
+    marker.write_text("untouched", encoding="utf-8")
+    before = (project / "policy.yaml").read_text(encoding="utf-8")
 
     got = client.get("/api/policies/content", params={"project_path": str(project)})
-    assert got.status_code == 200
-    content = got.json()["content"]
-    assert "refund_limit" in content
-    assert got.json()["version"] == "1"
+    assert got.status_code == 410
+    assert got.json()["error"]["code"] == "hosted_filesystem_access_removed"
 
-    # Invalid save rejected
-    bad = client.put(
-        "/api/policies/content",
-        params={"project_path": str(project)},
-        json={"content": "version: '1'\ntarget: t\nrules: oops\n"},
-    )
-    assert bad.status_code == 400
-
-    # Bump version and save
-    updated = content.replace('version: "1"', 'version: "2"', 1)
-    if updated == content:
-        updated = content.replace("version: '1'", "version: '2'", 1)
     saved = client.put(
         "/api/policies/content",
         params={"project_path": str(project)},
-        json={"content": updated},
+        json={"content": before.replace("version: \"1\"", "version: \"2\"", 1)},
     )
-    assert saved.status_code == 200, saved.text
-    assert saved.json()["version"] == "2"
-    assert saved.json()["ok"] is True
-
-    again = client.get("/api/policies/content", params={"project_path": str(project)})
-    assert again.json()["version"] == "2"
+    assert saved.status_code == 410
+    assert saved.json()["error"]["code"] == "hosted_filesystem_access_removed"
+    assert (project / "policy.yaml").read_text(encoding="utf-8") == before
+    assert marker.read_text(encoding="utf-8") == "untouched"
 
 
 def test_attestation_required(client: TestClient):
@@ -380,7 +367,8 @@ def test_projects_crud_and_campaign_list(client: TestClient, monkeypatch):
     project = created.json()
     assert project["name"] == "Sample Support"
     assert project["adapter"] == "openai_agents"
-    assert Path(project["path"]).name == "openai_support_agent"
+    # Opaque metadata — Hosted does not resolve to an absolute filesystem path.
+    assert project["path"] == "examples/openai_support_agent"
     pid = project["id"]
 
     # Idempotent register by path
@@ -401,6 +389,7 @@ def test_projects_crud_and_campaign_list(client: TestClient, monkeypatch):
     assert body["id"] == pid
     assert body["current_adapter"] == "openai_agents"
     assert "policies" in body
+    assert body["policies"]["code"] == "hosted_filesystem_access_removed"
     assert body["recent_campaigns"] == []
     assert body["last_run"] is None
 
@@ -471,11 +460,13 @@ def test_projects_crud_and_campaign_list(client: TestClient, monkeypatch):
     missing = client.get("/api/projects/does-not-exist")
     assert missing.status_code == 404
 
-    bad = client.post(
+    # Non-existent path is still accepted as opaque metadata (P0-3 — no FS probe).
+    opaque = client.post(
         "/api/projects",
         json={"path": "/tmp/mutiny-not-a-real-project-dir"},
     )
-    assert bad.status_code == 400
+    assert opaque.status_code == 201, opaque.text
+    assert opaque.json()["path"] == "/tmp/mutiny-not-a-real-project-dir"
 
 
 def test_schema_version_includes_projects(client: TestClient, api_db: Path):

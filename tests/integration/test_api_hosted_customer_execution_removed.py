@@ -276,6 +276,7 @@ def test_11_meta_and_health_advertise_removal(
     meta = client.get("/api/meta").json()["safety"]
     assert meta["hosted_customer_adapter_exec"] is False
     assert meta["hosted_customer_execution"] == "removed"
+    assert meta["hosted_customer_filesystem"] == "removed"
     health = client.get("/api/health").json()
     assert health["adapter_loading"] == "trusted_demo_only"
 

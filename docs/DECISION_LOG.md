@@ -324,8 +324,9 @@ Add new ADRs at the bottom. Do not rewrite history; supersede with a new ADR.
 2. **Customer adapter execution** belongs on the **developer machine** (primary: `mutiny run` / `mutiny test` → Core → Adapter #1), same trust domain as Local CLI (ADR-017). Hosted may later accept **uploaded events/artifacts** (or equivalent push) from that local runner; that ingestion path is **M-PR8**, not this ADR’s implementation.
 3. **Trusted in-process harness** (`target=in_process_demo`) may remain in the API for reliability demos — it is Mutiny-shipped code, not customer `project_path`.
 4. **Implemented (M-PR8E):** Hosted customer `project_path` → `load_adapter_factory` → `exec_module` is permanently refused (`410 hosted_customer_execution_removed`). `MUTINY_ALLOW_PROJECT_EXEC` is ignored and cannot restore production customer execution.
-5. **Orthogonal:** ADR-020 (policy-derived seeds) and ADR-021 (Bearer token) are unchanged. Auth does not grant execution; observe-only does not replace auth.
-6. **Does not supersede** ADR-020 or ADR-021. **Complements** ADR-017/018. **Partially supersedes** ADR-001’s implication that Hosted is the primary *execution* surface (product priority already moved by ADR-017; this ADR locks Hosted *execution* out of customer Python). **Does not** adopt ADR-007 workers for Target B; workers remain deferred (Option B rejected for now).
+5. **Implemented (P0-3):** Hosted customer `project_path` is filesystem-inert — no `Path.resolve` / read / write / mkdir / glob of customer trees or policy files (`410 hosted_filesystem_access_removed`). Project rows store opaque path labels only. `MUTINY_ALLOW_PROJECT_EXEC` cannot restore filesystem access.
+6. **Orthogonal:** ADR-020 (policy-derived seeds) and ADR-021 (Bearer token) are unchanged. Auth does not grant execution or FS access; observe-only does not replace auth.
+7. **Does not supersede** ADR-020 or ADR-021. **Complements** ADR-017/018. **Partially supersedes** ADR-001’s implication that Hosted is the primary *execution* surface (product priority already moved by ADR-017; this ADR locks Hosted *execution* out of customer Python). **Does not** adopt ADR-007 workers for Target B; workers remain deferred (Option B rejected for now).
 
 **Alternatives:**
 

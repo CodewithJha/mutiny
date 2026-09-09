@@ -397,7 +397,7 @@ sequenceDiagram
 
 ## 12. Frontend → API → Core → Adapter → Target → Trace
 
-**Current (trusted demo only):** Hosted supervisor may still run Core + adapter **in-process** for `in_process_demo`. Customer `openai_agents` + `project_path` create/start is **removed** (`410 hosted_customer_execution_removed`; `MUTINY_ALLOW_PROJECT_EXEC` ignored — M-PR8E).
+**Current (trusted demo only):** Hosted supervisor may still run Core + adapter **in-process** for `in_process_demo`. Customer `openai_agents` + `project_path` create/start is **removed** (`410 hosted_customer_execution_removed`; `MUTINY_ALLOW_PROJECT_EXEC` ignored — M-PR8E). Customer `project_path` filesystem access is also **removed** (`410 hosted_filesystem_access_removed` — P0-3).
 
 **Target (ADR-019; M-PR8A–E done):** Web/API observe lineage from a **CLI-side** campaign (customer adapter never `exec_module`’d in the shared API). Sequence below remains accurate for the trusted harness.
 
@@ -603,7 +603,8 @@ flowchart TB
 - Target allowlist enforced in API before adapter construction (Hosted).  
 - **M-PR1 (historical):** Hosted default-denied customer `.mutiny/adapter.py` with optional `MUTINY_ALLOW_PROJECT_EXEC=1`.  
 - **M-PR7:** When `MUTINY_API_TOKEN` is set, protected Hosted control/data routes require Bearer auth (ADR-021). Authentication is not execution isolation.  
-- **M-PR8E (current):** Production Hosted **never** executes arbitrary customer `.mutiny/adapter.py`. Customer create/start returns `410 hosted_customer_execution_removed`. Only the trusted `in_process_demo` harness runs in-process. `MUTINY_ALLOW_PROJECT_EXEC` is ignored. Local CLI remains the supported path for customer adapters.  
+- **M-PR8E (current):** Production Hosted **never** executes arbitrary customer `.mutiny/adapter.py`. Customer create/start returns `410 hosted_customer_execution_removed`. Only the trusted `in_process_demo` harness runs in-process. `MUTINY_ALLOW_PROJECT_EXEC` is ignored. Local CLI remains the supported path for customer adapters.
+- **P0-3:** Production Hosted **never** resolves/reads/writes customer `project_path` trees (policies, `.mutiny/`, etc.). Returns `410 hosted_filesystem_access_removed`. Project path fields are opaque metadata.  
 - **ADR-019 (implemented; M-PR8A–E):** Production Hosted is observe/lineage for customer projects — CLI executes customer Python; ingest API + CLI sync + Web observe copy + production customer exec removal. Contract: [HOSTED_INGESTION.md](./HOSTED_INGESTION.md). §12 diagram below describes the **trusted harness** supervisor path (not customer `project_path`).
 
 ---

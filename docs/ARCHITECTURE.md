@@ -177,6 +177,8 @@ Placement may be `integrations/cli` or a published `mutiny` package entrypoint; 
 
 **M-PR8E (current):** Hosted **permanently refuses** `openai_agents` + `project_path` customer adapter `exec_module` (`410 hosted_customer_execution_removed`). `MUTINY_ALLOW_PROJECT_EXEC` is ignored. Local CLI adapter execution is unchanged. Trusted `in_process_demo` remains.
 
+**P0-3:** Hosted customer `project_path` is **filesystem-inert** (`410 hosted_filesystem_access_removed` for policy content/list routes). Hosted never resolves/reads/writes customer project trees; project registration stores opaque path labels. Local CLI FS access is unchanged.
+
 **M-PR7 (current):** Optional single-tenant Bearer auth via `MUTINY_API_TOKEN` (ADR-021). When set, protected `/api/*` routes require `Authorization: Bearer <token>`. Public: `/api/health`, `/api/meta`. Auth does not enable customer Hosted execution and is not multi-tenant identity.
 
 **ADR-019 (implemented via M-PR8A–E):** Hosted role for customer projects is **observe/lineage** — persist campaigns, SSE, artifacts; customer Python runs on Local CLI. Production Hosted must not execute arbitrary customer `.mutiny/adapter.py` in the shared API process. Trusted `in_process_demo` harness may remain. See DECISION_LOG ADR-019.

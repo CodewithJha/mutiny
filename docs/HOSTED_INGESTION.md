@@ -374,6 +374,7 @@ Prefer **campaign-centric** routes over a parallel `/runs` resource. New write p
 - Do not overload `POST /api/campaigns/{id}/start` to mean “execute customer project” for Production Hosted.
 - Trusted `in_process_demo` may keep a Hosted-executed path separately labeled.
 - Customer `project_path` create/start/minimize/regression/test execution on Hosted returns **`410 hosted_customer_execution_removed`** (M-PR8E).
+- Customer policy/project filesystem access on Hosted returns **`410 hosted_filesystem_access_removed`** (P0-3) — `project_path` is opaque metadata only.
 - Web observe-only UX copy is **done (M-PR8D)** — Local CLI executes; Hosted observes; trusted `in_process_demo` remains labeled as demo.
 
 Validation on ingest: schema_version, required IDs, known event types, artifact kinds, payload shape (Pydantic), size limits, duplicate IDs, `redaction.applied`, Bearer auth.
@@ -400,7 +401,7 @@ CLI ingest batch
 ## 18. Security constraints
 
 1. **Data not code:** JSON evidence only; no deserialization gadgets; no loading uploaded `path` as `project_path` for `exec_module`.
-2. **Path fields** in projects/regressions are opaque labels / client display strings under observe-only ingest — never `resolve_project_root` for execution from ingest payloads.
+2. **Path fields** in projects/regressions are opaque labels / client display strings under observe-only ingest — never `resolve_project_root` for execution from ingest payloads. **P0-3:** Hosted policy/project APIs likewise never resolve/read/write customer `project_path` (`410 hosted_filesystem_access_removed`).
 3. **M-PR1 remains** until customer exec is fully removed from Production Hosted paths.
 4. **Secrets:** redact-before-upload + Hosted re-redact; auth token never logged.
 5. **Single-tenant:** token gates the whole DB; not a substitute for future multi-tenant isolation.
