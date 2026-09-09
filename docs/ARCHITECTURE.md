@@ -177,20 +177,23 @@ Placement may be `integrations/cli` or a published `mutiny` package entrypoint; 
 
 **M-PR7 (current):** Optional single-tenant Bearer auth via `MUTINY_API_TOKEN` (ADR-021). When set, protected `/api/*` routes require `Authorization: Bearer <token>`. Public: `/api/health`, `/api/meta`. Auth does not bypass M-PR1 and is not multi-tenant identity.
 
-**ADR-019 (decision; M-PR8 not yet implemented):** Target Hosted role for customer projects is **observe/lineage** — persist campaigns, SSE, artifacts; customer Python runs on Local CLI. Production Hosted must not execute arbitrary customer `.mutiny/adapter.py` in the shared API process. Trusted `in_process_demo` harness may remain. See DECISION_LOG ADR-019.
+**ADR-019 (decision; M-PR8 in progress):** Target Hosted role for customer projects is **observe/lineage** — persist campaigns, SSE, artifacts; customer Python runs on Local CLI. Production Hosted must not execute arbitrary customer `.mutiny/adapter.py` in the shared API process. Trusted `in_process_demo` harness may remain. See DECISION_LOG ADR-019.
 
-**M-PR8A–C:** CLI → Hosted ingest contract + Hosted `/api/ingest/v1/*` + CLI `--hosted` local-exec sync — identity, redaction-before-upload, idempotency, SSE reuse — in [HOSTED_INGESTION.md](./HOSTED_INGESTION.md). **Remove production customer exec (M-PR8E)** and **Web observe copy (M-PR8D)** remain.
+**M-PR8A–D:** CLI → Hosted ingest contract + Hosted `/api/ingest/v1/*` + CLI `--hosted` local-exec sync + Web observe-only copy — identity, redaction-before-upload, idempotency, SSE reuse — in [HOSTED_INGESTION.md](./HOSTED_INGESTION.md). **Remove production customer exec (M-PR8E)** remains.
+
 ### `apps/web` — Hosted presentation
 
 **Owns**
 
 - Campaign UX, evolution graph, exploit workflow, tests page  
 - SSE consumption and REST calls  
+- Observe-only product copy: Local CLI executes customer adapters; Hosted visualizes synced lineage; trusted `in_process_demo` labeled as demo  
 
 **Must not contain**
 
 - Policy evaluation  
 - Direct model calls for judging violations  
+- Browser POSTs to `/api/ingest/v1` (CLI is the ingestion client)  
 
 ### `apps/demo_agent` — reference / sample target (not primary product)
 

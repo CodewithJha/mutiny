@@ -7,6 +7,10 @@ Published on PyPI as **`mutiny-ai`** (+ [`mutiny-core`](https://pypi.org/project
 
 ## [Unreleased]
 
+### Changed
+
+- **M-PR8D Hosted observe UX** — Web UI clarifies Local CLI executes customer adapters; Hosted observes synced lineage (`execution_mode=local_cli` badges). Trusted `in_process_demo` remains labeled as demo. Project pages guide `mutiny run --hosted` instead of implying Hosted starts customer campaigns.
+
 ### Security
 
 - **M-PR1 Hosted kill-switch** — Hosted API refuses `openai_agents` + `project_path` customer adapter execution by default (`403 project_exec_disabled`). Trusted `in_process_demo` harness unchanged. Opt-in: `MUTINY_ALLOW_PROJECT_EXEC=1` (single-operator localhost only; not a sandbox). Local CLI adapter loading unchanged.

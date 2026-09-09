@@ -1,21 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { mutinyApi, type ProjectDetail } from "@/lib/api";
 import { campaignStatusChip, campaignStatusLabel } from "@/lib/campaigns";
-import { Button, EmptyState, Skeleton } from "@/components/ui";
+import { CodeBlock, EmptyState, Skeleton } from "@/components/ui";
 
 export default function ProjectDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const projectId = String(params.id);
   const [project, setProject] = useState<ProjectDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
-  const [attest, setAttest] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -33,34 +30,6 @@ export default function ProjectDetailPage() {
       cancelled = true;
     };
   }, [projectId]);
-
-  async function startCampaign() {
-    if (!project) return;
-    setError(null);
-    if (!attest) {
-      setError("Check attestation — authorized testing only.");
-      return;
-    }
-    setBusy(true);
-    try {
-      const camp = await mutinyApi.createCampaign({
-        population_size: 8,
-        max_generations: 6,
-        elite_count: 2,
-        stop_on_first_violation: true,
-        max_turns: 4,
-        rng_seed: 5,
-        use_boundary_seeds: true,
-        target: "openai_agents",
-        project_id: project.id,
-      });
-      await mutinyApi.startCampaign(camp.id, true);
-      router.push(`/campaign/${camp.id}`);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-      setBusy(false);
-    }
-  }
 
   if (loading) {
     return (
@@ -110,22 +79,27 @@ export default function ProjectDetailPage() {
           >
             Policies
           </Link>
-          <Button disabled={busy} onClick={startCampaign}>
-            {busy ? "Starting…" : "Start campaign"}
-          </Button>
+          <Link href="/campaigns" className="btn btn-secondary">
+            Observe campaigns
+          </Link>
         </div>
       </header>
 
-      <label className="checkbox-row mt-4">
-        <input
-          type="checkbox"
-          checked={attest}
-          onChange={(e) => setAttest(e.target.checked)}
-        />
-        <span>
-          I attest this campaign targets only systems I am authorized to test.
-        </span>
-      </label>
+      <section className="panel mt-6 max-w-xl p-4 space-y-3">
+        <h2 className="text-sm font-semibold text-text">
+          Run locally, observe here
+        </h2>
+        <p className="text-sm text-muted">
+          Hosted observes lineage for this project. Execute the campaign on your
+          machine with the Mutiny CLI —{" "}
+          <code>--hosted</code> means local Core + Hosted sync, not remote
+          execution.
+        </p>
+        <CodeBlock compact copyable label="CLI">
+          {`mutiny run --hosted
+# or: mutiny run --path . --hosted-url http://127.0.0.1:8000`}
+        </CodeBlock>
+      </section>
 
       {error && <p className="alert alert-error mt-4 max-w-xl">{error}</p>}
 
@@ -137,7 +111,7 @@ export default function ProjectDetailPage() {
           </div>
         </div>
         <div className="meta-strip-item">
-          <div className="label">Last run</div>
+          <div className="label">Last campaign</div>
           <div className="value text-sm">
             {lastRun ? (
               <Link
@@ -195,7 +169,10 @@ export default function ProjectDetailPage() {
         </div>
         {(project.recent_campaigns || []).length === 0 ? (
           <EmptyState title="No campaigns yet">
-            <p>Start a campaign from this project to see lineage here.</p>
+            <p>
+              Run <code>mutiny run --hosted</code> locally to sync lineage for
+              this project.
+            </p>
           </EmptyState>
         ) : (
           <ul className="list-stack">

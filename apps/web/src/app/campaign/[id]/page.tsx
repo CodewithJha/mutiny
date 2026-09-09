@@ -21,7 +21,14 @@ import {
   type TimelineEntry,
   type TimelineTone,
 } from "@/components/ui";
-import { campaignStatusLabel } from "@/lib/campaigns";
+import {
+  campaignEventLabel,
+  campaignExecutionLabel,
+  campaignObservationLabel,
+  campaignStatusLabel,
+  isDemoHarnessCampaign,
+  isLocalCliCampaign,
+} from "@/lib/campaigns";
 
 type MinimizeResult = {
   still_reproduces: boolean;
@@ -222,7 +229,7 @@ export default function CampaignPage() {
         }
         return {
           id: `${ev.id ?? ev.type}-${i}`,
-          type: ev.type,
+          type: campaignEventLabel(ev.type),
           meta: bits.join(" · ") || undefined,
           ts:
             typeof ev.ts === "string"
@@ -233,6 +240,11 @@ export default function CampaignPage() {
       }),
     [events]
   );
+
+  const localCli = isLocalCliCampaign(campaign);
+  const demoHarness = isDemoHarnessCampaign(campaign);
+  const executionLabel = campaignExecutionLabel(campaign);
+  const observationLabel = campaignObservationLabel(campaign);
 
   async function onMinimize() {
     if (!selectedId) return;
@@ -352,12 +364,15 @@ export default function CampaignPage() {
             <Chip tone={statusTone}>
               {searching && !violated ? (
                 <>
-                  <span className="pulse-dot" /> live
+                  <span className="pulse-dot" />{" "}
+                  {localCli ? "observing" : demoHarness ? "demo live" : "live"}
                 </>
               ) : (
                 campaignStatusLabel(status)
               )}
             </Chip>
+            <Chip tone="blue">{executionLabel}</Chip>
+            <Chip>{observationLabel}</Chip>
             {phase && <Chip>{phase}</Chip>}
             {violated && <Chip tone="violation">Verified violation</Chip>}
             {policyVersion && (
@@ -451,6 +466,14 @@ export default function CampaignPage() {
 
       <div className="meta-strip meta-strip-compact">
         <div className="meta-strip-item">
+          <div className="label">Execution</div>
+          <div className="value text-sm">{executionLabel}</div>
+        </div>
+        <div className="meta-strip-item">
+          <div className="label">Hosted</div>
+          <div className="value text-sm">{observationLabel}</div>
+        </div>
+        <div className="meta-strip-item">
           <div className="label">Generation</div>
           <div className="value">{maxGen}</div>
         </div>
@@ -474,7 +497,11 @@ export default function CampaignPage() {
 
       {searching && !violated && (
         <p className="alert alert-info mt-4">
-          Scoring real tool calls against project policies…
+          {localCli
+            ? "Observing Local CLI lineage. CLI sync is end-of-run today — events appear after ingest, not necessarily mid-execution."
+            : demoHarness
+              ? "Trusted demo harness scoring tool calls against sample policy…"
+              : "Campaign in progress (interim Hosted path — not the production observe-only flow)."}
         </p>
       )}
 
@@ -526,7 +553,10 @@ export default function CampaignPage() {
           }
         >
           <div className="p-3">
-            <Timeline entries={timelineEntries} empty="Listening for SSE…" />
+            <Timeline
+              entries={timelineEntries}
+              empty="Waiting for campaign events…"
+            />
           </div>
         </Collapsible>
       </div>

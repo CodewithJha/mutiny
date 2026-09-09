@@ -106,7 +106,7 @@ function OperateShell({
       <aside id="app-sidebar" className="app-sidebar">
         <Link href="/" className="app-sidebar-brand">
           <span className="brand-name">Mutiny</span>
-          <span className="brand-tag">Behavioral fuzz engine</span>
+          <span className="brand-tag">Observe · Local CLI executes</span>
         </Link>
 
         <div className="nav-section">

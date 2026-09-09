@@ -84,7 +84,7 @@ Keyword-shaped, product-shaped: agent safety, tool-call verification, OpenAI Age
 - **Minimize + regress** — Smallest reproduction, saved under `.mutiny/tests/`, replayed with `mutiny test`.
 - **Adapter-first Core** — Framework-independent engine; OpenAI Agents SDK adapter shipped; more via contributions.
 - **CLI-first DX** — `mutiny init` / `run` / `test` into *your* project (not “host our demo agent” as the product).
-- **Optional Hosted UI** — Campaign lineage and evidence when you want a browser (`./scripts/dev.sh`).
+- **Optional Hosted UI** — Observe campaign lineage and evidence in a browser when you sync with `mutiny run --hosted` (`./scripts/dev.sh`).
 
 ---
 
@@ -203,9 +203,10 @@ cd apps/web && npm install && npm run dev
 ```
 
 CLI campaigns default to **local** Core. Use `mutiny run --hosted` (or
-`--hosted-url`) for optional Hosted lineage.
+`--hosted-url`) for optional Hosted lineage (**local execute + Hosted observe/sync** —
+not remote adapter execution).
 
-**Hosted safety (M-PR1):** By default the Hosted API will **not** load/execute a customer `.mutiny/adapter.py` via `project_path` (returns `403`). Prefer `mutiny run` (local) for customer projects. The bundled `in_process_demo` harness still works in Hosted.
+**Hosted safety (M-PR1):** By default the Hosted API will **not** load/execute a customer `.mutiny/adapter.py` via `project_path` (returns `403`). Prefer `mutiny run` / `mutiny run --hosted` for customer projects. The bundled `in_process_demo` harness still works in Hosted as a labeled demo.
 
 **Hosted auth (M-PR7):** Set `MUTINY_API_TOKEN` on the API (and the same value on the web process for UI rewrites) to require `Authorization: Bearer` on protected routes. Unset = local demo only. Auth does not sandbox customer Python. See [SECURITY.md](./SECURITY.md).
 
@@ -433,7 +434,7 @@ Create a venv, then activate with PowerShell `.\.venv\Scripts\Activate.ps1` (or 
 No for the [sample project](./examples/openai_support_agent/) — it uses an offline scripted model when the key is unset. Your own live agent may need whatever keys that agent already uses.
 
 **Is the Hosted UI required?**  
-No. CLI is primary. `mutiny run` is local by default. Use `mutiny run --hosted` when you want Hosted lineage / ops in a browser.
+No. CLI is primary. `mutiny run` is local by default. Use `mutiny run --hosted` when you want Hosted to **observe** lineage in a browser (local execute + sync).
 
 **Is the bundled demo agent the product?**  
 No. It’s a **reference harness** for docs and reliability. The product story is: install Mutiny into *your* agent project.

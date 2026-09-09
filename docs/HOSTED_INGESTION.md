@@ -1,9 +1,9 @@
-# Hosted Ingestion Contract (M-PR8A / M-PR8B / M-PR8C)
+# Hosted Ingestion Contract (M-PR8A / M-PR8B / M-PR8C / M-PR8D)
 
 | Field | Value |
 |---|---|
-| **Status** | **Partial** — **M-PR8A–C implemented** (contract + Hosted ingest API + CLI local-exec sync). **M-PR8D/E pending** |
-| **Milestone** | M-PR8A (contract) + M-PR8B (server ingest) + **M-PR8C (CLI sync)** |
+| **Status** | **Partial** — **M-PR8A–D implemented** (contract + Hosted ingest API + CLI local-exec sync + Web observe copy). **M-PR8E pending** |
+| **Milestone** | M-PR8A (contract) + M-PR8B (server ingest) + M-PR8C (CLI sync) + **M-PR8D (Web observe UX)** |
 | **Anchors** | ADR-019 (Option A observe-only), ADR-021 (Bearer auth), M-PR3 (redaction), M-PR1 (kill-switch) |
 | **Last updated** | 2026-09-09 |
 
@@ -377,7 +377,7 @@ Prefer **campaign-centric** routes over a parallel `/runs` resource. New write p
 - Do not overload `POST /api/campaigns/{id}/start` to mean “execute customer project” for Production Hosted.
 - Trusted `in_process_demo` may keep a Hosted-executed path separately labeled.
 - Minimize/regression **execution** endpoints that call `_make_adapter` on customer `project_path` remain interim debt until removed/disabled for Production Hosted (M-PR8E).
-- Web observe-only UX copy is **M-PR8D**.
+- Web observe-only UX copy is **done (M-PR8D)** — Local CLI executes; Hosted observes; trusted `in_process_demo` remains labeled as demo.
 
 Validation on ingest: schema_version, required IDs, known event types, artifact kinds, payload shape (Pydantic), size limits, duplicate IDs, `redaction.applied`, Bearer auth.
 
@@ -419,7 +419,7 @@ CLI ingest batch
 | **M-PR8A** | This contract + doc consistency | **Done (docs)** |
 | **M-PR8B** | Hosted ingest endpoints + persistence wiring + contract tests (no customer exec required) | **Done (server)** |
 | **M-PR8C** | CLI local-exec + end-of-run sync for `--hosted`; pending-file on sync fail | **Done (CLI)** |
-| **M-PR8D** | Web copy “run locally, observe here” (SSE already wired from ingest) | Planned |
+| **M-PR8D** | Web copy “run locally, observe here” (SSE already wired from ingest) | **Done (Web)** |
 | **M-PR8E** | Remove/disable Production Hosted customer `project_path` `exec_module` path; keep `in_process_demo` | Planned |
 | **Later** | Optional `mutiny sync` / `mutiny test --hosted`; size-limit tuning; regression `project_id` column if join proves insufficient | Deferred |
 
@@ -437,9 +437,9 @@ Preserved by M-PR8C (CLI local + ingest sync; supervisor path retained for API/d
 - ADR-020 (policy-general seeds), ADR-021 (Bearer), ADR-019 (observe-only decision)
 - Interim Hosted supervisor / `in_process_demo` path unchanged until M-PR8E (CLI `--hosted` no longer uses it)
 
-### Current limitations (post M-PR8C)
+### Current limitations (post M-PR8D)
 
 - `mutiny test --hosted` not wired (payload builder only) — remaining CLI sync work / later
 - Automatic retry / `mutiny sync` command deferred (pending JSON written on sync failure)
 - Production Hosted customer `exec_module` path still exists behind M-PR1 — **M-PR8E**
-- Web UX copy for observe-only still pending — **M-PR8D**
+- Web cannot distinguish local-success + sync-failure from a missing Hosted row: sync failures do not fully ingest, so Hosted never claims those runs were received. A terminal `failed` status on an ingested `execution_mode=local_cli` campaign means the CLI reported campaign failure, not Hosted sync failure.

@@ -103,7 +103,7 @@ export default function HomePage() {
         max_turns: 4,
         rng_seed: 5,
         use_boundary_seeds: true,
-        // M-PR1: Hosted default is trusted harness only (no customer adapter exec).
+        // Trusted demo harness only — not customer project execution.
         target: "in_process_demo",
       });
       await mutinyApi.startCampaign(camp.id, true);
@@ -418,9 +418,10 @@ export default function HomePage() {
               against <code>policy.yaml</code>.
             </li>
             <li>
-              <strong>Run</strong> <code>mutiny run</code> locally — or open{" "}
-              <Link href="/campaigns">Campaigns</Link> to watch lineage on the
-              sample harness.
+              <strong>Run</strong> <code>mutiny run</code> locally, or{" "}
+              <code>mutiny run --hosted</code> to sync lineage here. Open{" "}
+              <Link href="/campaigns">Campaigns</Link> to observe — or try the
+              trusted demo harness.
             </li>
           </ol>
         </section>
@@ -562,10 +563,12 @@ export default function HomePage() {
           aria-labelledby="cta-title"
         >
           <div className="landing-footer-cta-inner">
-            <h2 id="cta-title">Your turn. Run the campaign.</h2>
+            <h2 id="cta-title">Try the trusted demo</h2>
             <p>
-              Start a hosted sample campaign and watch the FAIL land with
-              deterministic tool-call proof — then freeze it as a regression.
+              Start the Hosted sample harness (demo environment — not your
+              project code) and watch a FAIL land with deterministic tool-call
+              proof. For your agent:{" "}
+              <code>mutiny run --hosted</code> locally, then observe here.
             </p>
             <div className="landing-cta">
               <Button
@@ -574,10 +577,10 @@ export default function HomePage() {
                 disabled={busy}
                 onClick={runCampaign}
               >
-                {busy ? "Starting…" : "Run Campaign"}
+                {busy ? "Starting…" : "Run demo campaign"}
               </Button>
               <Link href="/campaigns" className="btn btn-secondary btn-lg">
-                Open Campaigns
+                Observe campaigns
               </Link>
             </div>
 
@@ -588,8 +591,8 @@ export default function HomePage() {
                 onChange={(e) => setAttest(e.target.checked)}
               />
               <span>
-                I attest this campaign targets only systems I am authorized to
-                test (sample / owned agents).
+                I attest this demo campaign targets only systems I am authorized
+                to test (sample harness).
               </span>
             </label>
 

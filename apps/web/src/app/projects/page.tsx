@@ -62,10 +62,9 @@ export default function ProjectsPage() {
           <p className="page-kicker">Workspace</p>
           <h1 className="page-title">Projects</h1>
           <p className="page-sub">
-            Local project roots with{" "}
-            <span className="font-mono text-dim">.mutiny/adapter.py</span> and{" "}
-            <span className="font-mono text-dim">policy.yaml</span>. Campaigns
-            belong to projects.
+            Register local project roots so Hosted can organize synced lineage.
+            Campaigns still execute via <code>mutiny run</code> on your machine —
+            observe results here after <code>mutiny run --hosted</code>.
           </p>
         </div>
         <Link href="/campaigns" className="btn btn-secondary">

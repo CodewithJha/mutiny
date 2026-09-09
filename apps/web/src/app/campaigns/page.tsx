@@ -4,8 +4,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { mutinyApi, type Campaign } from "@/lib/api";
-import { campaignStatusChip, campaignStatusLabel } from "@/lib/campaigns";
-import { Button, EmptyState, Skeleton } from "@/components/ui";
+import {
+  campaignStatusChip,
+  campaignStatusLabel,
+  isDemoHarnessCampaign,
+  isLocalCliCampaign,
+} from "@/lib/campaigns";
+import { Button, CodeBlock, EmptyState, Skeleton } from "@/components/ui";
 
 export default function CampaignsPage() {
   const router = useRouter();
@@ -46,7 +51,7 @@ export default function CampaignsPage() {
     return { total: campaigns.length, running, violations, completed };
   }, [campaigns]);
 
-  async function startCampaign() {
+  async function startDemoCampaign() {
     setError(null);
     if (!attest) {
       setError("Check attestation — authorized testing only.");
@@ -62,7 +67,7 @@ export default function CampaignsPage() {
         max_turns: 4,
         rng_seed: 5,
         use_boundary_seeds: true,
-        // M-PR1: Hosted default is trusted harness only (no customer adapter exec).
+        // Trusted demo harness only — not customer project execution.
         target: "in_process_demo",
       });
       await mutinyApi.startCampaign(camp.id, true);
@@ -77,26 +82,44 @@ export default function CampaignsPage() {
     <div className="page fade-in">
       <header className="page-header">
         <div>
-          <p className="page-kicker">Operate</p>
+          <p className="page-kicker">Observe</p>
           <h1 className="page-title">Campaigns</h1>
           <p className="page-sub">
-            Evolutionary runs against the trusted Hosted harness. Customer
-            projects use local <code>mutiny run</code> (Hosted adapter exec is
-            disabled by default).
+            Hosted stores and visualizes lineage. Your project adapter runs on
+            the Local CLI — sync with{" "}
+            <code>mutiny run --hosted</code> (local execute + Hosted ingest).
           </p>
         </div>
       </header>
-      <section className="campaigns-hero" aria-labelledby="campaigns-start">
+
+      <section className="campaigns-hero" aria-labelledby="campaigns-cli">
+        <div>
+          <h2 id="campaigns-cli">Run locally, observe here</h2>
+          <p>
+            Customer campaigns execute on your machine. Hosted receives
+            sanitized results and shows the evolution graph — it does not run
+            your project code.
+          </p>
+          <div className="mt-3 max-w-xl">
+            <CodeBlock compact copyable label="CLI">
+              {`mutiny run --hosted
+# or: mutiny run --hosted-url http://127.0.0.1:8000`}
+            </CodeBlock>
+          </div>
+        </div>
+      </section>
+
+      <section className="campaigns-hero mt-6" aria-labelledby="campaigns-demo">
         <div className="campaigns-hero-row">
           <div>
-            <h2 id="campaigns-start">Start a campaign</h2>
+            <h2 id="campaigns-demo">Trusted demo</h2>
             <p>
-              Hunt tool-call policy breaks on the sample harness — or your
-              registered project. Attestation required.
+              Optional sample harness inside Hosted — labeled demo, not your
+              agent project. Attestation required.
             </p>
           </div>
-          <Button disabled={busy} onClick={startCampaign}>
-            {busy ? "Starting…" : "Start campaign"}
+          <Button disabled={busy} onClick={startDemoCampaign}>
+            {busy ? "Starting…" : "Start demo campaign"}
           </Button>
         </div>
 
@@ -107,8 +130,8 @@ export default function CampaignsPage() {
             onChange={(e) => setAttest(e.target.checked)}
           />
           <span>
-            I attest this campaign targets only systems I am authorized to test
-            (sample / owned agents).
+            I attest this demo campaign targets only systems I am authorized to
+            test (sample harness).
           </span>
         </label>
 
@@ -119,7 +142,7 @@ export default function CampaignsPage() {
               <span className="v">{stats.total}</span>
             </div>
             <div className="stat-pill">
-              <span className="k">Running</span>
+              <span className="k">In progress</span>
               <span className="v">{stats.running}</span>
             </div>
             <div className="stat-pill">
@@ -143,14 +166,18 @@ export default function CampaignsPage() {
           <EmptyState
             title="No campaigns yet"
             action={
-              <Button className="mt-2" disabled={busy} onClick={startCampaign}>
-                {busy ? "Starting…" : "Start first campaign"}
+              <Button
+                className="mt-2"
+                disabled={busy}
+                onClick={startDemoCampaign}
+              >
+                {busy ? "Starting…" : "Start demo campaign"}
               </Button>
             }
           >
             <p>
-              Start a campaign to evolve prompts against policy rules. You&apos;ll
-              land on the live evolution graph when scoring begins.
+              Sync a local run with <code>mutiny run --hosted</code>, or start
+              the trusted demo harness to explore the evolution graph.
             </p>
           </EmptyState>
         )}
@@ -162,6 +189,7 @@ export default function CampaignsPage() {
                 <tr>
                   <th>Campaign</th>
                   <th>Status</th>
+                  <th>Execution</th>
                   <th>Project</th>
                   <th>Gens</th>
                   <th>Elapsed</th>
@@ -184,6 +212,11 @@ export default function CampaignsPage() {
                       : null);
                   const projectName =
                     camp.project?.name || camp.project?.path || "—";
+                  const execution = isLocalCliCampaign(camp)
+                    ? "Local CLI"
+                    : isDemoHarnessCampaign(camp)
+                      ? "Demo"
+                      : "Interim";
                   return (
                     <tr key={camp.id}>
                       <td>
@@ -199,6 +232,7 @@ export default function CampaignsPage() {
                           {campaignStatusLabel(status)}
                         </span>
                       </td>
+                      <td className="text-xs text-muted">{execution}</td>
                       <td className="text-xs text-muted max-w-[160px] truncate">
                         {projectName}
                       </td>

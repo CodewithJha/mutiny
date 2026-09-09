@@ -110,11 +110,11 @@ export default function PoliciesPage() {
           <p className="page-sub">
             Explicit tool invariants from the project{" "}
             <span className="font-mono text-dim">policy.yaml</span>. Same file
-            for CLI and Hosted.
+            for Local CLI execution and Hosted observation.
           </p>
         </div>
         <Link href="/campaigns" className="btn btn-primary">
-          Run Campaign
+          Observe campaigns
         </Link>
       </header>
 

@@ -205,7 +205,7 @@ MVP limitations are labeled as such, not “bugs.”
 
 ## Architecture Risks
 
-1. **Hosted execution model incompatible with untrusted tenants** — in-process adapter load is fine for Local CLI; fatal for shared Hosted. **ADR-019 accepted (Option A observe-only); M-PR8 not implemented.**
+1. **Hosted execution model incompatible with untrusted tenants** — in-process adapter load is fine for Local CLI; fatal for shared Hosted. **ADR-019 accepted (Option A observe-only); M-PR8A–D shipped; M-PR8E (remove production customer exec) remaining.**
 2. **Product narrative vs Hosted-first CLI** — ADR-017 says customer CLI primary; **M-PR2** aligns defaults (local; Hosted via `--hosted`).
 3. **Search heuristics coupled to refund demo** — **resolved for defaults (M-PR6 / ADR-020)**; refund packs remain harness helpers.
 4. **Single-process asyncio + SQLite** — acceptable for Local/demo Hosted; not multi-writer SaaS (ADR-005/007 already acknowledge). ADR-019 deliberately avoids Option B workers for Target B.
@@ -503,7 +503,7 @@ Order is dependency-aware. Each milestone is independently testable.
 | **DoD** | Threat model satisfied for single-tenant observe-only Hosted |
 | **Rollback** | Safe-mode only Hosted (M-PR1) |
 | **Release** | 0.4.0 → leads to 1.0.0 |
-| **Status** | **Partial:** **M-PR8A–C** in [HOSTED_INGESTION.md](./HOSTED_INGESTION.md) (contract + Hosted ingest API + CLI local-exec sync). **M-PR8D/E** (Web copy, remove production customer `exec_module`) **not implemented** |
+| **Status** | **Partial:** **M-PR8A–D** in [HOSTED_INGESTION.md](./HOSTED_INGESTION.md) (contract + Hosted ingest API + CLI local-exec sync + Web observe copy). **M-PR8E** (remove production customer `exec_module`) **not implemented** |
 
 #### M-PR8 staging
 
@@ -512,7 +512,7 @@ Order is dependency-aware. Each milestone is independently testable.
 | **M-PR8A** | CLI → Hosted ingestion contract (identity, events, artifacts, redaction, idempotency, API/CLI semantics) | **Done (docs)** |
 | **M-PR8B** | Hosted `/api/ingest/v1/*` + persistence + contract tests | **Done (server)** |
 | **M-PR8C** | CLI local exec + sync for `--hosted` | **Done (CLI)** |
-| **M-PR8D** | Web observe copy (SSE already published from ingest) | Planned |
+| **M-PR8D** | Web observe copy (SSE already published from ingest) | **Done (Web)** |
 | **M-PR8E** | Remove/disable Production Hosted customer `project_path` `exec_module` | Planned |
 
 ### Later (P3/P4) — packaging verify fix, Dependabot, project_id on regressions, adapters, Postgres
@@ -606,7 +606,7 @@ Scheduled after Target A gate; do not block 0.2.0.
 
 ### ADR-019 — Hosted must not execute customer Python in-process
 
-**Status:** **Accepted** — see DECISION_LOG ADR-019 (Option A: observe/lineage Hosted; CLI executes customer adapters). **M-PR8A–C:** contract + Hosted ingest API + CLI local-exec sync — [HOSTED_INGESTION.md](./HOSTED_INGESTION.md). **M-PR8D/E** (Web copy / remove production customer exec) **not implemented** in this revision.
+**Status:** **Accepted** — see DECISION_LOG ADR-019 (Option A: observe/lineage Hosted; CLI executes customer adapters). **M-PR8A–D:** contract + Hosted ingest API + CLI local-exec sync + Web observe copy — [HOSTED_INGESTION.md](./HOSTED_INGESTION.md). **M-PR8E** (remove production customer exec) **not implemented** in this revision.
 
 **Current code (interim):** Hosted can still load `.mutiny/adapter.py` via `load_adapter_factory` when `MUTINY_ALLOW_PROJECT_EXEC=1` (M-PR1). Default remains refuse. Trusted `in_process_demo` harness unchanged.
 
@@ -709,9 +709,10 @@ See checklists under [Definition of Done](#definition-of-done) for Target A and 
 
 - **Created:** `docs/PRODUCTION_READINESS.md` (this file)  
 - **Updated for consistency pointers / ADR proposals / stale-status notes:** `docs/README.md`, `docs/ARCHITECTURE.md`, `docs/ROADMAP.md`, `docs/DECISION_LOG.md`, `docs/IMPLEMENTATION_PLAN.md`, `SECURITY.md`  
-- **ADR-019 acceptance (docs-only):** `docs/DECISION_LOG.md`, `docs/ARCHITECTURE.md`, `docs/SYSTEM_DESIGN.md`, `docs/ROADMAP.md`, `docs/PRODUCTION_READINESS.md`, `SECURITY.md` — **M-PR8 runtime not implemented**  
+- **ADR-019 acceptance (docs-only):** `docs/DECISION_LOG.md`, `docs/ARCHITECTURE.md`, `docs/SYSTEM_DESIGN.md`, `docs/ROADMAP.md`, `docs/PRODUCTION_READINESS.md`, `SECURITY.md` — **M-PR8E runtime removal not implemented**  
 - **M-PR8A (docs):** `docs/HOSTED_INGESTION.md` (+ pointers) — contract defined
 - **M-PR8C (CLI):** `mutiny run --hosted` = local Core + end-of-run redacted ingest sync — **done**
-- **Remaining:** M-PR8D (Web observe copy), M-PR8E (remove production customer `exec_module`)
+- **M-PR8D (Web):** Hosted UI observe-only copy / Local CLI execution badges — **done**
+- **Remaining:** M-PR8E (remove production customer `exec_module`)
 
-**STOP:** Do not implement M-PR8D/E in the same change set as M-PR8C unless explicitly requested.
+**STOP:** Do not implement M-PR8E in the same change set as M-PR8D unless explicitly requested.

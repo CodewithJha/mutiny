@@ -382,7 +382,10 @@ export type TestsSummary = {
   failed_regressions: RegressionRow[];
 };
 
-/** Browser SSE with snapshot resume via after_id query when reconnecting. */
+/** Browser SSE with snapshot resume via after_id query when reconnecting.
+ * Web is an observe/control-plane consumer — do not POST to /api/ingest/v1
+ * from the browser; Local CLI is the ingestion client (ADR-019 / M-PR8).
+ */
 export function subscribeCampaignEvents(
   campaignId: string,
   onEvent: (ev: SseEvent) => void,
