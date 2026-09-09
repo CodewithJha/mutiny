@@ -81,8 +81,8 @@ export default function CampaignsPage() {
           <h1 className="page-title">Campaigns</h1>
           <p className="page-sub">
             Evolutionary runs against the trusted Hosted harness. Customer
-            projects use <code>mutiny run --no-hosted</code> (Hosted adapter
-            exec is disabled by default).
+            projects use local <code>mutiny run</code> (Hosted adapter exec is
+            disabled by default).
           </p>
         </div>
       </header>

@@ -17,7 +17,7 @@ Mutiny is a **behavioral fuzz-testing engine** for agents you own or are authori
 
 | Path | Behavior |
 |---|---|
-| **Local CLI** (`mutiny run --no-hosted`, `mutiny test`) | Executes the project's `.mutiny/adapter.py` in-process. Intentional — same trust model as running project tests. |
+| **Local CLI** (`mutiny run`, `mutiny test`) | Executes the project's `.mutiny/adapter.py` in-process. Intentional — same trust model as running project tests. Default `mutiny run` path (M-PR2). |
 | **Hosted trusted harness** (`target=in_process_demo`) | Uses the bundled demo agent only. No customer `project_path` import. |
 | **Hosted customer project** (`target=openai_agents` + `project_path`) | **Disabled by default.** The API returns `403 project_exec_disabled` and does not import/execute customer Python. |
 

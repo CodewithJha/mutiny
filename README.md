@@ -122,7 +122,7 @@ Static storyboard (fallback):
 | Tests | ![Hosted tests](./docs/assets/tests.png) |
 | CLI `mutiny run` | ![CLI local campaign finding a violation](./docs/assets/cli-run.png) |
 
-The [sample project](./examples/openai_support_agent/) runs offline without an API key. Hosted lineage (optional): `./scripts/dev.sh`, then `mutiny run` without `--no-hosted`.
+The [sample project](./examples/openai_support_agent/) runs offline without an API key. Hosted lineage (optional): `./scripts/dev.sh`, then `mutiny run --hosted`.
 
 ---
 
@@ -202,9 +202,10 @@ uv run uvicorn mutiny_api.main:app --host 127.0.0.1 --port 8000
 cd apps/web && npm install && npm run dev
 ```
 
-CLI campaigns without Hosted: pass `--no-hosted` to `mutiny run`.
+CLI campaigns default to **local** Core. Use `mutiny run --hosted` (or
+`--hosted-url`) for optional Hosted lineage.
 
-**Hosted safety (M-PR1):** By default the Hosted API will **not** load/execute a customer `.mutiny/adapter.py` via `project_path` (returns `403`). Use `mutiny run --no-hosted` for customer projects. The bundled `in_process_demo` harness still works in Hosted. See [SECURITY.md](./SECURITY.md).
+**Hosted safety (M-PR1):** By default the Hosted API will **not** load/execute a customer `.mutiny/adapter.py` via `project_path` (returns `403`). Prefer `mutiny run` (local) for customer projects. The bundled `in_process_demo` harness still works in Hosted. See [SECURITY.md](./SECURITY.md).
 
 ---
 
@@ -215,7 +216,7 @@ CLI campaigns without Hosted: pass `--no-hosted` to `mutiny run`.
 ```bash
 cd examples/openai_support_agent
 uv run mutiny init    # scaffolds .mutiny/adapter.py, policy.yaml, mutiny.yaml
-uv run mutiny run --no-hosted
+uv run mutiny run     # local by default
 uv run mutiny test    # replay saved regressions after a finding is saved
 ```
 
@@ -228,7 +229,7 @@ cd /path/to/your-agent
 uv run --directory /path/to/mutiny mutiny init --path .
 # edit .mutiny/adapter.py  → AGENT_REF + POLICY_CONTEXT
 # edit policy.yaml         → your tool names and rules
-uv run --directory /path/to/mutiny mutiny run --path . --no-hosted
+uv run --directory /path/to/mutiny mutiny run --path .
 uv run --directory /path/to/mutiny mutiny test --path .
 ```
 
@@ -240,7 +241,7 @@ uv run --directory /path/to/mutiny mutiny test --path .
 | `policy.yaml` | Deterministic tool-use invariants |
 | `mutiny.yaml` | Campaign defaults |
 
-With Hosted running (`./scripts/dev.sh`), drop `--no-hosted` so `mutiny run` prefers the API when reachable.
+With Hosted running (`./scripts/dev.sh`), use `mutiny run --hosted` for the API path (never selected from config alone).
 
 **Docs:** [`docs/`](./docs/) — start at [`docs/README.md`](./docs/README.md).
 
@@ -255,7 +256,7 @@ With Hosted running (`./scripts/dev.sh`), drop `--no-hosted` so `mutiny run` pre
 | Hosted UI won’t start | Install Node ≥ 20, then `cd apps/web && npm install` |
 | Port already in use | Free **8000** (API) and **3000** (UI), or change the ports in `scripts/dev.sh` / Next |
 | API looks down | `curl -sf http://127.0.0.1:8000/api/health` — expect JSON with a healthy status |
-| Campaign can’t reach Hosted | Start `./scripts/dev.sh`, or use `mutiny run --no-hosted` for local-only |
+| Campaign can’t reach Hosted | Start `./scripts/dev.sh`, then `mutiny run --hosted`; or use plain `mutiny run` for local-only |
 | Sample agent needs a live model | Set `OPENAI_API_KEY`; leave unset (or `MUTINY_SAMPLE_OFFLINE=1`) for the offline scripted model |
 
 Cold-start checklist: [`docs/COLD_START.md`](./docs/COLD_START.md).
@@ -326,7 +327,7 @@ Building an adapter? Start from `packages/mutiny_core`’s `TargetAdapter` port 
 | Command | What it does |
 |---|---|
 | `mutiny init [--path] [--force]` | Scaffold `.mutiny/adapter.py` + `policy.yaml` + `mutiny.yaml` |
-| `mutiny run [--path] [--no-hosted] [--hosted-url] [--attestation]` | Load adapter + policy; campaign; minimize / save regressions |
+| `mutiny run [--path] [--hosted] [--hosted-url] [--no-hosted] [--attestation]` | Local campaign by default; Hosted only with `--hosted` / `--hosted-url` |
 | `mutiny test [id] [--path] [--failed] [--json] [--no-report]` | Replay `.mutiny/tests/` (PASS / FAIL / SKIPPED); optional single id |
 
 Full flag reference: [`docs/CLI.md`](./docs/CLI.md) (from `mutiny --help`). Quick check: `mutiny <cmd> --help`.
@@ -428,7 +429,7 @@ Create a venv, then activate with PowerShell `.\.venv\Scripts\Activate.ps1` (or 
 No for the [sample project](./examples/openai_support_agent/) — it uses an offline scripted model when the key is unset. Your own live agent may need whatever keys that agent already uses.
 
 **Is the Hosted UI required?**  
-No. CLI is primary. Use `mutiny run --no-hosted` for local-only campaigns. Hosted adds lineage / ops when you want a browser.
+No. CLI is primary. `mutiny run` is local by default. Use `mutiny run --hosted` when you want Hosted lineage / ops in a browser.
 
 **Is the bundled demo agent the product?**  
 No. It’s a **reference harness** for docs and reliability. The product story is: install Mutiny into *your* agent project.

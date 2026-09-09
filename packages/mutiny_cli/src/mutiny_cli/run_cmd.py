@@ -1,4 +1,4 @@
-"""``mutiny run`` — Hosted-first campaign with customer project_path; else local Core."""
+"""``mutiny run`` — local Core by default; Hosted only when explicitly selected."""
 
 from __future__ import annotations
 
@@ -32,11 +32,31 @@ def run_campaign(
     *,
     project_root: Path,
     hosted_url: str | None = None,
+    hosted: bool = False,
     no_hosted: bool = False,
     attestation: bool = True,
 ) -> int:
+    """Run a campaign.
+
+    Execution-mode contract (M-PR2):
+    - Default: **local** Core + project adapter.
+    - Hosted only when explicitly selected via ``--hosted`` and/or ``--hosted-url``.
+    - ``mutiny.yaml`` / env Hosted URLs alone never select Hosted.
+    - ``--no-hosted`` remains a compatibility alias for local (default).
+    """
     root = project_root.resolve()
     ensure_project_on_path(root)
+
+    if no_hosted and (hosted or hosted_url):
+        print(
+            "error: --no-hosted conflicts with --hosted / --hosted-url",
+            file=sys.stderr,
+        )
+        return 2
+
+    # Explicit Hosted intent: --hosted and/or --hosted-url on the CLI.
+    # Config api_url alone is never enough.
+    want_hosted = bool(hosted or hosted_url) and not no_hosted
 
     config = _load_mutiny_yaml(root / "mutiny.yaml")
     try:
@@ -53,6 +73,12 @@ def run_campaign(
         )
         return 2
 
+    hosted_cfg = dict(config.get("hosted") or {})
+    if hosted_url:
+        hosted_cfg["api_url"] = hosted_url
+    api_url = (hosted_cfg.get("api_url") or "").rstrip("/")
+    ui_url = (hosted_cfg.get("ui_url") or "http://127.0.0.1:3000").rstrip("/")
+
     print()
     print("Mutiny run — behavioral fuzz campaign")
     print(f"  project: {root}")
@@ -66,29 +92,32 @@ def run_campaign(
         f"seed={config.get('rng_seed', 0)}"
     )
     print("  safety:  attestation ✓ · authorized testing only")
+    if want_hosted:
+        print("  Execution mode: hosted")
+        print(
+            "  note: Hosted customer project_path adapter exec is disabled by "
+            "default (M-PR1); API may return 403 unless MUTINY_ALLOW_PROJECT_EXEC=1"
+        )
+    else:
+        print("  Execution mode: local")
     print()
 
-    hosted_cfg = dict(config.get("hosted") or {})
-    if hosted_url:
-        hosted_cfg["api_url"] = hosted_url
-    api_url = (hosted_cfg.get("api_url") or "").rstrip("/")
-    ui_url = (hosted_cfg.get("ui_url") or "http://127.0.0.1:3000").rstrip("/")
-
-    # —— Hosted primary when reachable (loads this project's .mutiny/adapter.py) ——
-    if not no_hosted and api_url:
-        hosted = _run_via_hosted(
+    if want_hosted:
+        if not api_url:
+            print(
+                "error: Hosted selected but no api_url "
+                "(set hosted.api_url in mutiny.yaml or pass --hosted-url)",
+                file=sys.stderr,
+            )
+            return 2
+        return _run_via_hosted(
             config=config,
             hosted_cfg=hosted_cfg,
             api_url=api_url,
             ui_url=ui_url,
             project_root=root,
+            explicit=True,
         )
-        if hosted is not None:
-            return hosted
-
-    if no_hosted:
-        print("· Hosted skipped (--no-hosted). Running local campaign.")
-        print()
 
     return _run_local(root, config, policy)
 
@@ -100,14 +129,23 @@ def _run_via_hosted(
     api_url: str,
     ui_url: str,
     project_root: Path,
-) -> int | None:
-    """Register + start Hosted campaign, poll to completion. None = fall back."""
+    explicit: bool = True,
+) -> int:
+    """Register + start Hosted campaign, poll to completion.
+
+    When ``explicit`` is True (M-PR2 default for Hosted), failures return an
+    error code and never fall back to local execution.
+    """
     try:
         import httpx
     except ImportError:
-        print("⚠  httpx missing — cannot reach Hosted; falling back to local.")
+        msg = "error: httpx missing — cannot reach Hosted API"
+        if explicit:
+            print(msg, file=sys.stderr)
+            return 1
+        print(f"⚠  {msg}; falling back to local.")
         print()
-        return None
+        return 1  # should not be called non-explicit anymore
 
     # Hosted loads policy.yaml from project_path (same file as local CLI).
     payload = {
@@ -126,9 +164,11 @@ def _run_via_hosted(
         with httpx.Client(base_url=api_url, timeout=10.0) as client:
             health = client.get("/api/health")
             if health.status_code >= 400:
-                print(f"⚠  Hosted health HTTP {health.status_code}; local fallback.")
-                print()
-                return None
+                print(
+                    f"error: Hosted health HTTP {health.status_code} at {api_url}",
+                    file=sys.stderr,
+                )
+                return 1
 
             print(f"→ Hosted API  {api_url}")
             print(f"  project     {project_root}")
@@ -137,18 +177,19 @@ def _run_via_hosted(
             created = client.post("/api/campaigns", json=payload)
             if created.status_code >= 400:
                 print(
-                    f"⚠  Hosted create failed ({created.status_code}): "
-                    f"{created.text[:200]}"
+                    f"error: Hosted create failed ({created.status_code}): "
+                    f"{created.text[:200]}",
+                    file=sys.stderr,
                 )
-                print("   Falling back to local campaign.")
-                print()
-                return None
+                return 1
             body = created.json()
             campaign_id = body.get("id")
             if not campaign_id:
-                print("⚠  Hosted create returned no id; local fallback.")
-                print()
-                return None
+                print(
+                    "error: Hosted create returned no campaign id",
+                    file=sys.stderr,
+                )
+                return 1
 
             started = client.post(
                 f"/api/campaigns/{campaign_id}/start",
@@ -188,9 +229,8 @@ def _run_via_hosted(
             print()
             return 0 if status != "failed" else 1
     except Exception as exc:  # noqa: BLE001
-        print(f"⚠  Hosted unreachable ({exc}); local fallback.")
-        print()
-        return None
+        print(f"error: Hosted unreachable ({exc})", file=sys.stderr)
+        return 1
 
 
 def _poll_campaign(client: Any, campaign_id: str, timeout: float = 120.0) -> dict[str, Any]:

@@ -23,7 +23,7 @@ nit. Larger adapters need an issue first.
    ```bash
    cd examples/openai_support_agent
    uv run mutiny init
-   uv run mutiny run --no-hosted
+   uv run mutiny run
    # mutiny test after a finding is saved under .mutiny/tests/
    cd ../..
    ```
@@ -117,7 +117,7 @@ uv run pytest tests/integration -q   # when touching API / Hosted / sample loop
 uv run pytest tests/reliability -q   # when touching campaign / minimize / flaky paths
 ```
 
-Optional offline smoke: `cd examples/openai_support_agent && uv run mutiny init && uv run mutiny run --no-hosted`.
+Optional offline smoke: `cd examples/openai_support_agent && uv run mutiny init && uv run mutiny run`.
 
 ## Pull request etiquette
 

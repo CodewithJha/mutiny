@@ -10,6 +10,7 @@ Published on PyPI as **`mutiny-ai`** (+ [`mutiny-core`](https://pypi.org/project
 ### Security
 
 - **M-PR1 Hosted kill-switch** — Hosted API refuses `openai_agents` + `project_path` customer adapter execution by default (`403 project_exec_disabled`). Trusted `in_process_demo` harness unchanged. Opt-in: `MUTINY_ALLOW_PROJECT_EXEC=1` (single-operator localhost only; not a sandbox). Local CLI adapter loading unchanged.
+- **M-PR2 Local CLI default** — `mutiny run` executes locally by default. Hosted requires explicit `--hosted` and/or `--hosted-url`. Config `hosted.api_url` alone never selects Hosted. Explicit Hosted failures do not silently fall back to local.
 
 ### Planned
 
@@ -34,7 +35,7 @@ Initial public repository promotion.
 ### Notes
 
 - Install with `pip install mutiny-ai` (CLI command `mutiny`). Contributors: `uv sync --extra dev` (root `pip install -e .` is unsupported).
-- Hosted UI is secondary; CLI with `--no-hosted` is the primary local path.
+- Hosted UI is secondary; CLI local default (`mutiny run`) is the primary path; Hosted is `--hosted` opt-in.
 - Bundled sample / demo agents are **reference harnesses**, not the product.
 
 [Unreleased]: https://github.com/CodewithJha/mutiny/compare/v0.1.0...HEAD

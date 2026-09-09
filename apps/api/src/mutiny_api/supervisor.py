@@ -50,7 +50,7 @@ HARNESS_POLICY_ID = "demo_support"
 ALLOW_PROJECT_EXEC_ENV = "MUTINY_ALLOW_PROJECT_EXEC"
 HOSTED_PROJECT_EXEC_DISABLED_MSG = (
     "Hosted arbitrary customer adapter execution is disabled. "
-    "Run customer projects via local CLI (`mutiny run --no-hosted`). "
+    "Run customer projects via local CLI (`mutiny run`). "
     "The trusted in_process_demo harness remains available. "
     "Single-operator localhost only: set MUTINY_ALLOW_PROJECT_EXEC=1 to re-enable "
     "(not a sandbox; see docs/PRODUCTION_READINESS.md)."

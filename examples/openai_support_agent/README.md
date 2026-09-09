@@ -51,15 +51,15 @@ so the workspace CLI is on your PATH.
 # Terminal B — this sample project
 cd examples/openai_support_agent
 uv run mutiny init          # once
-uv run mutiny run           # Hosted-first when API is up
+uv run mutiny run --hosted  # explicit Hosted opt-in
 ```
 
 Then open the printed dashboard URL (`/campaign/<id>`).
 
-Local-only (no Hosted):
+Local-only (default):
 
 ```bash
-uv run mutiny run --no-hosted
+uv run mutiny run
 uv run mutiny test          # after regressions are saved under .mutiny/tests/
 ```
 

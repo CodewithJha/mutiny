@@ -35,7 +35,7 @@ def main(argv: list[str] | None = None) -> int:
 
     run_p = sub.add_parser(
         "run",
-        help="Load adapter + policy and start a campaign",
+        help="Load adapter + policy and start a campaign (default: local)",
     )
     run_p.add_argument(
         "--path",
@@ -44,20 +44,31 @@ def main(argv: list[str] | None = None) -> int:
         help="Project root (default: cwd)",
     )
     run_p.add_argument(
+        "--hosted",
+        action="store_true",
+        help="Explicitly run via Hosted API (opt-in; default is local)",
+    )
+    run_p.add_argument(
         "--hosted-url",
         default=None,
-        help="Hosted API base URL (overrides mutiny.yaml)",
+        help=(
+            "Hosted API base URL (implies --hosted; overrides mutiny.yaml). "
+            "Config alone never selects Hosted."
+        ),
     )
     run_p.add_argument(
         "--no-hosted",
         action="store_true",
-        help="Skip Hosted API registration; run locally only",
+        help=(
+            "Force local execution (default behavior; kept for compatibility). "
+            "Mutually exclusive with --hosted / --hosted-url."
+        ),
     )
     run_p.add_argument(
         "--attestation",
-        action="store_true",
+        action=argparse.BooleanOptionalAction,
         default=True,
-        help="Confirm authorized testing (default: true)",
+        help="Confirm authorized testing (default: true; --no-attestation fails)",
     )
 
     test_p = sub.add_parser(
@@ -107,6 +118,7 @@ def main(argv: list[str] | None = None) -> int:
         return run_campaign(
             project_root=args.path,
             hosted_url=args.hosted_url,
+            hosted=args.hosted,
             no_hosted=args.no_hosted,
             attestation=args.attestation,
         )

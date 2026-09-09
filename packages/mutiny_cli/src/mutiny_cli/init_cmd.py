@@ -115,8 +115,10 @@ stop_on_first_violation: true
 rng_seed: 5
 use_boundary_seeds: true
 
-# Hosted control plane — primary when API is reachable.
-# Hosted loads THIS project's .mutiny/adapter.py and policy.yaml via project_path.
+# Optional Hosted control plane (opt-in via `mutiny run --hosted`).
+# URL here does NOT auto-select Hosted — local Core is the default.
+# Hosted loads THIS project's .mutiny/adapter.py and policy.yaml via project_path
+# only when Hosted customer project exec is enabled on the API (see SECURITY.md).
 hosted:
   api_url: "http://127.0.0.1:8000"
   ui_url: "http://127.0.0.1:3000"
@@ -167,8 +169,8 @@ def run_init(*, project_root: Path, force: bool = False) -> int:
     print("Next steps")
     print("  1. Edit .mutiny/adapter.py  → set AGENT_REF + POLICY_CONTEXT")
     print("  2. Review policy.yaml       → match YOUR tool names (version field)")
-    print("  3. Start Hosted (optional)  → ./scripts/dev.sh  from Mutiny repo")
-    print("  4. mutiny run --no-hosted   → campaign uses THIS project's policy")
+    print("  3. mutiny run              → local campaign (default; this project's policy)")
+    print("  4. mutiny run --hosted     → optional Hosted API (explicit opt-in)")
     print()
     print("Authorized testing only. Mock / sandbox tools recommended.")
     return 0

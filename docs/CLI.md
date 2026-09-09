@@ -37,18 +37,26 @@ mutiny init --path /path/to/agent --force
 
 ## `mutiny run`
 
-Load the project adapter + policy and start an evolutionary campaign. Optionally register with Hosted API when reachable.
+Load the project adapter + policy and start an evolutionary campaign.
+**Default execution mode is local** (Core + `.mutiny/adapter.py`). Hosted is
+opt-in only.
 
 | Flag | Default | Meaning |
 |---|---|---|
 | `--path PATH` | cwd | Project root |
-| `--hosted-url HOSTED_URL` | from `mutiny.yaml` | Hosted API base URL override |
-| `--no-hosted` | off | Skip Hosted registration; run locally only |
-| `--attestation` | true | Confirm authorized testing |
+| `--hosted` | off | Explicitly run via Hosted API |
+| `--hosted-url HOSTED_URL` | from `mutiny.yaml` | Hosted API base URL (implies `--hosted`; overrides `mutiny.yaml`) |
+| `--no-hosted` | off | Force local (default behavior; kept for compatibility; conflicts with `--hosted` / `--hosted-url`) |
+| `--attestation` / `--no-attestation` | attestation on | Confirm authorized testing (`--no-attestation` fails closed) |
+
+**Precedence:** CLI flags decide mode. `hosted.api_url` in `mutiny.yaml` only
+supplies the URL when Hosted is explicitly selected — it never auto-selects Hosted.
 
 ```bash
-mutiny run --no-hosted
+mutiny run
+mutiny run --hosted
 mutiny run --path . --hosted-url http://127.0.0.1:8000
+mutiny run --no-hosted   # same as default local
 ```
 
 ---
@@ -80,7 +88,7 @@ pip install mutiny-ai
 cd /path/to/your/agent
 mutiny init
 # edit .mutiny/adapter.py + policy.yaml
-mutiny run --no-hosted
+mutiny run
 mutiny test
 ```
 

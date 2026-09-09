@@ -21,7 +21,7 @@ Mutiny **v0.1.0** is a credible **alpha OSS behavioral fuzz engine**: Core oracl
 
 It is **not** production-ready as a **public or multi-tenant Hosted** service. The Hosted API loads and **executes customer `.mutiny/adapter.py` in-process** with **no authentication**, **no path sandbox**, **no rate limits**, and binds `0.0.0.0` in Railway/docker paths. Attestation is a boolean checkbox, not authorization. That combination is a **remote code execution / filesystem write** class risk if the API is reachable beyond a single trusted operator machine.
 
-**Target A — Production Local CLI** is approachable with a focused hardening sequence (default `--no-hosted`, secret hygiene, policy-general seeds/mutators, CI completeness).
+**Target A — Production Local CLI** is approachable with a focused hardening sequence (default local `mutiny run`, secret hygiene, policy-general seeds/mutators, CI completeness).
 
 **Target B — Production Hosted** requires an **architecture change** (worker isolation or “CLI executes agent; Hosted observes”) before any internet-facing claim. Until then, Hosted must be documented and operated as **localhost / single-operator demo only**.
 
@@ -53,12 +53,12 @@ It is **not** production-ready as a **public or multi-tenant Hosted** service. T
 | SYSTEM_DESIGN §20: arbitrary remote hosts blocked; treat customer adapter as untrusted vs control plane | Hosted **executes** customer adapter via `importlib` `exec_module` in the API process (`load_adapter_factory`) |
 | PRD / plan: “Redact secrets in traces” | **No redaction implementation** found in Core/API |
 | `docker-compose.yml` sets `MUTINY_DB_PATH` | `mutiny_api.main:app` hardcodes `Path("data/mutiny.sqlite")` — **env ignored** |
-| ADR-001 “Hosted first” | Superseded for **product priority** by ADR-017; CLI still **Hosted-first when API reachable** (`run_cmd.py`) |
+| ADR-001 “Hosted first” | Superseded for **product priority** by ADR-017; **M-PR2:** CLI default is local; Hosted requires `--hosted` / `--hosted-url` |
 
 ### Honest product posture today
 
-- **Primary usable path:** developer machine → `pip install mutiny-ai` → `mutiny init` → `mutiny run --no-hosted` → `mutiny test`.
-- **Hosted:** valuable **lineage/ops demo** on localhost; **not** a safe shared cloud control plane.
+- **Primary usable path:** developer machine → `pip install mutiny-ai` → `mutiny init` → `mutiny run` → `mutiny test`.
+- **Hosted:** valuable **lineage/ops demo** on localhost; **not** a safe shared cloud control plane. CLI selects Hosted only via `--hosted` / `--hosted-url`.
 - **MVP limitations (not bugs):** one adapter; three policy primitives; single concurrent campaign; SQLite; template/LLM mutation quality varies; refund-oriented demo bias in seeds/prompts.
 
 ---
@@ -73,7 +73,7 @@ A release is **Production Local CLI ready** when a developer can, on their own m
 
 1. Install `mutiny-ai` from PyPI without monorepo `uv sync`.
 2. `mutiny init` scaffolds valid artifacts.
-3. `mutiny run --no-hosted` completes a campaign using Core + Adapter #1 only.
+3. `mutiny run` completes a campaign using Core + Adapter #1 only (Hosted is opt-in via `--hosted`).
 4. Violations are proven by deterministic policy evaluation on real tool traces (no LLM judge).
 5. Minimize + save under `.mutiny/tests/`; `mutiny test` FAIL→PASS after a documented agent fix.
 6. Secrets are not written plainly into artifacts by default (or are clearly warned + redacted).
@@ -241,7 +241,7 @@ MVP limitations are labeled as such, not “bugs.”
 ### Local CLI security bar (Target A)
 
 - Document that adapter execution is intentional and equivalent to running project code.
-- Default `mutiny run` should not silently escalate to Hosted on loopback without clear UX (prefer `--no-hosted` default **or** loud confirmation).
+- Default `mutiny run` should not silently escalate to Hosted on loopback without clear UX (**M-PR2:** local default; Hosted via `--hosted`).
 - Redact common secret patterns in saved regressions/traces.
 - Keep “authorized testing only” messaging; do not add open-internet target adapters without ADR.
 
@@ -297,14 +297,14 @@ MVP limitations are labeled as such, not “bugs.”
 |---|---|
 | `init` / `run` / `test` shipped | Pass |
 | Offline sample path | Pass (`MUTINY_SAMPLE_OFFLINE`) |
-| Local Core path `--no-hosted` | Pass |
-| Default Hosted-first | **Risk** (P1-4) |
-| Attestation UX consistency | Partial (P2-9) |
+| Local Core path (default) | Pass |
+| Default Hosted-first | **Fixed (M-PR2)** |
+| Attestation UX consistency | Pass (BooleanOptionalAction `--no-attestation`) |
 | Domain-general seeds/mutators | Fail (P2-1/2) |
 | Secret redaction | Fail (P1-3) |
 | PyPI install story | Pass (`mutiny-ai`) |
 
-**Closest path to Target A:** treat `--no-hosted` as the production default recommendation; harden artifacts; generalize seeds/mutators; keep Hosted optional and opt-in.
+**Closest path to Target A:** local `mutiny run` is the production default (M-PR2); harden artifacts; generalize seeds/mutators; keep Hosted optional and opt-in via `--hosted`.
 
 ---
 
@@ -416,6 +416,7 @@ Order is dependency-aware. Each milestone is independently testable.
 | **DoD** | Documented default matches ADR-017; Hosted requires explicit flag/url |
 | **Rollback** | Revert CLI default |
 | **Release** | 0.2.0 |
+| **Status** | **Implemented** — default local; `--hosted` / `--hosted-url` opt-in; no silent Hosted fallback; `--no-hosted` kept as local alias |
 
 ### M-PR3 — Secret redaction in traces/artifacts
 
@@ -512,7 +513,7 @@ Scheduled after Target A gate; do not block 0.2.0.
 ### Measurable — Production Local CLI (Target A)
 
 - [ ] `pip install mutiny-ai==<ver>` on clean venv; `mutiny --help` works  
-- [ ] Sample: `mutiny run --no-hosted` finds or honestly reports no violation without crashing  
+- [ ] Sample: `mutiny run` finds or honestly reports no violation without crashing  
 - [ ] Regression save + `mutiny test` FAIL→PASS path documented and tested offline  
 - [ ] No Hosted required for primary path; Hosted explicitly opt-in  
 - [ ] Secret redaction tests green  
@@ -628,7 +629,7 @@ Scheduled after Target A gate; do not block 0.2.0.
 
 ### Note on ADR-001 vs ADR-017
 
-ADR-017 already supersedes ADR-001 for **product priority**. Runtime CLI Hosted-first remains an implementation inconsistency to resolve under M-PR2 — not by rewriting ADR-001.
+ADR-017 already supersedes ADR-001 for **product priority**. **M-PR2** aligns runtime CLI defaults with ADR-017 (local default; Hosted explicit).
 
 ---
 
@@ -638,7 +639,7 @@ ADR-017 already supersedes ADR-001 for **product priority**. Runtime CLI Hosted-
 
 | Dimension | Score | Notes |
 |---|---|---|
-| **Local CLI** | **6.5** | Shipped and usable with `--no-hosted`; Hosted-first default + refund bias + no redaction block “production” |
+| **Local CLI** | **7.5** | Default local path (M-PR2); refund bias + no redaction still block full “production” |
 | **Hosted** | **2.0** | Local demo only; P0 auth/RCE if exposed |
 | **Core** | **7.5** | Strong oracle & package boundaries; search heuristics demo-coupled |
 | **OSS** | **7.0** | Strong community files; stale implementation plan; thin automation |
@@ -649,7 +650,7 @@ ADR-017 already supersedes ADR-001 for **product priority**. Runtime CLI Hosted-
 ### Critical Findings (P0/P1)
 
 - **P0:** Unauthenticated Hosted + in-process adapter exec + policy write + public bind templates.  
-- **P1:** Fake authz (attestation), missing rate limits/allowlist vs docs, no secret redaction, CLI Hosted-first, DB env ignored, CI unit-only, stale IMPLEMENTATION_PLAN.
+- **P1:** Fake authz (attestation), missing rate limits/allowlist vs docs, no secret redaction, DB env ignored, CI unit-only, stale IMPLEMENTATION_PLAN. *(P1-4 CLI Hosted-first resolved by M-PR2.)*
 
 ### Architectural Findings (ADR needed)
 

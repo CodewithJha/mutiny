@@ -135,7 +135,7 @@ Persistence is **not** Core’s job. The API or CLI persists what Core returns.
 **Owns (planned)**
 
 - `mutiny init` — generate `.mutiny/adapter.py`, `policy.yaml`, `mutiny.yaml` in the customer project  
-- `mutiny run` — load adapter + policy + config; drive Core campaign; write regressions  
+- `mutiny run` — load adapter + policy + config; drive **local** Core campaign by default; write regressions; Hosted only with `--hosted` / `--hosted-url`
 - `mutiny test` — regression replay (P1)  
 
 **Must not contain**

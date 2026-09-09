@@ -39,7 +39,7 @@ cd apps/web && npm install && cd ../..
 ```bash
 cd examples/openai_support_agent
 uv run mutiny init
-uv run mutiny run --no-hosted
+uv run mutiny run
 uv run mutiny test
 ```
 
@@ -94,7 +94,7 @@ Verify:
 
 Follow [DEMO_SCRIPT.md](./DEMO_SCRIPT.md). Prefer:
 
-1. Sample project → `mutiny init` → `mutiny run --no-hosted` / with Hosted  
+1. Sample project → `mutiny init` → `mutiny run` / `mutiny run --hosted`
 2. Fall back to Hosted harness + [backup fixture](../examples/demo/README.md) if needed  
 
 Pinned seeds (harness): **5, 7, 11** in `config/demo_pin.json`.

@@ -13,7 +13,7 @@ Real Hosted UI captures from [mutiny-sable.vercel.app](https://mutiny-sable.verc
 | `regressions.png` | Hosted `/campaign/{id}` violation + evolution graph + tool evidence |
 | `policy.png` | Hosted `/policies` |
 | `tests.png` | Hosted `/tests` |
-| `cli-run.png` | Terminal: `mutiny run --no-hosted` finding a violation |
+| `cli-run.png` | Terminal: `mutiny run` finding a violation |
 | `mutiny-demo.gif` | Short slideshow of the frames above |
 | `storyboard.svg` | Loop diagram (static fallback) |
 | `*.svg` (other) | Legacy mocks kept for reference; README prefers PNG/GIF |
@@ -31,7 +31,7 @@ Real Hosted UI captures from [mutiny-sable.vercel.app](https://mutiny-sable.verc
 
    ```bash
    cd examples/openai_support_agent
-   mutiny run --no-hosted
+   mutiny run
    # capture terminal; scrub personal absolute paths before committing
    ```
 
