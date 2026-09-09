@@ -380,26 +380,24 @@ Thanks to everyone who has contributed. New faces welcome — pick up a [`good f
 -->
 <!-- readme: contributors -start -->
 <table>
-  <tr>
-    <td align="center">
-      <a href="https://github.com/CodewithJha">
-        <img src="https://avatars.githubusercontent.com/u/155089480?v=4&s=100" width="100px;" alt="CodewithJha"/><br />
-        <sub><b>CodewithJha</b></sub>
-      </a>
-    </td>
-    <td align="center">
-      <a href="https://github.com/kkkhs">
-        <img src="https://avatars.githubusercontent.com/u/141250392?v=4&s=100" width="100px;" alt="kkkhs"/><br />
-        <sub><b>kkkhs</b></sub>
-      </a>
-    </td>
-    <td align="center">
-      <a href="https://github.com/Mr-Neutr0n">
-        <img src="https://avatars.githubusercontent.com/u/64578610?v=4&s=100" width="100px;" alt="Mr-Neutr0n"/><br />
-        <sub><b>Mr-Neutr0n</b></sub>
-      </a>
-    </td>
-  </tr>
+	<tbody>
+		<tr>
+            <td align="center">
+                <a href="https://github.com/CodewithJha">
+                    <img src="https://avatars.githubusercontent.com/u/155089480?v=4" width="100;" alt="CodewithJha"/>
+                    <br />
+                    <sub><b>CodewithJha</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/kkkhs">
+                    <img src="https://avatars.githubusercontent.com/u/141250392?v=4" width="100;" alt="kkkhs"/>
+                    <br />
+                    <sub><b>kkkhs</b></sub>
+                </a>
+            </td>
+		</tr>
+	<tbody>
 </table>
 <!-- readme: contributors -end -->
 
