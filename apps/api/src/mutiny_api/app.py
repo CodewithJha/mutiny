@@ -107,7 +107,8 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
             "MUTINY_ALLOW_PROJECT_EXEC no longer restores customer execution or FS access. "
             "Ingest never executes customer adapters. "
             "When MUTINY_API_TOKEN is set, protected /api routes require "
-            "Authorization: Bearer <token> (M-PR7). Auth is not a sandbox."
+            "Authorization: Bearer <token> (M-PR7). Non-loopback binds require "
+            "a non-empty token at process start (P0-1/P0-4). Auth is not a sandbox."
         ),
         lifespan=lifespan,
         # App-wide dependency: public /api/health|/api/meta skip inside the helper;

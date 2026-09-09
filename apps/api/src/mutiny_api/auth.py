@@ -1,13 +1,15 @@
-"""Single-tenant Hosted API token authentication (M-PR7).
+"""Single-tenant Hosted API token authentication (M-PR7 / P0-1 / P0-4).
 
 When ``MUTINY_API_TOKEN`` is set to a non-empty value, protected ``/api/*``
-routes require ``Authorization: Bearer <token>``. When unset, auth is disabled
-(local demo / tests only — not safe for shared or public networks).
+routes require ``Authorization: Bearer <token>``. When unset/empty/whitespace,
+auth is disabled for **loopback** local demo / tests only.
+
+Non-loopback Hosted binds must not start without a usable token — see
+``mutiny_api.bind_security`` and ``python -m mutiny_api``.
 
 This is identity for the Hosted control plane, not execution isolation (ADR-019 /
 M-PR8E). A valid token does not enable customer ``project_path`` adapter exec.
 """
-
 from __future__ import annotations
 
 import hmac

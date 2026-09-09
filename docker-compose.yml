@@ -8,15 +8,15 @@ services:
     command: >
       bash -lc "pip install -q uv && uv sync &&
       PYTHONPATH=apps/api/src:apps/demo_agent/src:packages/mutiny_core/src
-      uv run uvicorn mutiny_api.main:app --host 0.0.0.0 --port 8000"
+      uv run python -m mutiny_api --host 0.0.0.0 --port 8000"
     ports:
       - "8000:8000"
     environment:
       # Honored by mutiny_api.db.resolve_db_path (M-PR4).
       - MUTINY_DB_PATH=/app/data/mutiny.sqlite
-      # M-PR7 (optional): enable single-tenant Bearer auth on protected routes.
-      # Uncomment and set the same value on `web` so the Next rewrite can inject it.
-      # - MUTINY_API_TOKEN=change-me
+      # Required for --host 0.0.0.0 (P0-1/P0-4). Empty/unset → process refuses to start.
+      # Set the same value on `web` so the Next rewrite can inject Authorization.
+      - MUTINY_API_TOKEN=${MUTINY_API_TOKEN:?set MUTINY_API_TOKEN for non-loopback Hosted}
   web:
     image: node:22-bookworm
     working_dir: /app/apps/web
@@ -29,5 +29,5 @@ services:
       - api
     environment:
       - WATCHPACK_POLLING=true
-      # - MUTINY_API_TOKEN=change-me
+      # - MUTINY_API_TOKEN=${MUTINY_API_TOKEN}
       # - MUTINY_API_URL=http://api:8000

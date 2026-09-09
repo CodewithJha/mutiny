@@ -19,7 +19,7 @@
 
 Mutiny **v0.1.0** is a credible **alpha OSS behavioral fuzz engine**: Core oracle, Adapter #1 (OpenAI Agents SDK), CLI (`init` / `run` / `test`), sample project, and a local Hosted lineage UI/API. Unit tests are green (`126` passed in this audit). PyPI packages are published.
 
-It is **not** production-ready as a **public or multi-tenant Hosted** service. With **M-PR8E**, customer `project_path` adapter `exec_module` is **permanently removed** from Hosted (`410 hosted_customer_execution_removed`; `MUTINY_ALLOW_PROJECT_EXEC` ignored). With **P0-3**, customer `project_path` is also **filesystem-inert** on Hosted (`410 hosted_filesystem_access_removed` — no resolve/read/write of customer trees or policy files). With M-PR7, optional Bearer auth exists when `MUTINY_API_TOKEN` is set. Residual Hosted risks: attestation is not authorization, rate limits are missing, and deploy templates may bind `0.0.0.0`. Public multi-tenant Hosted remains out of scope.
+It is **not** production-ready as a **public or multi-tenant Hosted** service. With **M-PR8E**, customer `project_path` adapter `exec_module` is **permanently removed** from Hosted (`410 hosted_customer_execution_removed`; `MUTINY_ALLOW_PROJECT_EXEC` ignored). With **P0-3**, customer `project_path` is also **filesystem-inert** on Hosted (`410 hosted_filesystem_access_removed` — no resolve/read/write of customer trees or policy files). With M-PR7 + **P0-1/P0-4**, Bearer auth is required for non-loopback Hosted binds (`python -m mutiny_api` fails closed without a non-empty `MUTINY_API_TOKEN`); loopback may omit the token for local demo. Residual Hosted risks: attestation is not authorization, and rate limits are missing. Public multi-tenant Hosted remains out of scope.
 
 **Target A — Production Local CLI** is approachable with a focused hardening sequence (default local `mutiny run`, secret hygiene, policy-general seeds/mutators, CI completeness).
 
@@ -149,10 +149,10 @@ MVP limitations are labeled as such, not “bugs.”
 
 | ID | Finding | Evidence | Targets |
 |---|---|---|---|
-| P0-1 | **Unauthenticated Hosted API** — any client can create/start campaigns, read traces, write policies, delete regressions | `apps/api/src/mutiny_api/app.py` — no auth middleware/deps; SYSTEM_DESIGN §10 admits no multi-tenant auth | Hosted |
+| P0-1 | **Unauthenticated Hosted API** — any client can create/start campaigns, read traces, write policies, delete regressions | ~~optional auth only~~ **Mitigated (P0-1/P0-4):** non-loopback binds require non-empty `MUTINY_API_TOKEN` or `python -m mutiny_api` fails closed before listen; loopback may omit for local demo; M-PR7 Bearer when set | Hosted |
 | P0-2 | **In-process RCE via `project_path`** — Hosted resolves arbitrary paths and `exec_module`s `.mutiny/adapter.py` | ~~`resolve_project_root`, `load_adapter_factory`, `_make_adapter`~~ **Mitigated (M-PR8E):** customer path returns `410`; no `load_adapter_factory` in Hosted API | Hosted (was fatal if network-exposed) |
 | P0-3 | **Arbitrary policy file write** on server FS via `PUT /api/policies/content` after path resolve | ~~`save_policy_content` in `app.py`~~ **Mitigated (P0-3):** Hosted customer `project_path` is filesystem-inert (`410 hosted_filesystem_access_removed`); no resolve/read/write of customer trees | Hosted |
-| P0-4 | **Public bind without auth** — Railway `0.0.0.0` + nixpacks start; compose publishes `8000:8000` | `railway.toml`, `docker-compose.yml` | Hosted |
+| P0-4 | **Public bind without auth** — Railway `0.0.0.0` + nixpacks start; compose publishes `8000:8000` | ~~templates could start open~~ **Mitigated (P0-1/P0-4):** supported entrypoints use `python -m mutiny_api`; `0.0.0.0`/`::`/LAN/public require token; compose requires `MUTINY_API_TOKEN` | Hosted |
 
 ### P1 — Production blockers
 

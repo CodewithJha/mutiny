@@ -27,14 +27,15 @@ Mutiny is a **behavioral fuzz-testing engine** for agents you own or are authori
 
 **Ingestion (M-PR8A–E):** CLI → Hosted uploads send **already-redacted** JSON evidence (data, not executable). See [docs/HOSTED_INGESTION.md](./docs/HOSTED_INGESTION.md). Hosted ingest API + CLI `--hosted` local-exec sync + Web observe-only copy + production customer `exec_module` removal are implemented.
 
-## Hosted authentication (M-PR7)
+## Hosted authentication (M-PR7 / P0-1 / P0-4)
 
 Single-tenant shared Bearer token for the Hosted **control plane** (not multi-user accounts, OAuth, sessions, or RBAC).
 
 | Setting | Behavior |
 |---|---|
-| `MUTINY_API_TOKEN` **unset** / empty | Auth disabled — local demo / tests only. Do not expose on a shared network. |
-| `MUTINY_API_TOKEN` **set** | Protected `/api/*` routes require `Authorization: Bearer <token>`. Missing/invalid → `401 unauthorized`. |
+| Loopback bind (`127.0.0.1`, `localhost`, `::1`) + token unset/empty | Auth disabled — local demo / tests only. |
+| Non-loopback bind (`0.0.0.0`, `::`, LAN/public) + token unset/empty/whitespace | **Rejected at startup** — `python -m mutiny_api` fails closed before listen. |
+| `MUTINY_API_TOKEN` **set** (non-empty) | Protected `/api/*` routes require `Authorization: Bearer <token>`. Missing/invalid → `401 unauthorized`. Required for any non-loopback Hosted bind. |
 
 **Public (intentionally):** `GET /api/health`, `GET /api/meta` (meta reports `safety.auth_required` / `auth_env` — never the token value).
 

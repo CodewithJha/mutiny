@@ -86,7 +86,7 @@ Verify:
 - [ ] Open `http://127.0.0.1:3000` — safety banner visible  
 - [ ] Narrative: sample/reference agent, not “this is the product”  
 
-**docker-compose:** use when you want containerized API + web (`docker compose up --build`). Prefer `scripts/dev.sh` for local iteration. Compose sets `MUTINY_DB_PATH=/app/data/mutiny.sqlite` (honored by the API). The bind mount `.:/app` keeps that file on the host under `./data/`; there is no separate named volume. Optional `MUTINY_API_TOKEN` (M-PR7) enables single-tenant Bearer auth — set the same value on `api` and `web` if you enable it.
+**docker-compose:** use when you want containerized API + web (`docker compose up --build`). Prefer `scripts/dev.sh` for local iteration. Compose sets `MUTINY_DB_PATH=/app/data/mutiny.sqlite` (honored by the API). The bind mount `.:/app` keeps that file on the host under `./data/`; there is no separate named volume. Compose binds the API to `0.0.0.0`, so **`MUTINY_API_TOKEN` is required** (P0-1/P0-4) — unset/empty fails closed before listen. Set the same value on `api` and `web`.
 
 ---
 

@@ -3,8 +3,10 @@
 builder = "nixpacks"
 
 [deploy]
+# Non-loopback bind (0.0.0.0) requires MUTINY_API_TOKEN (P0-1/P0-4);
+# python -m mutiny_api fails closed before listen if missing/empty.
 # Sample .mutiny may be stripped from the image (Docker cannot re-include under
-# an excluded .mutiny/ parent). Always ensure adapter exists before uvicorn.
-startCommand = "uv sync && mkdir -p data && uv run python scripts/ensure_sample_mutiny.py && uv run uvicorn mutiny_api.main:app --host 0.0.0.0 --port ${PORT:-8000}"
+# an excluded .mutiny/ parent). Always ensure adapter exists before listen.
+startCommand = "uv sync && mkdir -p data && uv run python scripts/ensure_sample_mutiny.py && uv run python -m mutiny_api --host 0.0.0.0 --port ${PORT:-8000}"
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 10

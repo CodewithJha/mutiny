@@ -15,7 +15,7 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 echo "→ API http://127.0.0.1:8000"
-uv run uvicorn mutiny_api.main:app --host 127.0.0.1 --port 8000 &
+uv run python -m mutiny_api --host 127.0.0.1 --port 8000 &
 API_PID=$!
 
 echo "→ waiting for /api/health"

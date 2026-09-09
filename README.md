@@ -196,7 +196,7 @@ Or manually:
 
 ```bash
 # terminal A — API
-uv run uvicorn mutiny_api.main:app --host 127.0.0.1 --port 8000
+uv run python -m mutiny_api --host 127.0.0.1 --port 8000
 
 # terminal B — UI (Node required)
 cd apps/web && npm install && npm run dev
@@ -208,7 +208,7 @@ not remote adapter execution).
 
 **Hosted safety (M-PR8E):** The Hosted API will **not** load/execute a customer `.mutiny/adapter.py` via `project_path` (returns `410 hosted_customer_execution_removed`). Prefer `mutiny run` / `mutiny run --hosted` for customer projects. The bundled `in_process_demo` harness still works in Hosted as a labeled demo. `MUTINY_ALLOW_PROJECT_EXEC` is ignored.
 
-**Hosted auth (M-PR7):** Set `MUTINY_API_TOKEN` on the API (and the same value on the web process for UI rewrites) to require `Authorization: Bearer` on protected routes. Unset = local demo only. Auth does not sandbox customer Python. See [SECURITY.md](./SECURITY.md).
+**Hosted auth (M-PR7 / P0-1 / P0-4):** Loopback (`127.0.0.1` / `localhost` / `::1`) may omit `MUTINY_API_TOKEN` for local demo. Non-loopback binds require a non-empty token or `python -m mutiny_api` refuses to start. When set, protected routes require `Authorization: Bearer` (same value on the web process for UI rewrites). Auth does not sandbox customer Python. See [SECURITY.md](./SECURITY.md).
 
 ---
 

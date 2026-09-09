@@ -361,7 +361,7 @@ Typical campaign start when using Hosted:
 6. `POST /api/candidates/{id}/regression`  
 7. `POST /api/tests/run`  
 
-API uses optional single-tenant Bearer auth (`MUTINY_API_TOKEN`, ADR-021 / M-PR7) on protected control/data routes; not multi-tenant identity. Attestation remains a product safety acknowledgement, not authentication.
+API uses single-tenant Bearer auth (`MUTINY_API_TOKEN`, ADR-021 / M-PR7) on protected control/data routes when configured; loopback may omit the token for local demo, while non-loopback Hosted binds require it or fail closed before listen (P0-1 / P0-4). Not multi-tenant identity. Attestation remains a product safety acknowledgement, not authentication.
 
 **Execution (ADR-019):** Customer project campaigns belong on Local CLI; Hosted’s production role is lineage/ops. **M-PR8A–E** observe-only ingest + CLI local-exec sync + Web observe copy + **production customer `exec_module` removed**. Trusted `in_process_demo` may still run in-process. Contract: [HOSTED_INGESTION.md](./HOSTED_INGESTION.md).
 
