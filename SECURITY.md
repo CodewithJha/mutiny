@@ -21,7 +21,9 @@ Mutiny is a **behavioral fuzz-testing engine** for agents you own or are authori
 | **Hosted trusted harness** (`target=in_process_demo`) | Uses the bundled demo agent only. No customer `project_path` import. |
 | **Hosted customer project** (`target=openai_agents` + `project_path`) | **Disabled by default.** The API returns `403 project_exec_disabled` and does not import/execute customer Python. |
 
-Operators who accept the risk on a **single-operator localhost** machine may set `MUTINY_ALLOW_PROJECT_EXEC=1`. That flag is **not** a sandbox and **not** authorization. Do not expose Hosted on a shared or public network with this flag enabled. Full Hosted isolation remains an ADR-019 decision.
+Operators who accept the risk on a **single-operator localhost** machine may set `MUTINY_ALLOW_PROJECT_EXEC=1`. That flag is **not** a sandbox and **not** authorization. Do not expose Hosted on a shared or public network with this flag enabled.
+
+**Target architecture (ADR-019 accepted; M-PR8 not implemented):** Hosted is **observe/lineage only** for customer projects — customer `.mutiny/adapter.py` executes on the Local CLI trust domain; the shared API process must not `exec_module` customer trees in Production Hosted. Until M-PR8, treat any Hosted customer exec path as localhost-only opt-in debt.
 
 ## Hosted authentication (M-PR7)
 
@@ -38,7 +40,7 @@ Single-tenant shared Bearer token for the Hosted **control plane** (not multi-us
 
 CLI: default `mutiny run` stays local and needs no token. Explicit `mutiny run --hosted` / `--hosted-url` sends `MUTINY_API_TOKEN` when set; if the API requires auth and the token is missing/invalid, the CLI fails closed (no silent local fallback).
 
-**Auth ≠ sandbox:** A valid token does **not** enable customer `project_path` adapter execution and does **not** bypass M-PR1. Hosted execution isolation remains ADR-019 / M-PR8.
+**Auth ≠ sandbox:** A valid token does **not** enable customer `project_path` adapter execution and does **not** bypass M-PR1. ADR-021 auth and ADR-019 observe-only isolation are orthogonal; M-PR8 implements ADR-019.
 
 ## Secret redaction (M-PR3)
 

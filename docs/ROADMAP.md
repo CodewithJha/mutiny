@@ -3,8 +3,8 @@
 | Field | Value |
 |---|---|
 | **Status** | Canonical phased roadmap |
-| **Last updated** | 2026-08-09 |
-| **Rule** | Do not mix future work into current-scope execution. Near-term detail lives in [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md). |
+| **Last updated** | 2026-09-09 |
+| **Rule** | Do not mix future work into current-scope execution. Near-term detail lives in [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md). Production Hosted gates: [PRODUCTION_READINESS.md](./PRODUCTION_READINESS.md). |
 
 ---
 
@@ -23,7 +23,8 @@
 - Safety binds (local/in-process/localhost, attestation)  
 - **M-PR2:** CLI `mutiny run` defaults to local Core; Hosted requires `--hosted` / `--hosted-url` (config URL alone never selects Hosted)  
 - **M-PR1:** Hosted customer `project_path` adapter execution disabled by default (`MUTINY_ALLOW_PROJECT_EXEC=1` opt-in; trusted `in_process_demo` only otherwise)  
-- **M-PR7:** Optional single-tenant Hosted Bearer auth (`MUTINY_API_TOKEN`); not multi-tenant / not a sandbox 
+- **M-PR7:** Optional single-tenant Hosted Bearer auth (`MUTINY_API_TOKEN`); not multi-tenant / not a sandbox  
+- **ADR-019 (accepted decision; M-PR8 planned):** Hosted observe/lineage for customer projects; customer adapter exec on Local CLI — **not yet implemented**  
 - Reliability smoke (≥2/3 on harness)  
 - Docs matching engine-first + customer-project primary  
 
@@ -48,6 +49,7 @@
 - Keep demo assets under `docs/assets/` current with Hosted UI
 - Keep good-first-issue queue fresh ([GOOD_FIRST_ISSUES.md](./GOOD_FIRST_ISSUES.md))
 - Clarify sample vs customer-project paths in UX copy as adapters land
+- **M-PR8 (planned):** Implement ADR-019 observe-only Hosted — CLI-side customer exec + Hosted event/artifact ingest; remove production reliance on in-process `project_path` `exec_module`
 
 ---
 
@@ -72,6 +74,7 @@ New adapters on the **same** `TargetAdapter` interface (Core unchanged):
 
 - Authenticated single-tenant Hosted deploy  
 - Ownership attestation for remote targets  
+- Hosted observe/lineage ingest per ADR-019 (after M-PR8)  
 - Stable public Core/API/CLI contracts  
 - Policy packs library  
 - CI token + GitHub Action for regression replay  

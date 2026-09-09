@@ -3,8 +3,8 @@
 | Field | Value |
 |---|---|
 | **Status** | Canonical for package boundaries and constraints |
-| **Last updated** | 2026-08-07 |
-| **Related** | [PRD](./PRD.md) · [SYSTEM_DESIGN](./SYSTEM_DESIGN.md) · [DECISION_LOG](./DECISION_LOG.md) |
+| **Last updated** | 2026-09-09 |
+| **Related** | [PRD](./PRD.md) · [SYSTEM_DESIGN](./SYSTEM_DESIGN.md) · [DECISION_LOG](./DECISION_LOG.md) · [PRODUCTION_READINESS](./PRODUCTION_READINESS.md) |
 
 This document defines **how Mutiny is structured** and **what is allowed to depend on what**. It does not narrate product vision (see PRD) or runtime sequences (see SYSTEM_DESIGN).
 
@@ -176,6 +176,8 @@ Placement may be `integrations/cli` or a published `mutiny` package entrypoint; 
 **M-PR1 (current):** By default the API **refuses** `openai_agents` + `project_path` customer adapter `exec_module` (`403 project_exec_disabled`). Opt-in: `MUTINY_ALLOW_PROJECT_EXEC=1` for single-operator localhost only — not a sandbox. Local CLI adapter execution is unchanged.
 
 **M-PR7 (current):** Optional single-tenant Bearer auth via `MUTINY_API_TOKEN` (ADR-021). When set, protected `/api/*` routes require `Authorization: Bearer <token>`. Public: `/api/health`, `/api/meta`. Auth does not bypass M-PR1 and is not multi-tenant identity.
+
+**ADR-019 (decision; M-PR8 not yet implemented):** Target Hosted role for customer projects is **observe/lineage** — persist campaigns, SSE, artifacts; customer Python runs on Local CLI. Production Hosted must not execute arbitrary customer `.mutiny/adapter.py` in the shared API process. Trusted `in_process_demo` harness may remain. See DECISION_LOG ADR-019.
 ### `apps/web` — Hosted presentation
 
 **Owns**

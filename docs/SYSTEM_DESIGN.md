@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | **Status** | Canonical for runtime behavior and data contracts |
-| **Last updated** | 2026-08-07 |
+| **Last updated** | 2026-09-09 |
 | **Related** | [ARCHITECTURE](./ARCHITECTURE.md) · [PRD](./PRD.md) · [IMPLEMENTATION_PLAN](./IMPLEMENTATION_PLAN.md) |
 
 This document explains **exactly how Mutiny works**. An engineer should be able to implement the system from this + ARCHITECTURE without inventing hidden behavior.
@@ -363,6 +363,8 @@ Typical campaign start when using Hosted:
 
 API uses optional single-tenant Bearer auth (`MUTINY_API_TOKEN`, ADR-021 / M-PR7) on protected control/data routes; not multi-tenant identity. Attestation remains a product safety acknowledgement, not authentication.
 
+**Execution (ADR-019 target):** Customer project campaigns belong on Local CLI; Hosted’s production role is lineage/ops. Today’s Hosted start path still *can* construct adapters in-process for the trusted harness, and for customer `project_path` only under M-PR1 opt-in — **not yet implemented:** observe-only ingest (M-PR8).
+
 **Note:** Hosted may still wire the bundled demo adapter alongside the OpenAI Agents SDK + CLI path. Product narrative prefers sample-as-example, not demo-as-product.
 
 ---
@@ -394,6 +396,10 @@ sequenceDiagram
 ---
 
 ## 12. Frontend → API → Core → Adapter → Target → Trace
+
+**Current interim (demo / opt-in):** Hosted supervisor may still run Core + adapter **in-process** for `in_process_demo`, or for `openai_agents` + `project_path` only when `MUTINY_ALLOW_PROJECT_EXEC=1` (M-PR1). That path is localhost debt, not Target B.
+
+**Target (ADR-019; M-PR8 planned):** Web/API observe lineage from a **CLI-side** campaign (customer adapter never `exec_module`’d in the shared API). Sequence below remains accurate for the trusted harness and for today’s opt-in path until M-PR8 lands.
 
 ```mermaid
 sequenceDiagram
@@ -596,7 +602,8 @@ flowchart TB
 - Do not pass target output into Mutiny’s control prompts without sanitizing/structuring.  
 - Target allowlist enforced in API before adapter construction (Hosted).  
 - **M-PR1:** Hosted does **not** execute arbitrary customer `.mutiny/adapter.py` by default. Only the trusted `in_process_demo` harness runs in-process without opt-in. Customer `project_path` execution requires `MUTINY_ALLOW_PROJECT_EXEC=1` (localhost / single-operator risk acceptance — not isolation). Local CLI remains the supported path for customer adapters.  
-- **M-PR7:** When `MUTINY_API_TOKEN` is set, protected Hosted control/data routes require Bearer auth (ADR-021). Authentication is not execution isolation.
+- **M-PR7:** When `MUTINY_API_TOKEN` is set, protected Hosted control/data routes require Bearer auth (ADR-021). Authentication is not execution isolation.  
+- **ADR-019 (target; M-PR8 not implemented):** Production Hosted is observe/lineage for customer projects — CLI (or a future local runner) executes customer Python; the shared API process must not `exec_module` customer trees. §12 diagram below describes the **current interim** supervisor path (demo harness + kill-switched opt-in), not the Target B end state.
 
 ---
 

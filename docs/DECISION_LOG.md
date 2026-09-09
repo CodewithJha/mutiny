@@ -304,10 +304,37 @@ Add new ADRs at the bottom. Do not rewrite history; supersede with a new ADR.
 3. **Local demo rollback:** If unset/empty, auth is disabled (explicit insecure localhost/demo mode). Operators must set the token before any shared-network Hosted.
 4. **Public routes:** `GET /api/health` and `GET /api/meta` only. Meta may advertise `auth_required` / `auth_env` — never the secret.
 5. **Not in scope:** OAuth, users, sessions, refresh tokens, RBAC, multi-tenant isolation.
-6. **Orthogonal to M-PR1:** Valid auth does not enable `MUTINY_ALLOW_PROJECT_EXEC` or customer adapter `exec_module`. Execution isolation remains ADR-019 / M-PR8.
+6. **Orthogonal to M-PR1:** Valid auth does not enable `MUTINY_ALLOW_PROJECT_EXEC` or customer adapter `exec_module`. Execution isolation is **ADR-019** (accepted observe-only); implementation is **M-PR8** (not yet).
 
 **Alternatives:** Always-on auth with startup failure if unset; per-user accounts; mTLS; API-gateway-only auth.
 
 **Tradeoffs:** Unset token keeps local demo frictionless but is unsafe if Hosted is exposed. Single shared token is enough for single-operator Hosted, not multi-tenant cloud.
 
 **Reconsider when:** Multi-tenant Hosted or org SSO becomes a product requirement (superseding ADR).
+
+---
+
+## ADR-019 — Hosted observe/lineage only; customer Python executes on CLI
+
+**Problem:** Hosted `CampaignSupervisor` can load customer `.mutiny/adapter.py` via `load_adapter_factory` → `importlib` `exec_module` in the shared API process (`project_path` → `_make_adapter`). That is acceptable for Local CLI (same trust as `pytest`) but violates SYSTEM_DESIGN §20 for a control plane: authenticated or not, a reachable Hosted that executes arbitrary customer trees is an RCE / host-FS write class risk. M-PR1 (`MUTINY_ALLOW_PROJECT_EXEC`) is a kill-switch, not isolation. Target B (Production Hosted) needs a durable execution model.
+
+**Decision (Option A — observe-only Hosted):**
+
+1. **Target architecture:** Hosted API/UI is a **control, persistence, and lineage plane** — campaigns, SSE, SQLite artifacts, minimize/regression *metadata*. It does **not** execute customer project Python in the shared API process.
+2. **Customer adapter execution** belongs on the **developer machine** (primary: `mutiny run` / `mutiny test` → Core → Adapter #1), same trust domain as Local CLI (ADR-017). Hosted may later accept **uploaded events/artifacts** (or equivalent push) from that local runner; that ingestion path is **M-PR8**, not this ADR’s implementation.
+3. **Trusted in-process harness** (`target=in_process_demo`) may remain in the API for reliability demos — it is Mutiny-shipped code, not customer `project_path`.
+4. **Interim (current code, until M-PR8):** M-PR1 stays fail-closed by default; `MUTINY_ALLOW_PROJECT_EXEC=1` remains single-operator localhost risk acceptance only — **not** the Target B model and **not** a sandbox.
+5. **Orthogonal:** ADR-020 (policy-derived seeds) and ADR-021 (Bearer token) are unchanged. Auth does not grant execution; observe-only does not replace auth.
+6. **Does not supersede** ADR-020 or ADR-021. **Complements** ADR-017/018. **Partially supersedes** ADR-001’s implication that Hosted is the primary *execution* surface (product priority already moved by ADR-017; this ADR locks Hosted *execution* out of customer Python). **Does not** adopt ADR-007 workers for Target B; workers remain deferred (Option B rejected for now).
+
+**Alternatives:**
+
+| Option | Idea | Why not chosen |
+|---|---|---|
+| **A (chosen)** | Observe/lineage Hosted; CLI executes customer adapters | — |
+| **B** | Ephemeral per-campaign worker/container with FS allowlist | Keeps remote “Run” UX but conflicts with ADR-007 MVP posture, high ops cost, still needs auth + threat model; revisit if design partners require cloud-side agent exec |
+| **C** | Hosted = `in_process_demo` forever; customer projects CLI-only forever | Honest interim (overlaps M-PR1 default) but permanently shrinks Hosted product; does not define Target B lineage ingest |
+
+**Tradeoffs:** Clear trust boundary and reuse of Local CLI security model; Hosted “Run against my project” UX must become “run locally, observe in Hosted” (UI/API redesign in M-PR8). Weaker “push button cloud fuzz” story until/unless Option B is reconsidered.
+
+**Reconsider when:** A concrete multi-tenant or CI-remote requirement forces server-side customer execution with a written worker threat model (new ADR superseding this one toward Option B); or observe-only ingest proves insufficient for the primary Hosted UX.
