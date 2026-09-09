@@ -372,11 +372,10 @@ If this engine is useful, a star helps other agent builders find it. Fork the re
 Thanks to everyone who has contributed. New faces welcome — pick up a [`good first issue`](https://github.com/CodewithJha/mutiny/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).
 
 <!--
-  Gallery is regenerated from the GitHub Contributors API by
+  Gallery is regenerated from commit authors (GitHub Commits API) by
   .github/workflows/contributors.yml → .github/scripts/update_contributors.py
-  (on push to main + weekly cron). Do not use contrib.rocks — its production
-  CDN can lag the API for days (Cache-Control max-age=259200); cache-bust
-  query params do not refresh that server-side snapshot.
+  (on push to main + weekly cron). Avoid contrib.rocks (CDN lag) and the
+  /contributors stats endpoint (often incomplete right after merges).
 -->
 <!-- contributors-gallery:start -->
 <table>
@@ -384,14 +383,21 @@ Thanks to everyone who has contributed. New faces welcome — pick up a [`good f
         <tr>
             <td align="center">
                 <a href="https://github.com/CodewithJha">
-                    <img src="https://avatars.githubusercontent.com/u/155089480?v=4&s=100" width="100" height="100" alt="CodewithJha"/>
+                    <img src="https://github.com/CodewithJha.png?size=100" width="100" height="100" alt="CodewithJha"/>
                     <br />
                     <sub><b>CodewithJha</b></sub>
                 </a>
             </td>
             <td align="center">
+                <a href="https://github.com/Mr-Neutr0n">
+                    <img src="https://github.com/Mr-Neutr0n.png?size=100" width="100" height="100" alt="Mr-Neutr0n"/>
+                    <br />
+                    <sub><b>Mr-Neutr0n</b></sub>
+                </a>
+            </td>
+            <td align="center">
                 <a href="https://github.com/kkkhs">
-                    <img src="https://avatars.githubusercontent.com/u/141250392?v=4&s=100" width="100" height="100" alt="kkkhs"/>
+                    <img src="https://github.com/kkkhs.png?size=100" width="100" height="100" alt="kkkhs"/>
                     <br />
                     <sub><b>kkkhs</b></sub>
                 </a>

@@ -1,5 +1,5 @@
-# Keeps the README contributors gallery in sync with GitHub's Contributors API.
-# Replaces contrib.rocks (CDN can stay stale for ~3 days; cache-bust params do not help).
+# Keeps the README contributors gallery in sync with commit authors.
+# Avoids contrib.rocks CDN lag and the incomplete /contributors stats cache.
 name: Update contributors
 
 on:
