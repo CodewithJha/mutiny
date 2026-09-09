@@ -1,7 +1,9 @@
-"""ASGI entrypoint: ``uvicorn mutiny_api.main:app``."""
+"""ASGI entrypoint: ``uvicorn mutiny_api.main:app``.
 
-from pathlib import Path
+Database path: ``MUTINY_DB_PATH`` if set, else ``data/mutiny.sqlite``.
+See ``mutiny_api.db.resolve_db_path``.
+"""
 
 from mutiny_api.app import create_app
 
-app = create_app(Path("data/mutiny.sqlite"))
+app = create_app()

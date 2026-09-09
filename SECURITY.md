@@ -38,6 +38,20 @@ Mutiny applies a **small, deterministic, local** redactor (`mutiny_core.redact.r
 
 **Not a guarantee:** Mutiny does **not** detect every possible secret format (no LLM / external scanner). Unusual encodings, custom header schemes, and secrets embedded only in attack genomes may still appear. Rollback: `MUTINY_DISABLE_SECRET_REDACTION=1`.
 
+## Hosted SQLite path (M-PR4)
+
+Hosted API persistence uses a single SQLite file resolved by `mutiny_api.db.resolve_db_path`:
+
+| Precedence | Source |
+|---|---|
+| 1 | Explicit `create_app(db_path=…)` (tests / programmatic) |
+| 2 | `MUTINY_DB_PATH` environment variable |
+| 3 | Default `data/mutiny.sqlite` |
+
+Parent directories are created when missing. Empty or unusable paths **fail closed** — Mutiny does **not** silently open another database. `docker-compose.yml` sets `MUTINY_DB_PATH=/app/data/mutiny.sqlite` and the API uses that path.
+
+**Not provided:** automated backup/export/restore. Operators own filesystem snapshots of the configured SQLite file. Ephemeral deploy disks (e.g. Railway without a volume) remain a data-loss risk.
+
 ## Reporting a vulnerability
 
 Please **do not** open a public GitHub issue for security-sensitive reports.

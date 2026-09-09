@@ -27,7 +27,7 @@ from mutiny_core import (
 from mutiny_core.regress import RegressionNotReproducibleError
 
 from mutiny_api import __version__
-from mutiny_api.db import SCHEMA_VERSION, connect
+from mutiny_api.db import SCHEMA_VERSION, connect, resolve_db_path
 from mutiny_api.errors import (
     error_body,
     http_exception_handler,
@@ -61,21 +61,27 @@ from mutiny_api.supervisor import (
 log = logging.getLogger("mutiny_api")
 
 
-def create_app(db_path: str | Path) -> FastAPI:
+def create_app(db_path: str | Path | None = None) -> FastAPI:
+    """Build the Hosted API app.
+
+    Database path precedence (via ``resolve_db_path``):
+    explicit ``db_path`` → ``MUTINY_DB_PATH`` → ``data/mutiny.sqlite``.
+    """
     configure_logging()
     hub = EventHub()
+    resolved_db = resolve_db_path(db_path)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-        conn = connect(db_path)
+        conn = connect(resolved_db)
         repo = Repository(conn)
         supervisor = CampaignSupervisor(repo, hub)
         supervisor.set_loop(asyncio.get_running_loop())
         app.state.repo = repo
         app.state.supervisor = supervisor
         app.state.hub = hub
-        app.state.db_path = str(db_path)
-        log.info("mutiny_api.startup db=%s version=%s", db_path, __version__)
+        app.state.db_path = str(resolved_db)
+        log.info("mutiny_api.startup db=%s version=%s", resolved_db, __version__)
         yield
         conn.close()
         log.info("mutiny_api.shutdown")

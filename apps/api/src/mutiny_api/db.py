@@ -2,8 +2,47 @@
 
 from __future__ import annotations
 
+import os
 import sqlite3
 from pathlib import Path
+
+# Authoritative Hosted API DB path resolution (M-PR4).
+# Precedence: explicit argument → MUTINY_DB_PATH → DEFAULT_DB_PATH.
+DB_PATH_ENV = "MUTINY_DB_PATH"
+DEFAULT_DB_PATH = Path("data/mutiny.sqlite")
+
+
+class DatabaseConfigError(ValueError):
+    """Invalid or unusable database path configuration."""
+
+
+def resolve_db_path(explicit: str | Path | None = None) -> Path:
+    """Resolve the Hosted API SQLite file path.
+
+    Precedence:
+      1. ``explicit`` (constructor / test fixture)
+      2. ``MUTINY_DB_PATH`` environment variable
+      3. ``data/mutiny.sqlite`` (safe local default)
+
+    Empty explicit/env values raise ``DatabaseConfigError``. There is no
+    silent fallback to another database location.
+    """
+    if explicit is not None:
+        raw = str(explicit).strip()
+        if not raw:
+            raise DatabaseConfigError("database path is empty")
+        return Path(raw).expanduser()
+
+    if DB_PATH_ENV in os.environ:
+        raw = os.environ.get(DB_PATH_ENV, "").strip()
+        if not raw:
+            raise DatabaseConfigError(
+                f"{DB_PATH_ENV} is set but empty; unset it or provide a path"
+            )
+        return Path(raw).expanduser()
+
+    return DEFAULT_DB_PATH
+
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS projects (
@@ -148,9 +187,28 @@ def migrate(conn: sqlite3.Connection) -> None:
 
 
 def connect(db_path: str | Path) -> sqlite3.Connection:
+    """Open (and migrate) the SQLite DB at ``db_path``.
+
+    Parent directories are created when missing (existing Hosted contract).
+    Failures raise; callers must not catch and silently open another path.
+    """
     path = Path(db_path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(str(path), check_same_thread=False, timeout=30.0)
+    if not str(path).strip() or str(path).strip() == ".":
+        raise DatabaseConfigError(f"invalid database path: {db_path!r}")
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        raise DatabaseConfigError(
+            f"cannot create database parent directory for {path}: {exc}"
+        ) from exc
+
+    try:
+        conn = sqlite3.connect(str(path), check_same_thread=False, timeout=30.0)
+    except sqlite3.Error as exc:
+        raise DatabaseConfigError(
+            f"cannot open SQLite database at {path}: {exc}"
+        ) from exc
+
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     conn.execute("PRAGMA journal_mode = WAL")

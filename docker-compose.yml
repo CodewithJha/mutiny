@@ -3,6 +3,7 @@ services:
     image: python:3.12-slim
     working_dir: /app
     volumes:
+      # Bind-mount keeps MUTINY_DB_PATH (/app/data/...) on the host ./data/
       - .:/app
     command: >
       bash -lc "pip install -q uv && uv sync &&
@@ -11,6 +12,7 @@ services:
     ports:
       - "8000:8000"
     environment:
+      # Honored by mutiny_api.db.resolve_db_path (M-PR4).
       - MUTINY_DB_PATH=/app/data/mutiny.sqlite
   web:
     image: node:22-bookworm

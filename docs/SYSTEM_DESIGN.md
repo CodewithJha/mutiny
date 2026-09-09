@@ -436,6 +436,8 @@ sequenceDiagram
 
 Core returns objects; API serializes JSON columns. Core never opens SQLite.
 
+**Hosted DB path (M-PR4):** resolved by `mutiny_api.db.resolve_db_path` — explicit `create_app` argument → `MUTINY_DB_PATH` → default `data/mutiny.sqlite`. Parent dirs are created; invalid/empty paths fail without fallback. No automated backup/restore contract yet.
+
 ### Logical schema (Hosted)
 
 - `campaigns(id, status, config_json, metrics_json, created_at, completed_at)`  

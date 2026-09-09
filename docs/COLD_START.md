@@ -86,7 +86,7 @@ Verify:
 - [ ] Open `http://127.0.0.1:3000` — safety banner visible  
 - [ ] Narrative: sample/reference agent, not “this is the product”  
 
-**docker-compose:** use when you want containerized API + web (`docker compose up --build`). Prefer `scripts/dev.sh` for local iteration.
+**docker-compose:** use when you want containerized API + web (`docker compose up --build`). Prefer `scripts/dev.sh` for local iteration. Compose sets `MUTINY_DB_PATH=/app/data/mutiny.sqlite` (honored by the API). The bind mount `.:/app` keeps that file on the host under `./data/`; there is no separate named volume.
 
 ---
 

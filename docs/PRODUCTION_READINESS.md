@@ -52,7 +52,7 @@ It is **not** production-ready as a **public or multi-tenant Hosted** service. T
 | ARCHITECTURE: API owns “rate limits” + “target allowlisting” | **No rate limiter** implemented; “allowlist” is a **target enum** (`in_process_demo` \| `openai_agents`), not a filesystem/URL sandbox |
 | SYSTEM_DESIGN §20: arbitrary remote hosts blocked; treat customer adapter as untrusted vs control plane | Hosted **executes** customer adapter via `importlib` `exec_module` in the API process (`load_adapter_factory`) |
 | PRD / plan: “Redact secrets in traces” | **M-PR3:** deterministic redaction on persist/display (`mutiny_core.redact`) |
-| `docker-compose.yml` sets `MUTINY_DB_PATH` | `mutiny_api.main:app` hardcodes `Path("data/mutiny.sqlite")` — **env ignored** |
+| `docker-compose.yml` sets `MUTINY_DB_PATH` | **M-PR4:** `resolve_db_path()` honors env (compose `/app/data/mutiny.sqlite`); default remains `data/mutiny.sqlite` |
 | ADR-001 “Hosted first” | Superseded for **product priority** by ADR-017; **M-PR2:** CLI default is local; Hosted requires `--hosted` / `--hosted-url` |
 
 ### Honest product posture today
@@ -162,7 +162,7 @@ MVP limitations are labeled as such, not “bugs.”
 | P1-2 | Docs/architecture claim **rate limits** and **path/URL allowlisting**; missing or reduced to target enum | ARCHITECTURE §4 API owns; no limiter in API; no FS root allowlist | Hosted |
 | P1-3 | **Secret redaction** required by PRD — **implemented (M-PR3)** | `mutiny_core.redact`; persist/display wiring | Both (resolved for common patterns) |
 | P1-4 | CLI **Hosted-first** when `api_url` reachable — surprises operators; pushes `project_path` to API | `run_cmd.py` | Local (ops safety); Hosted blast radius |
-| P1-5 | `MUTINY_DB_PATH` in compose **ignored**; DB path hardcoded | `main.py` vs `docker-compose.yml` | Hosted / Data |
+| P1-5 | `MUTINY_DB_PATH` in compose **ignored**; DB path hardcoded — **resolved (M-PR4)** | `mutiny_api.db.resolve_db_path` | Hosted / Data |
 | P1-6 | CI runs **unit only** — integration + reliability not gated on PR | `.github/workflows/ci.yml` | Both / OSS |
 | P1-7 | [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) **stale** vs 0.1.0 — misleads maintainers on ship status | Milestone table vs CHANGELOG / code | OSS |
 
@@ -446,6 +446,7 @@ Order is dependency-aware. Each milestone is independently testable.
 | **DoD** | Env controls DB location |
 | **Rollback** | Revert main.py |
 | **Release** | 0.2.0 |
+| **Status** | **Implemented** — `resolve_db_path` (explicit → `MUTINY_DB_PATH` → `data/mutiny.sqlite`); fail-closed on invalid/empty path; parent dirs created; **backup/restore still a gap (P2-6)** |
 
 ### M-PR5 — CI completeness
 
@@ -651,7 +652,7 @@ ADR-017 already supersedes ADR-001 for **product priority**. **M-PR2** aligns ru
 ### Critical Findings (P0/P1)
 
 - **P0:** Unauthenticated Hosted + in-process adapter exec + policy write + public bind templates.  
-- **P1:** Fake authz (attestation), missing rate limits/allowlist vs docs, DB env ignored, CI unit-only, stale IMPLEMENTATION_PLAN. *(P1-3 secret redaction resolved by M-PR3 for common patterns; P1-4 CLI Hosted-first resolved by M-PR2.)*
+- **P1:** Fake authz (attestation), missing rate limits/allowlist vs docs, CI unit-only, stale IMPLEMENTATION_PLAN. *(P1-3 secret redaction resolved by M-PR3; P1-4 CLI Hosted-first resolved by M-PR2; P1-5 `MUTINY_DB_PATH` resolved by M-PR4.)*
 
 ### Architectural Findings (ADR needed)
 
@@ -670,7 +671,7 @@ ADR-017 already supersedes ADR-001 for **product priority**. **M-PR2** aligns ru
 - SYSTEM_DESIGN trust boundary vs Hosted exec.  
 - ADR-001 historical vs ADR-017 + CLI Hosted-first behavior.  
 - PRD secret redaction — **addressed by M-PR3** (deterministic common-pattern redactor; not universal detection).  
-- compose `MUTINY_DB_PATH` vs hardcoded DB path.
+- compose `MUTINY_DB_PATH` vs hardcoded DB path — **addressed by M-PR4**.
 
 ### Proposed Milestones (exact order)
 
