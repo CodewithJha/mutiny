@@ -396,13 +396,6 @@ Thanks to everyone who has contributed. New faces welcome — pick up a [`good f
                     <sub><b>kkkhs</b></sub>
                 </a>
             </td>
-            <td align="center">
-                <a href="https://github.com/Mr-Neutr0n">
-                    <img src="https://avatars.githubusercontent.com/u/64578610?v=4&s=100" width="100" height="100" alt="Mr-Neutr0n"/>
-                    <br />
-                    <sub><b>Mr-Neutr0n</b></sub>
-                </a>
-            </td>
         </tr>
     </tbody>
 </table>
