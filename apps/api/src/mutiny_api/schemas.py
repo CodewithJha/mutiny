@@ -116,6 +116,9 @@ class MetaResponse(BaseModel):
             "project_path_required_for": ["openai_agents"],
             "hosted_customer_adapter_exec": False,
             "hosted_customer_adapter_exec_env": "MUTINY_ALLOW_PROJECT_EXEC",
+            # M-PR7: True when MUTINY_API_TOKEN is configured (never the token value).
+            "auth_required": False,
+            "auth_env": "MUTINY_API_TOKEN",
             "mock_tools": True,
             "open_proxy": False,
         }

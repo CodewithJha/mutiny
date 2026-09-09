@@ -14,6 +14,9 @@ services:
     environment:
       # Honored by mutiny_api.db.resolve_db_path (M-PR4).
       - MUTINY_DB_PATH=/app/data/mutiny.sqlite
+      # M-PR7 (optional): enable single-tenant Bearer auth on protected routes.
+      # Uncomment and set the same value on `web` so the Next rewrite can inject it.
+      # - MUTINY_API_TOKEN=change-me
   web:
     image: node:22-bookworm
     working_dir: /app/apps/web
@@ -26,3 +29,5 @@ services:
       - api
     environment:
       - WATCHPACK_POLLING=true
+      # - MUTINY_API_TOKEN=change-me
+      # - MUTINY_API_URL=http://api:8000

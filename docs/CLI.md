@@ -49,12 +49,18 @@ opt-in only.
 | `--no-hosted` | off | Force local (default behavior; kept for compatibility; conflicts with `--hosted` / `--hosted-url`) |
 | `--attestation` / `--no-attestation` | attestation on | Confirm authorized testing (`--no-attestation` fails closed) |
 
+**Hosted auth (M-PR7):** Explicit Hosted runs send `Authorization: Bearer` from
+`MUTINY_API_TOKEN` when set. If the API has auth enabled and the token is
+missing or wrong, the CLI exits with an error (no silent local fallback).
+Default local `mutiny run` does not require a Hosted token.
+
 **Precedence:** CLI flags decide mode. `hosted.api_url` in `mutiny.yaml` only
 supplies the URL when Hosted is explicitly selected — it never auto-selects Hosted.
 
 ```bash
 mutiny run
 mutiny run --hosted
+MUTINY_API_TOKEN=… mutiny run --hosted
 mutiny run --path . --hosted-url http://127.0.0.1:8000
 mutiny run --no-hosted   # same as default local
 ```

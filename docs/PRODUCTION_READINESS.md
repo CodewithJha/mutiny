@@ -481,13 +481,14 @@ Order is dependency-aware. Each milestone is independently testable.
 |---|---|
 | **Goal** | Minimum auth before any non-loopback Hosted |
 | **Problems solved** | P0-1, P1-1 (partial) |
-| **Files** | `apps/api`, web client headers, SECURITY.md |
-| **Architecture impact** | ADR for auth scheme |
+| **Files** | `apps/api`, web middleware headers, CLI Hosted client, SECURITY.md |
+| **Architecture impact** | **ADR-021** accepted — single-tenant Bearer token |
 | **Dependencies** | M-PR1 |
-| **Tests** | Integration 401 without token |
-| **DoD** | Mutating routes require token when enabled |
-| **Rollback** | Disable via env for local demo |
+| **Tests** | Integration: 401 without/invalid token; authenticated success; SSE; CLI; M-PR1 preserved |
+| **DoD** | Protected routes require token when `MUTINY_API_TOKEN` is set — **done (M-PR7)** |
+| **Rollback** | Unset `MUTINY_API_TOKEN` for local unauthenticated demo |
 | **Release** | 0.3.0 |
+| **Status** | **Implemented** — Bearer via `MUTINY_API_TOKEN`; public health/meta; auth does not bypass M-PR1 |
 
 ### M-PR8 — ADR-019 implementation (Hosted execution isolation)
 
@@ -526,7 +527,7 @@ Scheduled after Target A gate; do not block 0.2.0.
 ### Measurable — Production Hosted (Target B)
 
 - [ ] All Target A checks  
-- [ ] AuthN on mutating routes  
+- [ ] AuthN on mutating routes when `MUTINY_API_TOKEN` set (M-PR7) 
 - [ ] No customer `exec_module` in API process (ADR-019)  
 - [ ] Rate limits enforced  
 - [ ] DB path configurable; backup procedure documented  

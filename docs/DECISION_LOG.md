@@ -290,3 +290,24 @@ Add new ADRs at the bottom. Do not rewrite history; supersede with a new ADR.
 **Tradeoffs:** Out-of-box refund demo hit rate may rely on harness-pinned boundary seeds for the offline smoke gate; general policies get relevant search without a second engine.
 
 **Reconsider when:** Search quality on diverse policies needs richer constraint-aware generators or optional user seed corpora in `mutiny.yaml`.
+
+---
+
+## ADR-021 — Single-tenant Hosted API token (M-PR7)
+
+**Problem:** Hosted API previously accepted unauthenticated control-plane calls (campaigns, policies, regressions, SSE). Attestation is a product safety checkbox, not identity. Multi-tenant OAuth/users/sessions are out of current scope and would expand the product surface without fixing the immediate exposure.
+
+**Decision:**
+
+1. **One shared server credential:** `MUTINY_API_TOKEN` environment variable. Clients send `Authorization: Bearer <token>`.
+2. **Fail closed when enabled:** If the env var is set to a non-empty value, all protected `/api/*` routes reject missing/invalid credentials with the same `401 unauthorized` body (constant-time compare; no token echo).
+3. **Local demo rollback:** If unset/empty, auth is disabled (explicit insecure localhost/demo mode). Operators must set the token before any shared-network Hosted.
+4. **Public routes:** `GET /api/health` and `GET /api/meta` only. Meta may advertise `auth_required` / `auth_env` — never the secret.
+5. **Not in scope:** OAuth, users, sessions, refresh tokens, RBAC, multi-tenant isolation.
+6. **Orthogonal to M-PR1:** Valid auth does not enable `MUTINY_ALLOW_PROJECT_EXEC` or customer adapter `exec_module`. Execution isolation remains ADR-019 / M-PR8.
+
+**Alternatives:** Always-on auth with startup failure if unset; per-user accounts; mTLS; API-gateway-only auth.
+
+**Tradeoffs:** Unset token keeps local demo frictionless but is unsafe if Hosted is exposed. Single shared token is enough for single-operator Hosted, not multi-tenant cloud.
+
+**Reconsider when:** Multi-tenant Hosted or org SSO becomes a product requirement (superseding ADR).

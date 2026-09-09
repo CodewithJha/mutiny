@@ -23,6 +23,7 @@
 - Safety binds (local/in-process/localhost, attestation)  
 - **M-PR2:** CLI `mutiny run` defaults to local Core; Hosted requires `--hosted` / `--hosted-url` (config URL alone never selects Hosted)  
 - **M-PR1:** Hosted customer `project_path` adapter execution disabled by default (`MUTINY_ALLOW_PROJECT_EXEC=1` opt-in; trusted `in_process_demo` only otherwise)  
+- **M-PR7:** Optional single-tenant Hosted Bearer auth (`MUTINY_API_TOKEN`); not multi-tenant / not a sandbox 
 - Reliability smoke (≥2/3 on harness)  
 - Docs matching engine-first + customer-project primary  
 

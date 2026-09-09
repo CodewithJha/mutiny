@@ -95,9 +95,9 @@ def run_campaign(
     if want_hosted:
         print("  Execution mode: hosted")
         print(
-            "  note: Hosted customer project_path adapter exec is disabled by "
-            "default (M-PR1); API may return 403 unless MUTINY_ALLOW_PROJECT_EXEC=1"
-        )
+        "  note: Hosted customer project_path adapter exec is disabled by "
+        "default (M-PR1); a valid API token does not enable it"
+    )
     else:
         print("  Execution mode: local")
     print()
@@ -160,8 +160,11 @@ def _run_via_hosted(
         "use_boundary_seeds": bool(config.get("use_boundary_seeds", True)),
     }
 
+    headers = _hosted_auth_headers()
+    token_configured = bool(headers)
+
     try:
-        with httpx.Client(base_url=api_url, timeout=10.0) as client:
+        with httpx.Client(base_url=api_url, timeout=10.0, headers=headers) as client:
             health = client.get("/api/health")
             if health.status_code >= 400:
                 print(
@@ -170,11 +173,31 @@ def _run_via_hosted(
                 )
                 return 1
 
+            meta = client.get("/api/meta")
+            if meta.status_code == 200:
+                safety = (meta.json() or {}).get("safety") or {}
+                if safety.get("auth_required") and not token_configured:
+                    print(
+                        "error: Hosted API requires authentication "
+                        "(set MUTINY_API_TOKEN); refusing silent local fallback",
+                        file=sys.stderr,
+                    )
+                    return 1
+
             print(f"→ Hosted API  {api_url}")
             print(f"  project     {project_root}")
             print("  adapter     .mutiny/adapter.py (loaded on server)")
             print("  policy      policy.yaml (loaded on server from project)")
+            if token_configured:
+                print("  auth        Authorization: Bearer <MUTINY_API_TOKEN>")
             created = client.post("/api/campaigns", json=payload)
+            if created.status_code == 401:
+                print(
+                    "error: Hosted authentication failed "
+                    "(set a valid MUTINY_API_TOKEN); refusing silent local fallback",
+                    file=sys.stderr,
+                )
+                return 1
             if created.status_code >= 400:
                 print(
                     f"error: Hosted create failed ({created.status_code}): "
@@ -195,6 +218,13 @@ def _run_via_hosted(
                 f"/api/campaigns/{campaign_id}/start",
                 json={"attestation": True},
             )
+            if started.status_code == 401:
+                print(
+                    "error: Hosted authentication failed "
+                    "(set a valid MUTINY_API_TOKEN); refusing silent local fallback",
+                    file=sys.stderr,
+                )
+                return 1
             if started.status_code >= 400:
                 print(
                     f"error: Hosted start failed ({started.status_code}): "
@@ -232,6 +262,18 @@ def _run_via_hosted(
         print(f"error: Hosted unreachable ({exc})", file=sys.stderr)
         return 1
 
+
+def _hosted_auth_headers() -> dict[str, str]:
+    """Bearer headers from ``MUTINY_API_TOKEN`` when set (never logged)."""
+    import os
+
+    raw = os.environ.get("MUTINY_API_TOKEN")
+    if raw is None:
+        return {}
+    token = raw.strip()
+    if not token:
+        return {}
+    return {"Authorization": f"Bearer {token}"}
 
 def _poll_campaign(client: Any, campaign_id: str, timeout: float = 120.0) -> dict[str, Any]:
     deadline = time.time() + timeout

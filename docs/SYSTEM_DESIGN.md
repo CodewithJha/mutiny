@@ -361,7 +361,7 @@ Typical campaign start when using Hosted:
 6. `POST /api/candidates/{id}/regression`  
 7. `POST /api/tests/run`  
 
-API authenticates nothing multi-tenant in current scope; local single-user trust with attestation flag.
+API uses optional single-tenant Bearer auth (`MUTINY_API_TOKEN`, ADR-021 / M-PR7) on protected control/data routes; not multi-tenant identity. Attestation remains a product safety acknowledgement, not authentication.
 
 **Note:** Hosted may still wire the bundled demo adapter alongside the OpenAI Agents SDK + CLI path. Product narrative prefers sample-as-example, not demo-as-product.
 
@@ -596,6 +596,7 @@ flowchart TB
 - Do not pass target output into Mutiny’s control prompts without sanitizing/structuring.  
 - Target allowlist enforced in API before adapter construction (Hosted).  
 - **M-PR1:** Hosted does **not** execute arbitrary customer `.mutiny/adapter.py` by default. Only the trusted `in_process_demo` harness runs in-process without opt-in. Customer `project_path` execution requires `MUTINY_ALLOW_PROJECT_EXEC=1` (localhost / single-operator risk acceptance — not isolation). Local CLI remains the supported path for customer adapters.  
+- **M-PR7:** When `MUTINY_API_TOKEN` is set, protected Hosted control/data routes require Bearer auth (ADR-021). Authentication is not execution isolation.
 
 ---
 

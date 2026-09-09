@@ -174,6 +174,8 @@ Placement may be `integrations/cli` or a published `mutiny` package entrypoint; 
 - Mutation prompt logic copied out of Core  
 
 **M-PR1 (current):** By default the API **refuses** `openai_agents` + `project_path` customer adapter `exec_module` (`403 project_exec_disabled`). Opt-in: `MUTINY_ALLOW_PROJECT_EXEC=1` for single-operator localhost only — not a sandbox. Local CLI adapter execution is unchanged.
+
+**M-PR7 (current):** Optional single-tenant Bearer auth via `MUTINY_API_TOKEN` (ADR-021). When set, protected `/api/*` routes require `Authorization: Bearer <token>`. Public: `/api/health`, `/api/meta`. Auth does not bypass M-PR1 and is not multi-tenant identity.
 ### `apps/web` — Hosted presentation
 
 **Owns**

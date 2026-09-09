@@ -11,7 +11,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, AsyncIterator
 
-from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, StreamingResponse
 
@@ -27,6 +27,7 @@ from mutiny_core import (
 from mutiny_core.regress import RegressionNotReproducibleError
 
 from mutiny_api import __version__
+from mutiny_api.auth import auth_required, require_hosted_auth
 from mutiny_api.db import SCHEMA_VERSION, connect, resolve_db_path
 from mutiny_api.errors import (
     error_body,
@@ -94,9 +95,14 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
             "AI proposes; deterministic PolicyEvaluator proves. "
             "Trusted harness: in_process_demo. "
             "Customer openai_agents + project_path execution is disabled by default "
-            "(MUTINY_ALLOW_PROJECT_EXEC=1 opt-in for single-operator localhost only)."
+            "(MUTINY_ALLOW_PROJECT_EXEC=1 opt-in for single-operator localhost only). "
+            "When MUTINY_API_TOKEN is set, protected /api routes require "
+            "Authorization: Bearer <token> (M-PR7). Auth is not a sandbox."
         ),
         lifespan=lifespan,
+        # App-wide dependency: public /api/health|/api/meta skip inside the helper;
+        # when MUTINY_API_TOKEN is unset, enforcement is a no-op (local demo).
+        dependencies=[Depends(require_hosted_auth)],
     )
     app.add_exception_handler(HTTPException, http_exception_handler)
     app.add_exception_handler(Exception, unhandled_exception_handler)
@@ -166,6 +172,8 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
                 "project_path_required_for": ["openai_agents"],
                 "hosted_customer_adapter_exec": allow,
                 "hosted_customer_adapter_exec_env": "MUTINY_ALLOW_PROJECT_EXEC",
+                "auth_required": auth_required(),
+                "auth_env": "MUTINY_API_TOKEN",
                 "mock_tools": True,
                 "open_proxy": False,
             },

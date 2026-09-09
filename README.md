@@ -205,7 +205,9 @@ cd apps/web && npm install && npm run dev
 CLI campaigns default to **local** Core. Use `mutiny run --hosted` (or
 `--hosted-url`) for optional Hosted lineage.
 
-**Hosted safety (M-PR1):** By default the Hosted API will **not** load/execute a customer `.mutiny/adapter.py` via `project_path` (returns `403`). Prefer `mutiny run` (local) for customer projects. The bundled `in_process_demo` harness still works in Hosted. See [SECURITY.md](./SECURITY.md).
+**Hosted safety (M-PR1):** By default the Hosted API will **not** load/execute a customer `.mutiny/adapter.py` via `project_path` (returns `403`). Prefer `mutiny run` (local) for customer projects. The bundled `in_process_demo` harness still works in Hosted.
+
+**Hosted auth (M-PR7):** Set `MUTINY_API_TOKEN` on the API (and the same value on the web process for UI rewrites) to require `Authorization: Bearer` on protected routes. Unset = local demo only. Auth does not sandbox customer Python. See [SECURITY.md](./SECURITY.md).
 
 ---
 
@@ -449,7 +451,7 @@ No. Authorized testing only — local / in-process / localhost. Not an open-inte
 - **One shipped adapter** (OpenAI Agents SDK); multi-framework support is intentional future work, not missing polish of a single kernel.
 - **Published on PyPI** as `mutiny-ai` (`pip install mutiny-ai`) — see [docs/PUBLISHING.md](./docs/PUBLISHING.md).
 - **Policy expressiveness** is deliberately narrow (deterministic operators on tool calls) — not NL policies judged by an LLM.
-- **Hosted** is optional and secondary; auth / multi-tenant cloud are not current scope.
+- **Hosted** is optional and secondary; single-tenant Bearer auth is available (`MUTINY_API_TOKEN`); multi-tenant cloud / SSO are not current scope.
 - Sample and reference demo agents use **mock tools**; they are not production payment or email systems.
 - See [CHANGELOG.md](./CHANGELOG.md) for Unreleased / initial release notes.
 

@@ -58,6 +58,8 @@ def test_meta_project_path_model(client: TestClient):
     assert "openai_agents" in safety["project_path_required_for"]
     assert safety["hosted_customer_adapter_exec"] is False
     assert safety["hosted_customer_adapter_exec_env"] == "MUTINY_ALLOW_PROJECT_EXEC"
+    assert safety["auth_required"] is False
+    assert safety["auth_env"] == "MUTINY_API_TOKEN"
 
 def test_policies_load_from_project(client: TestClient):
     r = client.get(

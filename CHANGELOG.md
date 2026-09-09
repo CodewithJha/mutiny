@@ -15,6 +15,7 @@ Published on PyPI as **`mutiny-ai`** (+ [`mutiny-core`](https://pypi.org/project
 - **M-PR4 DB path hygiene** — Hosted API honors `MUTINY_DB_PATH` for the real SQLite file (precedence: explicit `create_app` path → env → `data/mutiny.sqlite`). Invalid/empty paths fail closed with no silent fallback. Parent directories are created when missing. Backup/restore tooling is still out of scope.
 - **M-PR5 CI completeness** — PR CI gates unit + offline integration + reliability (Python 3.11/3.12), local CLI sample smoke, web typecheck/build, and publishable package builds. Publish verify reads versions from each package `pyproject.toml` (no hardcoded `0.1.0`).
 - **M-PR6 Policy-general seeds/mutators** — Core/CLI/API defaults use `default_policy_seeds` from `AttackFocus` (ADR-020). Template/LLM mutators probe focus tools/args/thresholds instead of hardcoded refund/`ord_1001`/`amount>200`. `boundary_refund_seeds` remains a demo/harness helper.
+- **M-PR7 Hosted authN** — Optional single-tenant Bearer token (`MUTINY_API_TOKEN`). When set, protected Hosted `/api/*` routes require `Authorization: Bearer <token>` (`401` otherwise). Public: `/api/health`, `/api/meta`. CLI `--hosted` uses the env token and fails closed if auth is required but missing. Auth does not bypass M-PR1 kill-switch and is not a sandbox (ADR-021).
 
 ### Planned
 

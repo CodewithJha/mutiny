@@ -72,6 +72,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
 def _code_for_status(status: int) -> str:
     return {
         400: "bad_request",
+        401: "unauthorized",
         403: "forbidden",
         404: "not_found",
         409: "conflict",
