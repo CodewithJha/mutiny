@@ -373,33 +373,40 @@ Thanks to everyone who has contributed. New faces welcome — pick up a [`good f
 
 <!--
   Gallery is regenerated from the GitHub Contributors API by
-  .github/workflows/contributors.yml (on push to main + weekly cron).
-  Do not use contrib.rocks here — its production CDN can lag the API
-  for days (Cache-Control max-age=259200); cache-bust query params do
-  not refresh that server-side snapshot.
+  .github/workflows/contributors.yml → .github/scripts/update_contributors.py
+  (on push to main + weekly cron). Do not use contrib.rocks — its production
+  CDN can lag the API for days (Cache-Control max-age=259200); cache-bust
+  query params do not refresh that server-side snapshot.
 -->
-<!-- readme: contributors -start -->
+<!-- contributors-gallery:start -->
 <table>
-	<tbody>
-		<tr>
+    <tbody>
+        <tr>
             <td align="center">
                 <a href="https://github.com/CodewithJha">
-                    <img src="https://avatars.githubusercontent.com/u/155089480?v=4" width="100;" alt="CodewithJha"/>
+                    <img src="https://avatars.githubusercontent.com/u/155089480?v=4&s=100" width="100" height="100" alt="CodewithJha"/>
                     <br />
                     <sub><b>CodewithJha</b></sub>
                 </a>
             </td>
             <td align="center">
                 <a href="https://github.com/kkkhs">
-                    <img src="https://avatars.githubusercontent.com/u/141250392?v=4" width="100;" alt="kkkhs"/>
+                    <img src="https://avatars.githubusercontent.com/u/141250392?v=4&s=100" width="100" height="100" alt="kkkhs"/>
                     <br />
                     <sub><b>kkkhs</b></sub>
                 </a>
             </td>
-		</tr>
-	<tbody>
+            <td align="center">
+                <a href="https://github.com/Mr-Neutr0n">
+                    <img src="https://avatars.githubusercontent.com/u/64578610?v=4&s=100" width="100" height="100" alt="Mr-Neutr0n"/>
+                    <br />
+                    <sub><b>Mr-Neutr0n</b></sub>
+                </a>
+            </td>
+        </tr>
+    </tbody>
 </table>
-<!-- readme: contributors -end -->
+<!-- contributors-gallery:end -->
 
 Full graph: [github.com/CodewithJha/mutiny/graphs/contributors](https://github.com/CodewithJha/mutiny/graphs/contributors).
 
