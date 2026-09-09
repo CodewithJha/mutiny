@@ -110,6 +110,17 @@ User-facing PyPI name for the CLI package is **`mutiny-ai`** (see [docs/PUBLISHI
 
 ## How to run tests
 
+PR CI (see `.github/workflows/ci.yml`) gates on Python **3.11** and **3.12**:
+
+| Check | Local equivalent |
+|---|---|
+| Unit | `uv run pytest tests/unit -q` |
+| Integration (offline) | `uv run pytest tests/integration -q` |
+| Reliability | `uv run pytest tests/reliability -q` |
+| CLI smoke (local, no Hosted) | `cd examples/openai_support_agent && uv run mutiny init && uv run mutiny run` |
+| Web typecheck + build | `cd apps/web && npm ci && npx tsc --noEmit && npm run build` |
+| Package build | `uv build --out-dir dist/core packages/mutiny_core` (and openai/cli packages) |
+
 ```bash
 uv sync --extra dev
 uv run pytest tests/unit -q          # default for most PRs
@@ -118,6 +129,8 @@ uv run pytest tests/reliability -q   # when touching campaign / minimize / flaky
 ```
 
 Optional offline smoke: `cd examples/openai_support_agent && uv run mutiny init && uv run mutiny run`.
+
+Normal CI does **not** require Hosted, Featherless, or LLM API keys (`MUTINY_SAMPLE_OFFLINE=1`).
 
 ## Pull request etiquette
 

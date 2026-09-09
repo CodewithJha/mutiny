@@ -87,11 +87,21 @@ jobs:
       - name: Verify on PyPI
         run: |
           set -euo pipefail
-          for pkg in mutiny-core mutiny-openai-agents mutiny-ai; do
-            if curl -fsSL "https://pypi.org/pypi/${pkg}/0.1.0/json" >/dev/null; then
-              echo "ok ${pkg} 0.1.0"
+          version_of() {
+            grep -E '^version[[:space:]]*=' "$1/pyproject.toml" | head -1 | sed -E 's/.*"([^"]+)".*/\1/'
+          }
+          verify_pkg() {
+            local dir="$1"
+            local pypi_name="$2"
+            local version
+            version="$(version_of "$dir")"
+            if curl -fsSL "https://pypi.org/pypi/${pypi_name}/${version}/json" >/dev/null; then
+              echo "ok ${pypi_name} ${version}"
             else
-              echo "missing ${pkg} 0.1.0" >&2
+              echo "missing ${pypi_name} ${version}" >&2
               exit 1
             fi
-          done
+          }
+          verify_pkg packages/mutiny_core mutiny-core
+          verify_pkg packages/mutiny_openai_agents mutiny-openai-agents
+          verify_pkg packages/mutiny_cli mutiny-ai

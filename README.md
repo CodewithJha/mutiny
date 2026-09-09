@@ -358,6 +358,8 @@ uv sync --extra dev
 uv run pytest tests/unit -q
 ```
 
+PR CI also runs offline integration + reliability (3.11/3.12), sample local CLI smoke, web typecheck/build, and package builds — see [CONTRIBUTING.md](./CONTRIBUTING.md#how-to-run-tests).
+
 - **Guide (30-min path):** [CONTRIBUTING.md](./CONTRIBUTING.md)
 - **Good first issues:** [open labeled issues](https://github.com/CodewithJha/mutiny/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) · catalog [`docs/GOOD_FIRST_ISSUES.md`](./docs/GOOD_FIRST_ISSUES.md)
 - **Ideas & brainstorming:** [Discussions](https://github.com/CodewithJha/mutiny/discussions/12)

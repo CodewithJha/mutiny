@@ -40,7 +40,7 @@ It is **not** production-ready as a **public or multi-tenant Hosted** service. T
 | Hosted API | `apps/api` — campaigns, SSE, minimize, regressions, projects, policy CRUD |
 | Hosted UI | `apps/web` — talks HTTP/SSE to API only (ADR-014) |
 | Demo harness | `apps/demo_agent` — `in_process_demo` still supported by supervisor |
-| CI | `.github/workflows/ci.yml` — unit tests on 3.11/3.12 only |
+| CI | `.github/workflows/ci.yml` — unit + integration + reliability (3.11/3.12), CLI smoke, web build, package build |
 | Publish | `.github/workflows/publish.yml` + `docs/PUBLISHING.md` |
 | Tag | `v0.1.0` |
 
@@ -163,7 +163,7 @@ MVP limitations are labeled as such, not “bugs.”
 | P1-3 | **Secret redaction** required by PRD — **implemented (M-PR3)** | `mutiny_core.redact`; persist/display wiring | Both (resolved for common patterns) |
 | P1-4 | CLI **Hosted-first** when `api_url` reachable — surprises operators; pushes `project_path` to API | `run_cmd.py` | Local (ops safety); Hosted blast radius |
 | P1-5 | `MUTINY_DB_PATH` in compose **ignored**; DB path hardcoded — **resolved (M-PR4)** | `mutiny_api.db.resolve_db_path` | Hosted / Data |
-| P1-6 | CI runs **unit only** — integration + reliability not gated on PR | `.github/workflows/ci.yml` | Both / OSS |
+| P1-6 | CI runs **unit only** — integration + reliability not gated on PR — **resolved (M-PR5)** | `.github/workflows/ci.yml` | Both / OSS |
 | P1-7 | [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) **stale** vs 0.1.0 — misleads maintainers on ship status | Milestone table vs CHANGELOG / code | OSS |
 
 ### P2 — Significant debt
@@ -173,7 +173,7 @@ MVP limitations are labeled as such, not “bugs.”
 | P2-1 | Campaign defaults to **refund-oriented seeds** when caller omits seeds | `CampaignEngine._initial_population` → `default_refund_seeds` |
 | P2-2 | Template mutator + LLM prompts **hardcode** refund/`issue_refund`/`amount>200`/`ord_1001` | `mutate/templates.py`, `mutate/engine.py` `_build_prompt` |
 | P2-3 | Featherless concrete client lives in Core (port OK; **provider-named** surface in kernel package) | `mutiny_core/llm/featherless.py`, ADR-012 |
-| P2-4 | `publish.yml` verify step **hardcodes `0.1.0`** | Will fail/misleading on next version |
+| P2-4 | `publish.yml` verify step **hardcodes `0.1.0`** — **resolved (M-PR5)**; reads each package `pyproject.toml` | Was fail/misleading on next version |
 | P2-5 | Regressions table has **no `project_id`**; filtering joins via campaigns | `db.py` schema |
 | P2-6 | No SQLite backup/export tooling for Hosted data | ops gap |
 | P2-7 | Empty `integrations/` vs ARCHITECTURE diagram mentioning MCP/skills | placeholder only |
@@ -326,12 +326,13 @@ MVP limitations are labeled as such, not “bugs.”
 
 | Topic | Status |
 |---|---|
-| Unit tests on 3.11/3.12 | Pass |
-| Integration tests in CI | **Not run** (P1-6) |
-| Reliability smoke in CI | **Not run** (optional offline gate exists) |
-| Publish workflow | Present; verify hardcodes `0.1.0` (P2-4) |
-| Lint/typecheck job | Absent |
-| Web build/test in CI | Absent |
+| Unit tests on 3.11/3.12 | Pass (PR gate) |
+| Integration tests in CI | **Pass** — offline `tests/integration` on PR (M-PR5) |
+| Reliability smoke in CI | **Pass** — `tests/reliability` on PR (M-PR5) |
+| CLI local smoke in CI | **Pass** — sample `mutiny init` + `mutiny run` (no Hosted) |
+| Publish workflow | Present; verify reads package `pyproject.toml` versions (M-PR5) |
+| Web typecheck + build in CI | Present (`apps/web`) |
+| Package build in CI | Present (`mutiny-core` / `mutiny-openai-agents` / `mutiny-ai`) |
 | Branch protection assumptions | Not verified in this audit (ops) |
 
 ---
@@ -453,14 +454,15 @@ Order is dependency-aware. Each milestone is independently testable.
 | | |
 |---|---|
 | **Goal** | Gate PRs on unit + offline integration (and optional smoke) |
-| **Problems solved** | P1-6 |
-| **Files** | `.github/workflows/ci.yml` |
+| **Problems solved** | P1-6; P2-4 |
+| **Files** | `.github/workflows/ci.yml`, `.github/workflows/publish.yml` |
 | **Architecture impact** | None |
 | **Dependencies** | Stable offline sample |
 | **Tests** | Workflow itself |
 | **DoD** | `tests/integration` (offline) runs on PR; documented |
 | **Rollback** | Revert workflow |
 | **Release** | 0.2.0 |
+| **Status** | **Implemented** — PR CI: `backend-tests` (unit+integration+reliability × 3.11/3.12), `cli-smoke` (local sample), `web-build`, `package-build`; publish verify uses `pyproject.toml` versions |
 
 ### M-PR6 — Policy-general seeds & mutators
 
@@ -520,7 +522,7 @@ Scheduled after Target A gate; do not block 0.2.0.
 - [ ] No Hosted required for primary path; Hosted explicitly opt-in  
 - [x] Secret redaction tests green  
 - [ ] Seeds/mutators policy-general (or documented residual refund bias with issue link)  
-- [ ] CI: unit + offline integration green on PR  
+- [x] CI: unit + offline integration green on PR  
 - [ ] README/SECURITY/IMPLEMENTATION_PLAN match code  
 - [ ] Version **≥ 0.2.0** tagged with CHANGELOG  
 
@@ -644,15 +646,15 @@ ADR-017 already supersedes ADR-001 for **product priority**. **M-PR2** aligns ru
 | **Local CLI** | **8.0** | Default local path (M-PR2); common-secret redaction (M-PR3); refund bias still blocks full “production” |
 | **Hosted** | **2.5** | Local demo only; P0 auth/RCE if exposed; M-PR3 redacts persist/SSE evidence |
 | **Core** | **7.5** | Strong oracle & package boundaries; search heuristics demo-coupled |
-| **OSS** | **7.0** | Strong community files; stale implementation plan; thin automation |
-| **Packaging** | **8.0** | PyPI 0.1.0 real; publish verify hardcoded |
+| **OSS** | **7.5** | Strong community files; PR CI covers unit/integration/reliability + smoke (M-PR5); stale implementation plan |
+| **Packaging** | **8.5** | PyPI 0.1.0 real; publish verify reads package metadata (M-PR5) |
 | **Security** | **3.5** | Oracle trustworthy; M-PR3 redaction; Hosted control plane still not auth-safe |
 | **Overall** | **4.5** | Alpha suitable for authorized local fuzzing; not dual-target production |
 
 ### Critical Findings (P0/P1)
 
 - **P0:** Unauthenticated Hosted + in-process adapter exec + policy write + public bind templates.  
-- **P1:** Fake authz (attestation), missing rate limits/allowlist vs docs, CI unit-only, stale IMPLEMENTATION_PLAN. *(P1-3 secret redaction resolved by M-PR3; P1-4 CLI Hosted-first resolved by M-PR2; P1-5 `MUTINY_DB_PATH` resolved by M-PR4.)*
+- **P1:** Fake authz (attestation), missing rate limits/allowlist vs docs, stale IMPLEMENTATION_PLAN. *(P1-3 secret redaction resolved by M-PR3; P1-4 CLI Hosted-first resolved by M-PR2; P1-5 `MUTINY_DB_PATH` resolved by M-PR4; P1-6 CI completeness resolved by M-PR5.)*
 
 ### Architectural Findings (ADR needed)
 

@@ -13,12 +13,12 @@ Published on PyPI as **`mutiny-ai`** (+ [`mutiny-core`](https://pypi.org/project
 - **M-PR2 Local CLI default** — `mutiny run` executes locally by default. Hosted requires explicit `--hosted` and/or `--hosted-url`. Config `hosted.api_url` alone never selects Hosted. Explicit Hosted failures do not silently fall back to local.
 - **M-PR3 Secret redaction** — Deterministic `[REDACTED]` sanitization of common credential fields and `Authorization: Bearer` strings on persist/display paths (traces, hits, SSE/event payloads, test evidence). Runtime policy evaluation still sees raw in-memory traces. Not a general secret scanner.
 - **M-PR4 DB path hygiene** — Hosted API honors `MUTINY_DB_PATH` for the real SQLite file (precedence: explicit `create_app` path → env → `data/mutiny.sqlite`). Invalid/empty paths fail closed with no silent fallback. Parent directories are created when missing. Backup/restore tooling is still out of scope.
+- **M-PR5 CI completeness** — PR CI gates unit + offline integration + reliability (Python 3.11/3.12), local CLI sample smoke, web typecheck/build, and publishable package builds. Publish verify reads versions from each package `pyproject.toml` (no hardcoded `0.1.0`).
 
 ### Planned
 
 - Additional framework adapters (LangGraph, CrewAI, PydanticAI, …)
-- CI GitHub Action for sample-project `mutiny test` replay (not shipped in 0.1.0)
-
+- Dedicated GitHub Action for customer-project `mutiny test` replay packaging (sample path covered by CLI smoke + suites)
 ## [0.1.0] — 2026-08-09
 
 Initial public repository promotion.

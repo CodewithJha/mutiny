@@ -6,8 +6,13 @@ on:
   pull_request:
     branches: [main]
 
+# Normal PR CI is offline: sample agent + template smoke; no Hosted/LLM secrets.
+env:
+  MUTINY_SAMPLE_OFFLINE: "1"
+
 jobs:
-  test:
+  backend-tests:
+    name: backend-tests
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -31,5 +36,116 @@ jobs:
       - name: Unit tests
         run: uv run pytest tests/unit -q --tb=short
         env:
-          # Sample agent falls back to offline scripted model without a key.
+          MUTINY_DB_PATH: ${{ runner.temp }}/mutiny-unit-${{ matrix.python-version }}.sqlite
+
+      - name: Integration tests
+        run: uv run pytest tests/integration -q --tb=short
+        env:
+          MUTINY_DB_PATH: ${{ runner.temp }}/mutiny-integration-${{ matrix.python-version }}.sqlite
+
+      - name: Reliability tests
+        run: uv run pytest tests/reliability -q --tb=short
+        env:
+          MUTINY_DB_PATH: ${{ runner.temp }}/mutiny-reliability-${{ matrix.python-version }}.sqlite
+
+  cli-smoke:
+    name: cli-smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Sync workspace
+        run: uv sync --extra dev
+
+      - name: Local CLI smoke (sample project)
+        working-directory: examples/openai_support_agent
+        env:
+          # M-PR2: local path only — do not pass --hosted / --hosted-url.
           MUTINY_SAMPLE_OFFLINE: "1"
+          # Ensure offline scripted model even if a runner secret leaked in.
+          OPENAI_API_KEY: ""
+          FEATHERLESS_API_KEY: ""
+        run: |
+          set -euo pipefail
+          uv run mutiny --help >/dev/null
+          uv run mutiny init
+          uv run mutiny run
+
+  web-build:
+    name: web-build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build
+
+  package-build:
+    name: package-build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Sync workspace
+        run: uv sync --extra dev
+
+      - name: Build publishable packages
+        run: |
+          set -euo pipefail
+          uv build --out-dir dist/ci-core packages/mutiny_core
+          uv build --out-dir dist/ci-openai packages/mutiny_openai_agents
+          uv build --out-dir dist/ci-cli packages/mutiny_cli
+          test -n "$(ls dist/ci-core)"
+          test -n "$(ls dist/ci-openai)"
+          test -n "$(ls dist/ci-cli)"
+
+      - name: Verify package versions and CLI entrypoint
+        run: |
+          set -euo pipefail
+          version_of() {
+            grep -E '^version[[:space:]]*=' "$1/pyproject.toml" | head -1 | sed -E 's/.*"([^"]+)".*/\1/'
+          }
+          core_v="$(version_of packages/mutiny_core)"
+          openai_v="$(version_of packages/mutiny_openai_agents)"
+          cli_v="$(version_of packages/mutiny_cli)"
+          echo "mutiny-core=${core_v}"
+          echo "mutiny-openai-agents=${openai_v}"
+          echo "mutiny-ai=${cli_v}"
+          test -n "${core_v}"
+          test -n "${openai_v}"
+          test -n "${cli_v}"
+          test "${core_v}" = "${openai_v}"
+          test "${core_v}" = "${cli_v}"
+          uv run mutiny --help >/dev/null
