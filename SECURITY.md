@@ -13,19 +13,19 @@ Mutiny is under active development. Security fixes land on `main` first. There i
 
 Mutiny is a **behavioral fuzz-testing engine** for agents you own or are authorized to test. It is **not** an open-internet attack proxy. Default targets are local projects, in-process adapters, or localhost with sandboxed mock tools.
 
-## Hosted execution (M-PR1)
+## Hosted execution (M-PR8E / ADR-019)
 
 | Path | Behavior |
 |---|---|
 | **Local CLI** (`mutiny run`, `mutiny test`) | Executes the project's `.mutiny/adapter.py` in-process. Intentional — same trust model as running project tests. Default `mutiny run` path (M-PR2). |
 | **Hosted trusted harness** (`target=in_process_demo`) | Uses the bundled demo agent only. No customer `project_path` import. |
-| **Hosted customer project** (`target=openai_agents` + `project_path`) | **Disabled by default.** The API returns `403 project_exec_disabled` and does not import/execute customer Python. |
+| **Hosted customer project** (`target=openai_agents` + `project_path`) | **Removed.** The API returns `410 Gone` with `hosted_customer_execution_removed` and does not import/execute customer Python. Use `mutiny run` / `mutiny run --hosted` (local exec + ingest sync). |
 
-Operators who accept the risk on a **single-operator localhost** machine may set `MUTINY_ALLOW_PROJECT_EXEC=1`. That flag is **not** a sandbox and **not** authorization. Do not expose Hosted on a shared or public network with this flag enabled.
+`MUTINY_ALLOW_PROJECT_EXEC` is **ignored** and cannot restore customer Hosted adapter execution (M-PR1 kill-switch superseded by M-PR8E).
 
-**Target architecture (ADR-019 accepted; M-PR8 in progress):** Hosted is **observe/lineage only** for customer projects — customer `.mutiny/adapter.py` executes on the Local CLI trust domain; the shared API process must not `exec_module` customer trees in Production Hosted. **M-PR8B** ships authenticated `/api/ingest/v1/*` (data only). Until M-PR8E, treat any Hosted customer exec path as localhost-only opt-in debt.
+**Architecture (ADR-019):** Hosted is **observe/lineage only** for customer projects — customer `.mutiny/adapter.py` executes on the Local CLI trust domain; the shared API process must not `exec_module` customer trees. Trusted `in_process_demo` may remain as a labeled demo harness.
 
-**Ingestion (M-PR8A–D):** CLI → Hosted uploads send **already-redacted** JSON evidence (data, not executable). See [docs/HOSTED_INGESTION.md](./docs/HOSTED_INGESTION.md). Hosted ingest API + CLI `--hosted` local-exec sync + Web observe-only copy are implemented; production customer `exec_module` removal remains M-PR8E.
+**Ingestion (M-PR8A–E):** CLI → Hosted uploads send **already-redacted** JSON evidence (data, not executable). See [docs/HOSTED_INGESTION.md](./docs/HOSTED_INGESTION.md). Hosted ingest API + CLI `--hosted` local-exec sync + Web observe-only copy + production customer `exec_module` removal are implemented.
 
 ## Hosted authentication (M-PR7)
 
@@ -42,7 +42,7 @@ Single-tenant shared Bearer token for the Hosted **control plane** (not multi-us
 
 CLI: default `mutiny run` stays local and needs no token. Explicit `mutiny run --hosted` / `--hosted-url` sends `MUTINY_API_TOKEN` when set; if the API requires auth and the token is missing/invalid, the CLI fails closed (no silent local fallback).
 
-**Auth ≠ sandbox:** A valid token does **not** enable customer `project_path` adapter execution and does **not** bypass M-PR1. ADR-021 auth and ADR-019 observe-only isolation are orthogonal; M-PR8 implements ADR-019.
+**Auth ≠ sandbox:** A valid token does **not** enable customer `project_path` adapter execution. ADR-021 auth and ADR-019 observe-only isolation are orthogonal; M-PR8E enforces ADR-019.
 
 ## Secret redaction (M-PR3)
 

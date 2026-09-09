@@ -61,8 +61,7 @@ from mutiny_api.supervisor import (
     HARNESS_POLICY_PATH,
     CampaignSupervisor,
     EventHub,
-    HostedProjectExecDisabled,
-    hosted_project_exec_allowed,
+    HostedCustomerExecutionRemoved,
     project_policy_payload,
     resolve_project_root,
 )
@@ -107,9 +106,10 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
             "and observe-only ingest (/api/ingest/v1). "
             "AI proposes; deterministic PolicyEvaluator proves. "
             "Trusted harness: in_process_demo. "
-            "Customer openai_agents + project_path execution is disabled by default "
-            "(MUTINY_ALLOW_PROJECT_EXEC=1 opt-in for single-operator localhost only). "
-            "Ingest never executes customer adapters (ADR-019 / M-PR8B). "
+            "Customer openai_agents + project_path execution is removed (ADR-019 / M-PR8E); "
+            "use mutiny run / mutiny run --hosted (local exec + ingest sync). "
+            "MUTINY_ALLOW_PROJECT_EXEC no longer restores customer execution. "
+            "Ingest never executes customer adapters. "
             "When MUTINY_API_TOKEN is set, protected /api routes require "
             "Authorization: Bearer <token> (M-PR7). Auth is not a sandbox."
         ),
@@ -121,17 +121,17 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
     app.add_exception_handler(HTTPException, http_exception_handler)
     app.add_exception_handler(Exception, unhandled_exception_handler)
 
-    @app.exception_handler(HostedProjectExecDisabled)
-    async def hosted_project_exec_disabled_handler(
-        request: Request, exc: HostedProjectExecDisabled
+    @app.exception_handler(HostedCustomerExecutionRemoved)
+    async def hosted_customer_execution_removed_handler(
+        request: Request, exc: HostedCustomerExecutionRemoved
     ) -> JSONResponse:
         request_id = getattr(request.state, "request_id", None)
         return JSONResponse(
-            status_code=403,
+            status_code=410,
             content=error_body(
-                code="project_exec_disabled",
+                code="hosted_customer_execution_removed",
                 message=str(exc),
-                status=403,
+                status=410,
                 request_id=request_id,
             ),
             headers={"X-Request-Id": request_id} if request_id else None,
@@ -177,15 +177,16 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
 
     @app.get("/api/meta", response_model=MetaResponse, tags=["ops"])
     def meta() -> MetaResponse:
-        allow = hosted_project_exec_allowed()
         return MetaResponse(
             version=__version__,
             safety={
                 "attestation_required": True,
                 "targets": ["in_process_demo", "openai_agents"],
                 "project_path_required_for": ["openai_agents"],
-                "hosted_customer_adapter_exec": allow,
+                "hosted_customer_adapter_exec": False,
+                "hosted_customer_execution": "removed",
                 "hosted_customer_adapter_exec_env": "MUTINY_ALLOW_PROJECT_EXEC",
+                "hosted_customer_adapter_exec_env_effect": "ignored",
                 "auth_required": auth_required(),
                 "auth_env": "MUTINY_API_TOKEN",
                 "mock_tools": True,
@@ -212,7 +213,6 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
         status = "ok" if db_ok else "degraded"
         if running > 1:
             status = "degraded"
-        allow = hosted_project_exec_allowed()
         return HealthResponse(
             status=status,
             api=True,
@@ -225,7 +225,7 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
             schema_version=SCHEMA_VERSION,
             max_concurrent_campaigns=1,
             running_campaigns=running,
-            adapter_loading="project_path" if allow else "disabled",
+            adapter_loading="trusted_demo_only",
         )
 
     def _resolve_policies_project(project_path: str | None) -> str:
@@ -400,8 +400,8 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
         supervisor: CampaignSupervisor = app.state.supervisor
         try:
             return supervisor.create_campaign(body.model_dump())
-        except HostedProjectExecDisabled as exc:
-            raise_api(403, "project_exec_disabled", str(exc))
+        except HostedCustomerExecutionRemoved as exc:
+            raise_api(410, "hosted_customer_execution_removed", str(exc))
         except (
             ValueError,
             PolicyValidationError,
@@ -430,8 +430,8 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
                 attestation=body.attestation,
                 request_id=getattr(request.state, "request_id", None),
             )
-        except HostedProjectExecDisabled as exc:
-            raise_api(403, "project_exec_disabled", str(exc))
+        except HostedCustomerExecutionRemoved as exc:
+            raise_api(410, "hosted_customer_execution_removed", str(exc))
         except PermissionError as exc:
             raise_api(403, "attestation_required", str(exc))
         except KeyError:
@@ -519,8 +519,8 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
             return supervisor.minimize_candidate(
                 candidate_id, target_rule_ids=body.target_rule_ids
             )
-        except HostedProjectExecDisabled as exc:
-            raise_api(403, "project_exec_disabled", str(exc))
+        except HostedCustomerExecutionRemoved as exc:
+            raise_api(410, "hosted_customer_execution_removed", str(exc))
         except KeyError:
             raise_api(404, "candidate_not_found", "candidate not found")
 
@@ -539,8 +539,8 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
                 name=body.name,
                 target_rule_ids=body.target_rule_ids,
             )
-        except HostedProjectExecDisabled as exc:
-            raise_api(403, "project_exec_disabled", str(exc))
+        except HostedCustomerExecutionRemoved as exc:
+            raise_api(410, "hosted_customer_execution_removed", str(exc))
         except KeyError:
             raise_api(404, "candidate_not_found", "candidate not found")
         except RegressionNotReproducibleError as exc:
@@ -615,8 +615,8 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
                 failed_only=body.failed_only,
                 persist=body.persist,
             )
-        except HostedProjectExecDisabled as exc:
-            raise_api(403, "project_exec_disabled", str(exc))
+        except HostedCustomerExecutionRemoved as exc:
+            raise_api(410, "hosted_customer_execution_removed", str(exc))
         except KeyError:
             raise_api(404, "regression_not_found", "regression not found")
         except ValueError as exc:

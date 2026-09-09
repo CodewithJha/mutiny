@@ -1,13 +1,15 @@
-"""M-PR1: Hosted kill-switch — refuse arbitrary customer adapter exec by default."""
+"""M-PR8E: Hosted permanently refuses customer adapter exec (was M-PR1 kill-switch)."""
 
 from __future__ import annotations
 
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
 from mutiny_api.supervisor import (
     PRODUCT_TARGET,
+    HostedCustomerExecutionRemoved,
     HostedProjectExecDisabled,
     _make_adapter,
     hosted_project_exec_allowed,
@@ -29,7 +31,7 @@ from pathlib import Path
 Path({str(marker)!r}).write_text("executed", encoding="utf-8")
 
 def create_adapter():
-    raise RuntimeError("adapter factory must not run under kill-switch")
+    raise RuntimeError("adapter factory must not run under M-PR8E")
 """,
         encoding="utf-8",
     )
@@ -43,7 +45,7 @@ def create_adapter():
 def test_hosted_project_exec_denied_by_default(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Test A (unit): validate / _make_adapter must not exec customer adapter."""
+    """validate / _make_adapter must not exec customer adapter."""
     monkeypatch.delenv("MUTINY_ALLOW_PROJECT_EXEC", raising=False)
     assert hosted_project_exec_allowed() is False
 
@@ -51,7 +53,7 @@ def test_hosted_project_exec_denied_by_default(
     marker = project / MARKER_NAME
     assert not marker.exists()
 
-    with pytest.raises(HostedProjectExecDisabled, match="disabled"):
+    with pytest.raises(HostedCustomerExecutionRemoved, match="removed"):
         validate_campaign_config(
             {
                 "target": PRODUCT_TARGET,
@@ -60,7 +62,7 @@ def test_hosted_project_exec_denied_by_default(
         )
     assert not marker.exists(), "adapter.py must not have been executed"
 
-    with pytest.raises(HostedProjectExecDisabled, match="disabled"):
+    with pytest.raises(HostedCustomerExecutionRemoved, match="removed"):
         _make_adapter(
             {
                 "target": PRODUCT_TARGET,
@@ -70,32 +72,70 @@ def test_hosted_project_exec_denied_by_default(
     assert not marker.exists(), "adapter.py must not have been executed"
 
 
-def test_opt_in_allows_hosted_project_exec(
+def test_opt_in_cannot_restore_hosted_project_exec(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Opt-in flag restores Hosted loader for single-operator localhost only."""
+    """MUTINY_ALLOW_PROJECT_EXEC=1 must NOT restore Hosted customer exec (M-PR8E)."""
     monkeypatch.setenv("MUTINY_ALLOW_PROJECT_EXEC", "1")
-    assert hosted_project_exec_allowed() is True
+    assert hosted_project_exec_allowed() is False
 
     project = _malicious_project(tmp_path)
     marker = project / MARKER_NAME
 
-    # validate_campaign_config imports adapter via load_adapter_factory (side effect)
-    # but does not call create_adapter().
-    cfg = validate_campaign_config(
-        {
-            "target": PRODUCT_TARGET,
-            "project_path": str(project),
-        }
-    )
-    assert cfg["project_path"] == str(project.resolve())
-    assert marker.exists(), "opt-in must reach exec_module"
+    with pytest.raises(HostedCustomerExecutionRemoved, match="removed"):
+        validate_campaign_config(
+            {
+                "target": PRODUCT_TARGET,
+                "project_path": str(project),
+            }
+        )
+    assert not marker.exists(), "opt-in must not reach exec_module"
+
+    with pytest.raises(HostedCustomerExecutionRemoved):
+        _make_adapter(
+            {
+                "target": PRODUCT_TARGET,
+                "project_path": str(project),
+            }
+        )
+    assert not marker.exists()
 
 
-def test_local_cli_loader_unaffected_by_kill_switch(
+def test_allow_env_truthy_variants_ignored(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Test D: CLI/local load_adapter_factory still executes customer adapters."""
+    project = _malicious_project(tmp_path)
+    marker = project / MARKER_NAME
+    for raw in ("1", "true", "YES", "on", "True"):
+        monkeypatch.setenv("MUTINY_ALLOW_PROJECT_EXEC", raw)
+        assert hosted_project_exec_allowed() is False
+        with pytest.raises(HostedCustomerExecutionRemoved):
+            _make_adapter({"target": PRODUCT_TARGET, "project_path": str(project)})
+        assert not marker.exists()
+
+
+def test_hosted_never_calls_load_adapter_factory(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("MUTINY_ALLOW_PROJECT_EXEC", "1")
+    project = _malicious_project(tmp_path)
+    with patch(
+        "mutiny_openai_agents.loader.load_adapter_factory",
+        side_effect=AssertionError("load_adapter_factory must not run"),
+    ) as mocked:
+        with pytest.raises(HostedCustomerExecutionRemoved):
+            validate_campaign_config(
+                {"target": PRODUCT_TARGET, "project_path": str(project)}
+            )
+        with pytest.raises(HostedCustomerExecutionRemoved):
+            _make_adapter({"target": PRODUCT_TARGET, "project_path": str(project)})
+        mocked.assert_not_called()
+
+
+def test_local_cli_loader_unaffected_by_removal(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """CLI/local load_adapter_factory still executes customer adapters."""
     monkeypatch.delenv("MUTINY_ALLOW_PROJECT_EXEC", raising=False)
     project = _malicious_project(tmp_path)
     marker = project / MARKER_NAME
@@ -109,8 +149,12 @@ def test_local_cli_loader_unaffected_by_kill_switch(
 def test_harness_target_still_builds_without_opt_in(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Test C (unit): trusted in_process_demo does not need the opt-in flag."""
-    monkeypatch.delenv("MUTINY_ALLOW_PROJECT_EXEC", raising=False)
+    """Trusted in_process_demo does not need any exec flag."""
+    monkeypatch.setenv("MUTINY_ALLOW_PROJECT_EXEC", "1")
     cfg = validate_campaign_config({"target": "in_process_demo"})
     adapter = _make_adapter(cfg)
     assert adapter.__class__.__name__ == "InProcessDemoAdapter"
+
+
+def test_alias_exception_is_same_type() -> None:
+    assert HostedProjectExecDisabled is HostedCustomerExecutionRemoved

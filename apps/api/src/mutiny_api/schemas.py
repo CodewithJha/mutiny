@@ -22,15 +22,14 @@ class CampaignCreateRequest(BaseModel):
     max_turns: int = Field(default=4, ge=1, le=6)
     stop_on_first_violation: bool = True
     rng_seed: int = 0
-    # Product path: openai_agents + project_path → load customer's .mutiny/adapter.py
-    # Harness: in_process_demo (dev / reliability suite; no project_path required)
-    # project_path required for openai_agents is enforced in the supervisor.
+    # Product path openai_agents + project_path is retired on Hosted (M-PR8E);
+    # create returns 410 hosted_customer_execution_removed. Harness: in_process_demo.
     target: Literal["in_process_demo", "openai_agents"] = "in_process_demo"
     project_path: str | None = None
-    # Optional link to a registered project. When set, path is taken from the
-    # project row (project_path may still be supplied and must match if both set).
+    # Optional link to a registered project. Customer campaign start via Hosted
+    # is retired; project rows remain for observe/policy metadata.
     project_id: str | None = None
-    # Harness-only fixture id. Product campaigns load policy.yaml from project_path.
+    # Harness-only fixture id.
     policy_set_id: str | None = None
     use_boundary_seeds: bool = True
     wall_clock_seconds: float | None = None
@@ -85,12 +84,12 @@ class HealthResponse(BaseModel):
     max_concurrent_campaigns: int = 1
     running_campaigns: int = 0
     demo_pin: str | None = "iris-demo-pin"
-    # Supported campaign targets (openai_agents requires project_path + opt-in exec)
+    # Supported campaign targets (openai_agents create/start retired on Hosted)
     target_allowlist: list[str] = Field(
         default_factory=lambda: ["in_process_demo", "openai_agents"]
     )
-    # M-PR1: customer project_path adapter exec is disabled unless opted in.
-    adapter_loading: str = "disabled"
+    # M-PR8E: customer project_path adapter exec removed; trusted demo only.
+    adapter_loading: str = "trusted_demo_only"
 
 
 class MetaResponse(BaseModel):
@@ -116,7 +115,9 @@ class MetaResponse(BaseModel):
             "targets": ["in_process_demo", "openai_agents"],
             "project_path_required_for": ["openai_agents"],
             "hosted_customer_adapter_exec": False,
+            "hosted_customer_execution": "removed",
             "hosted_customer_adapter_exec_env": "MUTINY_ALLOW_PROJECT_EXEC",
+            "hosted_customer_adapter_exec_env_effect": "ignored",
             # M-PR7: True when MUTINY_API_TOKEN is configured (never the token value).
             "auth_required": False,
             "auth_env": "MUTINY_API_TOKEN",

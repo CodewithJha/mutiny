@@ -4,8 +4,8 @@ When ``MUTINY_API_TOKEN`` is set to a non-empty value, protected ``/api/*``
 routes require ``Authorization: Bearer <token>``. When unset, auth is disabled
 (local demo / tests only — not safe for shared or public networks).
 
-This is identity for the Hosted control plane, not execution isolation (M-PR1 /
-ADR-019). A valid token does not enable customer ``project_path`` adapter exec.
+This is identity for the Hosted control plane, not execution isolation (ADR-019 /
+M-PR8E). A valid token does not enable customer ``project_path`` adapter exec.
 """
 
 from __future__ import annotations

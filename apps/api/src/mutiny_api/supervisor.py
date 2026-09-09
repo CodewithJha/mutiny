@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import inspect
-import os
 import threading
 import time
 import uuid
@@ -30,48 +28,54 @@ from mutiny_core import (
 from mutiny_core.genome import AttackGenome
 from mutiny_core.redact import redact_secrets
 from mutiny_core.regress import RegressionNotReproducibleError, RegressionTest
-from mutiny_openai_agents.loader import load_adapter_factory
-
 from demo_agent import DemoSupportAgent, InProcessDemoAdapter
 
 from mutiny_api.repository import Repository
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 
-# Product target loads customer's .mutiny/adapter.py via project_path.
-# in_process_demo remains an optional local harness for reliability tests.
+# Customer openai_agents + project_path execution is retired on Hosted (M-PR8E /
+# ADR-019). Trusted in_process_demo remains an optional local harness.
 HARNESS_TARGET = "in_process_demo"
 PRODUCT_TARGET = "openai_agents"
 SUPPORTED_TARGETS = frozenset({HARNESS_TARGET, PRODUCT_TARGET})
-# Local Hosted default — same sample project as Milestone A UI.
+# Local Hosted default — same sample project as Milestone A UI (policies metadata).
 DEFAULT_SAMPLE_PROJECT = "examples/openai_support_agent"
 HARNESS_POLICY_ID = "demo_support"
 
-# M-PR1: Hosted must not exec arbitrary customer adapters unless explicitly opted in.
+# Historical M-PR1 env name — ignored; cannot restore customer Hosted exec (M-PR8E).
 ALLOW_PROJECT_EXEC_ENV = "MUTINY_ALLOW_PROJECT_EXEC"
-HOSTED_PROJECT_EXEC_DISABLED_MSG = (
-    "Hosted arbitrary customer adapter execution is disabled. "
-    "Run customer projects via local CLI (`mutiny run`). "
+HOSTED_CUSTOMER_EXECUTION_REMOVED_MSG = (
+    "Hosted customer project execution has been removed (ADR-019 / M-PR8E). "
+    "Run customer projects via local CLI (`mutiny run` or `mutiny run --hosted` "
+    "for local exec + Hosted ingest sync). "
     "The trusted in_process_demo harness remains available. "
-    "Single-operator localhost only: set MUTINY_ALLOW_PROJECT_EXEC=1 to re-enable "
-    "(not a sandbox; see docs/PRODUCTION_READINESS.md)."
+    "MUTINY_ALLOW_PROJECT_EXEC no longer restores customer adapter execution."
 )
 
 
-class HostedProjectExecDisabled(RuntimeError):
-    """Hosted refused customer ``.mutiny/adapter.py`` execution (M-PR1 kill-switch)."""
+class HostedCustomerExecutionRemoved(RuntimeError):
+    """Hosted refused customer ``.mutiny/adapter.py`` execution (M-PR8E / ADR-019)."""
+
+
+# Back-compat alias for M-PR1-era imports/tests.
+HostedProjectExecDisabled = HostedCustomerExecutionRemoved
+HOSTED_PROJECT_EXEC_DISABLED_MSG = HOSTED_CUSTOMER_EXECUTION_REMOVED_MSG
 
 
 def hosted_project_exec_allowed() -> bool:
-    """True only when an operator explicitly opts into Hosted project_path exec."""
-    raw = os.environ.get(ALLOW_PROJECT_EXEC_ENV, "").strip().lower()
-    return raw in {"1", "true", "yes", "on"}
+    """Always False — Hosted customer project_path exec is permanently removed."""
+    return False
+
+
+def require_hosted_customer_execution_removed() -> None:
+    """Fail closed: Hosted never ``load_adapter_factory`` / ``exec_module`` customer trees."""
+    raise HostedCustomerExecutionRemoved(HOSTED_CUSTOMER_EXECUTION_REMOVED_MSG)
 
 
 def require_hosted_project_exec() -> None:
-    """Fail closed before any Hosted ``load_adapter_factory`` / ``exec_module``."""
-    if not hosted_project_exec_allowed():
-        raise HostedProjectExecDisabled(HOSTED_PROJECT_EXEC_DISABLED_MSG)
+    """Deprecated alias — always raises (M-PR8E)."""
+    require_hosted_customer_execution_removed()
 
 
 def _find_harness_policy() -> Path:
@@ -127,18 +131,8 @@ def validate_campaign_config(cfg: dict[str, Any]) -> dict[str, Any]:
         )
     out["target"] = target
     if target == PRODUCT_TARGET:
-        project_path = out.get("project_path")
-        if not project_path or not str(project_path).strip():
-            raise ValueError(
-                "project_path is required when target is 'openai_agents'"
-            )
-        # Kill-switch before path resolve / import (fail closed; static message).
-        require_hosted_project_exec()
-        root = resolve_project_root(str(project_path))
-        out["project_path"] = str(root)
-        # Fail fast: factory must import + project policy must validate
-        load_adapter_factory(root)
-        load_project_policy(root)
+        # M-PR8E: never resolve / import / exec customer project_path on Hosted.
+        require_hosted_customer_execution_removed()
     else:
         # Harness: validate fixture policy up front
         load_policy_for_config(out)
@@ -148,21 +142,19 @@ def validate_campaign_config(cfg: dict[str, Any]) -> dict[str, Any]:
 def load_policy_for_config(cfg: dict[str, Any]) -> PolicySet:
     """Load the policy set for a campaign config.
 
-    Product path (``openai_agents`` + ``project_path``): project's ``policy.yaml``
-    (same file CLI uses). Harness (``in_process_demo``): demo fixture JSON.
+    Hosted execution only supports the trusted ``in_process_demo`` harness.
+    Customer ``openai_agents`` + ``project_path`` campaigns are retired (M-PR8E);
+    use Local CLI + ingest for those policies.
     """
     target = cfg.get("target") or HARNESS_TARGET
     if target == PRODUCT_TARGET:
-        root = resolve_project_root(str(cfg["project_path"]))
-        policy, _path = load_project_policy(root)
-        return policy
+        require_hosted_customer_execution_removed()
     # Optional harness fixture — not the Hosted product policy source
     policy_set_id = cfg.get("policy_set_id") or HARNESS_POLICY_ID
     if policy_set_id != HARNESS_POLICY_ID:
         raise ValueError(
             f"unknown harness policy_set_id={policy_set_id!r}; "
-            f"use {HARNESS_POLICY_ID!r} for in_process_demo, or "
-            "target=openai_agents with project_path for project policies"
+            f"use {HARNESS_POLICY_ID!r} for in_process_demo"
         )
     return load_policy_file(HARNESS_POLICY_PATH)
 
@@ -187,8 +179,8 @@ def _make_adapter(cfg: dict[str, Any], *, fixed_agent: bool = False):
     """Construct a TargetAdapter for Hosted campaigns.
 
     ``in_process_demo`` — optional reliability harness (DemoSupportAgent).
-    ``openai_agents`` — load ``create_adapter()`` from customer's
-    ``.mutiny/adapter.py`` via ``project_path`` (same loader as CLI local).
+    ``openai_agents`` + customer ``project_path`` — permanently refused (M-PR8E).
+    Customer adapters run on Local CLI only (``mutiny run`` / ``mutiny run --hosted``).
     """
     target = cfg.get("target") or HARNESS_TARGET
     if target == HARNESS_TARGET:
@@ -196,19 +188,7 @@ def _make_adapter(cfg: dict[str, Any], *, fixed_agent: bool = False):
             agent=DemoSupportAgent(enforce_refund_policy=fixed_agent)
         )
     if target == PRODUCT_TARGET:
-        require_hosted_project_exec()
-        root = resolve_project_root(str(cfg["project_path"]))
-        factory = load_adapter_factory(root)
-        if fixed_agent:
-            try:
-                params = inspect.signature(factory).parameters
-            except (TypeError, ValueError):
-                params = {}
-            if "enforce_refund_policy" in params:
-                return factory(enforce_refund_policy=True)
-            if "fixed_agent" in params:
-                return factory(fixed_agent=True)
-        return factory()
+        require_hosted_customer_execution_removed()
     raise ValueError(f"unsupported target: {target}")
 
 
@@ -262,7 +242,11 @@ class CampaignSupervisor:
             project = self.repo.get_project(str(project_id))
             if not project:
                 raise ValueError(f"unknown project_id={project_id}")
-            # Prefer registered project path; reject conflicting project_path.
+            if not cfg.get("target"):
+                cfg["target"] = project.get("adapter") or PRODUCT_TARGET
+            # Refuse customer Hosted execution before any path resolve / import.
+            if cfg.get("target") == PRODUCT_TARGET:
+                require_hosted_customer_execution_removed()
             incoming = cfg.get("project_path")
             if incoming and str(incoming).strip():
                 try:
@@ -275,8 +259,6 @@ class CampaignSupervisor:
                         f"(got {incoming_root}, project has {project['path']})"
                     )
             cfg["project_path"] = project["path"]
-            if not cfg.get("target"):
-                cfg["target"] = project.get("adapter") or PRODUCT_TARGET
         try:
             validated = validate_campaign_config(cfg)
         except PolicyValidationError as exc:

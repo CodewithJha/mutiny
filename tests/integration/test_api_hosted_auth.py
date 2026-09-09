@@ -395,13 +395,13 @@ def test_m_cli_local_no_hosted_token(
     local.assert_called_once()
 
 
-# —— Test N: auth does not bypass M-PR1 ——
+# —— Test N: auth does not bypass M-PR8E removal ——
 
 
 def test_n_auth_does_not_bypass_kill_switch(
     client: TestClient, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.delenv("MUTINY_ALLOW_PROJECT_EXEC", raising=False)
+    monkeypatch.setenv("MUTINY_ALLOW_PROJECT_EXEC", "1")
     project = tmp_path / "cust"
     project.mkdir()
     (project / ".mutiny").mkdir()
@@ -433,8 +433,8 @@ def test_n_auth_does_not_bypass_kill_switch(
             "project_path": str(project),
         },
     )
-    assert r.status_code == 403, r.text
-    assert r.json()["error"]["code"] == "project_exec_disabled"
+    assert r.status_code == 410, r.text
+    assert r.json()["error"]["code"] == "hosted_customer_execution_removed"
     assert not marker.exists()
 
 

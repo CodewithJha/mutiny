@@ -165,7 +165,7 @@ Placement may be `integrations/cli` or a published `mutiny` package entrypoint; 
 - Mapping DB rows ↔ Core objects  
 - Campaign task supervision (`asyncio`)  
 - Authz attestation checks, rate limits, target allowlisting  
-- Wiring the trusted `in_process_demo` harness and (opt-in only) customer adapters  
+- Wiring the trusted `in_process_demo` harness (customer adapters execute on Local CLI only)  
 
 **Must not contain**
 
@@ -173,13 +173,15 @@ Placement may be `integrations/cli` or a published `mutiny` package entrypoint; 
 - Custom fitness math divergent from Core  
 - Mutation prompt logic copied out of Core  
 
-**M-PR1 (current):** By default the API **refuses** `openai_agents` + `project_path` customer adapter `exec_module` (`403 project_exec_disabled`). Opt-in: `MUTINY_ALLOW_PROJECT_EXEC=1` for single-operator localhost only — not a sandbox. Local CLI adapter execution is unchanged.
+**M-PR1 (historical):** Kill-switch that default-denied customer Hosted `exec_module` with optional `MUTINY_ALLOW_PROJECT_EXEC=1`.
 
-**M-PR7 (current):** Optional single-tenant Bearer auth via `MUTINY_API_TOKEN` (ADR-021). When set, protected `/api/*` routes require `Authorization: Bearer <token>`. Public: `/api/health`, `/api/meta`. Auth does not bypass M-PR1 and is not multi-tenant identity.
+**M-PR8E (current):** Hosted **permanently refuses** `openai_agents` + `project_path` customer adapter `exec_module` (`410 hosted_customer_execution_removed`). `MUTINY_ALLOW_PROJECT_EXEC` is ignored. Local CLI adapter execution is unchanged. Trusted `in_process_demo` remains.
 
-**ADR-019 (decision; M-PR8 in progress):** Target Hosted role for customer projects is **observe/lineage** — persist campaigns, SSE, artifacts; customer Python runs on Local CLI. Production Hosted must not execute arbitrary customer `.mutiny/adapter.py` in the shared API process. Trusted `in_process_demo` harness may remain. See DECISION_LOG ADR-019.
+**M-PR7 (current):** Optional single-tenant Bearer auth via `MUTINY_API_TOKEN` (ADR-021). When set, protected `/api/*` routes require `Authorization: Bearer <token>`. Public: `/api/health`, `/api/meta`. Auth does not enable customer Hosted execution and is not multi-tenant identity.
 
-**M-PR8A–D:** CLI → Hosted ingest contract + Hosted `/api/ingest/v1/*` + CLI `--hosted` local-exec sync + Web observe-only copy — identity, redaction-before-upload, idempotency, SSE reuse — in [HOSTED_INGESTION.md](./HOSTED_INGESTION.md). **Remove production customer exec (M-PR8E)** remains.
+**ADR-019 (implemented via M-PR8A–E):** Hosted role for customer projects is **observe/lineage** — persist campaigns, SSE, artifacts; customer Python runs on Local CLI. Production Hosted must not execute arbitrary customer `.mutiny/adapter.py` in the shared API process. Trusted `in_process_demo` harness may remain. See DECISION_LOG ADR-019.
+
+**M-PR8A–E:** CLI → Hosted ingest contract + Hosted `/api/ingest/v1/*` + CLI `--hosted` local-exec sync + Web observe-only copy + **production customer exec removed** — [HOSTED_INGESTION.md](./HOSTED_INGESTION.md).
 
 ### `apps/web` — Hosted presentation
 

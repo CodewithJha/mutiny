@@ -46,7 +46,7 @@ def test_health(client: TestClient):
     assert body["status"] == "ok"
     assert "openai_agents" in body["target_allowlist"]
     assert "in_process_demo" in body["target_allowlist"]
-    assert body["adapter_loading"] == "disabled"
+    assert body["adapter_loading"] == "trusted_demo_only"
     assert "openai_support_agent" not in body["target_allowlist"]
 
 
@@ -58,6 +58,8 @@ def test_meta_project_path_model(client: TestClient):
     assert "openai_agents" in safety["project_path_required_for"]
     assert safety["hosted_customer_adapter_exec"] is False
     assert safety["hosted_customer_adapter_exec_env"] == "MUTINY_ALLOW_PROJECT_EXEC"
+    assert safety["hosted_customer_execution"] == "removed"
+    assert safety["hosted_customer_adapter_exec_env_effect"] == "ignored"
     assert safety["auth_required"] is False
     assert safety["auth_env"] == "MUTINY_API_TOKEN"
 
@@ -289,6 +291,7 @@ def test_events_table_has_scored_events(client: TestClient, api_db: Path):
 
 
 def test_openai_agents_requires_project_path(client: TestClient):
+    """M-PR8E: openai_agents on Hosted is retired (410), even without project_path."""
     r = client.post(
         "/api/campaigns",
         json={
@@ -297,8 +300,8 @@ def test_openai_agents_requires_project_path(client: TestClient):
             "target": "openai_agents",
         },
     )
-    assert r.status_code == 400
-    assert "project_path" in r.text
+    assert r.status_code == 410
+    assert r.json()["error"]["code"] == "hosted_customer_execution_removed"
 
 
 def test_legacy_openai_support_agent_target_rejected(client: TestClient):
@@ -314,7 +317,7 @@ def test_legacy_openai_support_agent_target_rejected(client: TestClient):
 
 
 def test_relative_project_path_rejected_without_opt_in(client: TestClient):
-    """M-PR1: Hosted refuses openai_agents + project_path by default."""
+    """M-PR8E: Hosted refuses openai_agents + project_path permanently."""
     created = client.post(
         "/api/campaigns",
         json={
@@ -324,12 +327,14 @@ def test_relative_project_path_rejected_without_opt_in(client: TestClient):
             "project_path": "examples/openai_support_agent",
         },
     )
-    assert created.status_code == 403, created.text
-    assert created.json()["error"]["code"] == "project_exec_disabled"
+    assert created.status_code == 410, created.text
+    assert created.json()["error"]["code"] == "hosted_customer_execution_removed"
 
 
-def test_hosted_campaign_via_sample_project_path(client: TestClient, monkeypatch):
-    """Opt-in Hosted path: Adapter #1 sample via project_path (not allowlist magic)."""
+def test_hosted_campaign_via_sample_project_path_retired(
+    client: TestClient, monkeypatch
+):
+    """Former opt-in Hosted sample path now returns 410 (use CLI + ingest)."""
     monkeypatch.setenv("MUTINY_ALLOW_PROJECT_EXEC", "1")
     monkeypatch.setenv("MUTINY_SAMPLE_OFFLINE", "1")
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
@@ -352,34 +357,13 @@ def test_hosted_campaign_via_sample_project_path(client: TestClient, monkeypatch
             "project_path": str(sample),
         },
     )
-    assert created.status_code == 201, created.text
-    body = created.json()
-    assert body["config"]["target"] == "openai_agents"
-    assert body["config"]["project_path"] == str(sample.resolve())
-
-    cid = body["id"]
-    started = client.post(
-        f"/api/campaigns/{cid}/start", json={"attestation": True}
-    )
-    assert started.status_code == 200, started.text
-    assert started.json()["status"] == "running"
-
-    final = _wait_campaign(client, cid, timeout=60.0)
-    assert final["status"] in {"violation", "completed", "failed"}
-    assert final["status"] != "failed", final.get("metrics")
-    # Sample + boundary seeds should find refund_limit under offline model
-    assert final["status"] == "violation" or final.get("metrics", {}).get(
-        "violated"
-    )
-
-    cands = client.get(f"/api/campaigns/{cid}/candidates")
-    assert cands.status_code == 200
-    assert len(cands.json()["candidates"]) >= 1
+    assert created.status_code == 410, created.text
+    assert created.json()["error"]["code"] == "hosted_customer_execution_removed"
 
 
 def test_projects_crud_and_campaign_list(client: TestClient, monkeypatch):
     """Milestone C: projects as first-class entities + campaign history API."""
-    monkeypatch.setenv("MUTINY_ALLOW_PROJECT_EXEC", "1")
+    monkeypatch.delenv("MUTINY_ALLOW_PROJECT_EXEC", raising=False)
     empty = client.get("/api/projects")
     assert empty.status_code == 200
     assert empty.json()["projects"] == []
@@ -420,7 +404,7 @@ def test_projects_crud_and_campaign_list(client: TestClient, monkeypatch):
     assert body["recent_campaigns"] == []
     assert body["last_run"] is None
 
-    # Campaign via project_id
+    # Hosted customer campaign via project_id is retired (M-PR8E)
     camp = client.post(
         "/api/campaigns",
         json={
@@ -430,13 +414,9 @@ def test_projects_crud_and_campaign_list(client: TestClient, monkeypatch):
             "project_id": pid,
         },
     )
-    assert camp.status_code == 201, camp.text
-    camp_body = camp.json()
-    assert camp_body["project_id"] == pid
-    assert camp_body["project"]["id"] == pid
-    assert "project_path" in camp_body["config"]
+    assert camp.status_code == 410, camp.text
+    assert camp.json()["error"]["code"] == "hosted_customer_execution_removed"
 
-    # Campaign via project_path still upserts/links
     camp2 = client.post(
         "/api/campaigns",
         json={
@@ -446,10 +426,10 @@ def test_projects_crud_and_campaign_list(client: TestClient, monkeypatch):
             "project_path": "examples/openai_support_agent",
         },
     )
-    assert camp2.status_code == 201, camp2.text
-    assert camp2.json()["project_id"] == pid
+    assert camp2.status_code == 410, camp2.text
+    assert camp2.json()["error"]["code"] == "hosted_customer_execution_removed"
 
-    # Harness campaign has no project
+    # Harness campaign still works (no project)
     harness = client.post(
         "/api/campaigns",
         json={
@@ -464,10 +444,8 @@ def test_projects_crud_and_campaign_list(client: TestClient, monkeypatch):
     hist = client.get("/api/campaigns")
     assert hist.status_code == 200
     campaigns = hist.json()["campaigns"]
-    assert len(campaigns) >= 3
+    assert len(campaigns) >= 1
     ids = {c["id"] for c in campaigns}
-    assert camp_body["id"] in ids
-    assert camp2.json()["id"] in ids
     assert harness.json()["id"] in ids
     for c in campaigns:
         assert "status" in c
@@ -478,19 +456,17 @@ def test_projects_crud_and_campaign_list(client: TestClient, monkeypatch):
 
     filtered = client.get("/api/campaigns", params={"project_id": pid})
     assert filtered.status_code == 200
-    only_project = filtered.json()["campaigns"]
-    assert len(only_project) == 2
-    assert all(c["project_id"] == pid for c in only_project)
+    assert filtered.json()["campaigns"] == []
 
     # Alias filter
     alias = client.get("/api/campaigns", params={"project": pid})
     assert alias.status_code == 200
-    assert len(alias.json()["campaigns"]) == 2
+    assert alias.json()["campaigns"] == []
 
     detail2 = client.get(f"/api/projects/{pid}")
     assert detail2.status_code == 200
-    assert len(detail2.json()["recent_campaigns"]) == 2
-    assert detail2.json()["last_run"] is not None
+    assert detail2.json()["recent_campaigns"] == []
+    assert detail2.json()["last_run"] is None
 
     missing = client.get("/api/projects/does-not-exist")
     assert missing.status_code == 404

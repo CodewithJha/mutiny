@@ -51,7 +51,7 @@ opt-in only.
 
 **Hosted sync (M-PR8C):** After local campaign completion, CLI POSTs to `/api/ingest/v1/*` with `schema_version=1` and `redaction.applied=true`. Bearer from `MUTINY_API_TOKEN` when set. Local success + sync failure → exit **3** (local result remains authoritative). Missing `api_url` with `--hosted` → exit 2. Config URL alone never selects Hosted.
 
-**Hosted Web (M-PR8D):** The Hosted UI observes synced campaigns (and the labeled demo harness). It does not upload to ingest and does not start customer project execution — use the CLI above.
+**Hosted Web (M-PR8D/E):** The Hosted UI observes synced campaigns (and the labeled demo harness). It does not upload to ingest and does not start customer project execution — retired Hosted customer start returns `410 hosted_customer_execution_removed`. Use the CLI above.
 
 **Precedence:** CLI flags decide mode. `hosted.api_url` in `mutiny.yaml` only
 supplies the URL when Hosted is explicitly selected — it never auto-selects Hosted.

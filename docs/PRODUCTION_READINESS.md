@@ -19,7 +19,7 @@
 
 Mutiny **v0.1.0** is a credible **alpha OSS behavioral fuzz engine**: Core oracle, Adapter #1 (OpenAI Agents SDK), CLI (`init` / `run` / `test`), sample project, and a local Hosted lineage UI/API. Unit tests are green (`126` passed in this audit). PyPI packages are published.
 
-It is **not** production-ready as a **public or multi-tenant Hosted** service. With M-PR1, customer `project_path` adapter `exec_module` is **disabled by default**; with M-PR7, optional Bearer auth exists when `MUTINY_API_TOKEN` is set. Residual risk: opt-in `MUTINY_ALLOW_PROJECT_EXEC=1` still runs customer Python **in-process** (no path sandbox), attestation is not authorization, rate limits are missing, and deploy templates may bind `0.0.0.0`. That combination remains an **RCE / filesystem write** class risk if Hosted is reachable beyond a single trusted operator machine.
+It is **not** production-ready as a **public or multi-tenant Hosted** service. With **M-PR8E**, customer `project_path` adapter `exec_module` is **permanently removed** from Hosted (`410 hosted_customer_execution_removed`; `MUTINY_ALLOW_PROJECT_EXEC` ignored). With M-PR7, optional Bearer auth exists when `MUTINY_API_TOKEN` is set. Residual Hosted risks: attestation is not authorization, rate limits are missing, deploy templates may bind `0.0.0.0`, and policies/`project` registration may still resolve local paths for YAML metadata (not adapter exec). Public multi-tenant Hosted remains out of scope.
 
 **Target A — Production Local CLI** is approachable with a focused hardening sequence (default local `mutiny run`, secret hygiene, policy-general seeds/mutators, CI completeness).
 
@@ -50,7 +50,7 @@ It is **not** production-ready as a **public or multi-tenant Hosted** service. W
 |---|---|
 | [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) marks M2–M5 largely **Planned/Partial** (2026-08-07) | Adapter #1 + CLI init/run/test + sample path are **shipped in 0.1.0** |
 | ARCHITECTURE: API owns “rate limits” + “target allowlisting” | **No rate limiter** implemented; “allowlist” is a **target enum** (`in_process_demo` \| `openai_agents`), not a filesystem/URL sandbox |
-| SYSTEM_DESIGN §20: arbitrary remote hosts blocked; treat customer adapter as untrusted vs control plane | **ADR-019** accepts observe-only Target B; **current code** still *can* `exec_module` customer adapters when `MUTINY_ALLOW_PROJECT_EXEC=1` (M-PR1 kill-switch default off). M-PR8 not implemented |
+| SYSTEM_DESIGN §20: arbitrary remote hosts blocked; treat customer adapter as untrusted vs control plane | **ADR-019** observe-only Target B **implemented (M-PR8A–E)** — Hosted never `exec_module`s customer trees; CLI executes + ingest |
 | PRD / plan: “Redact secrets in traces” | **M-PR3:** deterministic redaction on persist/display (`mutiny_core.redact`) |
 | `docker-compose.yml` sets `MUTINY_DB_PATH` | **M-PR4:** `resolve_db_path()` honors env (compose `/app/data/mutiny.sqlite`); default remains `data/mutiny.sqlite` |
 | ADR-001 “Hosted first” | Superseded for **product priority** by ADR-017; **M-PR2:** CLI default is local; Hosted requires `--hosted` / `--hosted-url` |
@@ -134,9 +134,9 @@ A release is **Production Hosted ready** when, in addition to Local CLI readines
                                 └──────────────────────────┘
 ```
 
-**Hard rule for Hosted production (ADR-019):** arbitrary customer Python **must not** run in the shared Hosted API process. **Verified today (pre-M-PR8):** without opt-in, M-PR1 refuses customer path; with `MUTINY_ALLOW_PROJECT_EXEC=1`, `CampaignSupervisor._make_adapter` → `load_adapter_factory` → `spec.loader.exec_module(mod)` still exists — localhost debt only.
+**Hard rule for Hosted production (ADR-019):** arbitrary customer Python **must not** run in the shared Hosted API process. **Verified (M-PR8E):** customer `openai_agents` + `project_path` create/start/minimize/test paths raise `HostedCustomerExecutionRemoved` before any `load_adapter_factory` / `exec_module`. `MUTINY_ALLOW_PROJECT_EXEC` cannot restore execution. Trusted `in_process_demo` remains.
 
-**SYSTEM_DESIGN §20** already says treat customer adapter as untrusted vs the control plane. Current opt-in Hosted path **violates** that boundary; Target B fix is ADR-019 → M-PR8, not weakening the doc.
+**SYSTEM_DESIGN §20** treat customer adapter as untrusted vs the control plane — satisfied for Production Hosted customer execution by ADR-019 → M-PR8E.
 
 ---
 
@@ -150,7 +150,7 @@ MVP limitations are labeled as such, not “bugs.”
 | ID | Finding | Evidence | Targets |
 |---|---|---|---|
 | P0-1 | **Unauthenticated Hosted API** — any client can create/start campaigns, read traces, write policies, delete regressions | `apps/api/src/mutiny_api/app.py` — no auth middleware/deps; SYSTEM_DESIGN §10 admits no multi-tenant auth | Hosted |
-| P0-2 | **In-process RCE via `project_path`** — Hosted resolves arbitrary paths and `exec_module`s `.mutiny/adapter.py` | `resolve_project_root`, `load_adapter_factory`, `_make_adapter` | Hosted (fatal if network-exposed) |
+| P0-2 | **In-process RCE via `project_path`** — Hosted resolves arbitrary paths and `exec_module`s `.mutiny/adapter.py` | ~~`resolve_project_root`, `load_adapter_factory`, `_make_adapter`~~ **Mitigated (M-PR8E):** customer path returns `410`; no `load_adapter_factory` in Hosted API | Hosted (was fatal if network-exposed) |
 | P0-3 | **Arbitrary policy file write** on server FS via `PUT /api/policies/content` after path resolve | `save_policy_content` in `app.py` | Hosted |
 | P0-4 | **Public bind without auth** — Railway `0.0.0.0` + nixpacks start; compose publishes `8000:8000` | `railway.toml`, `docker-compose.yml` | Hosted |
 
@@ -205,7 +205,7 @@ MVP limitations are labeled as such, not “bugs.”
 
 ## Architecture Risks
 
-1. **Hosted execution model incompatible with untrusted tenants** — in-process adapter load is fine for Local CLI; fatal for shared Hosted. **ADR-019 accepted (Option A observe-only); M-PR8A–D shipped; M-PR8E (remove production customer exec) remaining.**
+1. **Hosted execution model** — in-process customer adapter load is fine for Local CLI; forbidden on shared Hosted. **ADR-019 Option A implemented (M-PR8A–E).**
 2. **Product narrative vs Hosted-first CLI** — ADR-017 says customer CLI primary; **M-PR2** aligns defaults (local; Hosted via `--hosted`).
 3. **Search heuristics coupled to refund demo** — **resolved for defaults (M-PR6 / ADR-020)**; refund packs remain harness helpers.
 4. **Single-process asyncio + SQLite** — acceptable for Local/demo Hosted; not multi-writer SaaS (ADR-005/007 already acknowledge). ADR-019 deliberately avoids Option B workers for Target B.
@@ -221,7 +221,7 @@ MVP limitations are labeled as such, not “bugs.”
 |---|---|---|
 | AuthN | OS user | Optional Bearer (`MUTINY_API_TOKEN`, M-PR7); unset = open local demo |
 | AuthZ | Operator discipline | Checkbox attestation (not identity) |
-| Target isolation | Same process as developer agent | **Kill-switch (M-PR1):** customer adapter exec disabled by default; trusted `in_process_demo` only unless `MUTINY_ALLOW_PROJECT_EXEC=1`. **Target (ADR-019):** observe-only — **M-PR8 not implemented** |
+| Target isolation | Same process as developer agent | **M-PR8E:** customer adapter exec permanently removed from Hosted; trusted `in_process_demo` only. **ADR-019 observe-only implemented** |
 | Network bind | N/A (CLI) | `0.0.0.0` in deploy templates |
 | Rate limit | N/A | **Missing** (error code only) |
 | Secret redaction | Pass (M-PR3) | Pass (M-PR3; Hosted persist/SSE) |
@@ -284,7 +284,7 @@ MVP limitations are labeled as such, not “bugs.”
 | Durable multi-user data | **Fail** (SQLite + no backup story) |
 | Internet deploy | **Unsafe** with current architecture |
 
-**Operating rule until Target B milestones land:** Hosted = **localhost / single-operator only**. Do not market Railway/public URLs as production. Prefer leaving `MUTINY_ALLOW_PROJECT_EXEC` unset on any shared deploy (M-PR1). ADR-019 Target B = observe-only (M-PR8 not yet).
+**Operating rule for Hosted deploys:** Prefer loopback / single-operator until rate limits and durable ops land. Do not market Railway/public URLs as multi-tenant production. Customer adapter exec is removed (M-PR8E); `MUTINY_ALLOW_PROJECT_EXEC` has no effect. ADR-019 observe-only = CLI exec + Hosted ingest.
 
 ---
 
@@ -399,7 +399,7 @@ Order is dependency-aware. Each milestone is independently testable.
 | **DoD** | Default production-ish config cannot exec customer adapters |
 | **Rollback** | Feature flag off |
 | **Release** | 0.1.x or 0.2.0 |
-| **Status** | **Implemented** — default deny; `MUTINY_ALLOW_PROJECT_EXEC=1` opt-in; trusted `in_process_demo` preserved |
+| **Status** | **Implemented (historical)** — superseded by **M-PR8E** (ALLOW flag ignored; permanent remove) |
 
 ### M-PR2 — Local CLI production default path
 
@@ -503,7 +503,7 @@ Order is dependency-aware. Each milestone is independently testable.
 | **DoD** | Threat model satisfied for single-tenant observe-only Hosted |
 | **Rollback** | Safe-mode only Hosted (M-PR1) |
 | **Release** | 0.4.0 → leads to 1.0.0 |
-| **Status** | **Partial:** **M-PR8A–D** in [HOSTED_INGESTION.md](./HOSTED_INGESTION.md) (contract + Hosted ingest API + CLI local-exec sync + Web observe copy). **M-PR8E** (remove production customer `exec_module`) **not implemented** |
+| **Status** | **Done:** **M-PR8A–E** in [HOSTED_INGESTION.md](./HOSTED_INGESTION.md) (contract + ingest API + CLI sync + Web observe + **production customer `exec_module` removed**) |
 
 #### M-PR8 staging
 
@@ -513,7 +513,7 @@ Order is dependency-aware. Each milestone is independently testable.
 | **M-PR8B** | Hosted `/api/ingest/v1/*` + persistence + contract tests | **Done (server)** |
 | **M-PR8C** | CLI local exec + sync for `--hosted` | **Done (CLI)** |
 | **M-PR8D** | Web observe copy (SSE already published from ingest) | **Done (Web)** |
-| **M-PR8E** | Remove/disable Production Hosted customer `project_path` `exec_module` | Planned |
+| **M-PR8E** | Remove/disable Production Hosted customer `project_path` `exec_module` | **Done** |
 
 ### Later (P3/P4) — packaging verify fix, Dependabot, project_id on regressions, adapters, Postgres
 
@@ -539,7 +539,7 @@ Scheduled after Target A gate; do not block 0.2.0.
 
 - [ ] All Target A checks  
 - [ ] AuthN on mutating routes when `MUTINY_API_TOKEN` set (M-PR7) 
-- [ ] No customer `exec_module` in API process for Production Hosted (ADR-019 → **M-PR8 not yet**)  
+- [x] No customer `exec_module` in API process for Production Hosted (ADR-019 → **M-PR8E**)  
 - [ ] Rate limits enforced  
 - [ ] DB path configurable; backup procedure documented  
 - [ ] Threat model in SECURITY.md; no public demo without auth  
@@ -606,11 +606,11 @@ Scheduled after Target A gate; do not block 0.2.0.
 
 ### ADR-019 — Hosted must not execute customer Python in-process
 
-**Status:** **Accepted** — see DECISION_LOG ADR-019 (Option A: observe/lineage Hosted; CLI executes customer adapters). **M-PR8A–D:** contract + Hosted ingest API + CLI local-exec sync + Web observe copy — [HOSTED_INGESTION.md](./HOSTED_INGESTION.md). **M-PR8E** (remove production customer exec) **not implemented** in this revision.
+**Status:** **Accepted** — see DECISION_LOG ADR-019 (Option A: observe/lineage Hosted; CLI executes customer adapters). **M-PR8A–E implemented** — [HOSTED_INGESTION.md](./HOSTED_INGESTION.md).
 
-**Current code (interim):** Hosted can still load `.mutiny/adapter.py` via `load_adapter_factory` when `MUTINY_ALLOW_PROJECT_EXEC=1` (M-PR1). Default remains refuse. Trusted `in_process_demo` harness unchanged.
+**Current code:** Hosted never loads customer `.mutiny/adapter.py` via `load_adapter_factory` / `exec_module`. Customer create/start returns `410 hosted_customer_execution_removed`. `MUTINY_ALLOW_PROJECT_EXEC` ignored. Trusted `in_process_demo` harness unchanged.
 
-**Why Target B needs M-PR8:** Even with auth (ADR-021), in-process customer `exec_module` + `project_path` remains RCE/FS-write risk and conflicts with SYSTEM_DESIGN §20.
+**Why Target B needed M-PR8:** Even with auth (ADR-021), in-process customer `exec_module` + `project_path` was RCE/FS-write risk and conflicted with SYSTEM_DESIGN §20. **M-PR8E removes that path.**
 
 **Options evaluated (decision locked):**
 
@@ -651,11 +651,11 @@ ADR-017 already supersedes ADR-001 for **product priority**. **M-PR2** aligns ru
 | Dimension | Score | Notes |
 |---|---|---|
 | **Local CLI** | **8.5** | Default local path (M-PR2); common-secret redaction (M-PR3); policy-general seeds/mutators (M-PR6) |
-| **Hosted** | **3.0** | Local demo only; M-PR1 kill-switch + optional M-PR7 auth; ADR-019 accepted but **M-PR8 not implemented** (opt-in in-process exec still exists) |
+| **Hosted** | **3.5** | Observe-only customer path (M-PR8E); trusted demo harness; optional M-PR7 auth; still not multi-tenant Production Hosted |
 | **Core** | **8.0** | Strong oracle & package boundaries; search heuristics policy-derived (M-PR6) |
 | **OSS** | **7.5** | Strong community files; PR CI covers unit/integration/reliability + smoke (M-PR5); stale implementation plan |
 | **Packaging** | **8.5** | PyPI 0.1.0 real; publish verify reads package metadata (M-PR5) |
-| **Security** | **4.0** | Oracle trustworthy; M-PR3 redaction; M-PR7 optional auth; Hosted still not Production Hosted (ADR-019 pending M-PR8) |
+| **Security** | **4.5** | Oracle trustworthy; M-PR3 redaction; M-PR7 optional auth; ADR-019 customer exec removed (M-PR8E); remaining: rate limits, durable deploy, multi-tenant |
 | **Overall** | **4.5** | Alpha suitable for authorized local fuzzing; not dual-target production |
 
 ### Critical Findings (P0/P1)
@@ -665,7 +665,7 @@ ADR-017 already supersedes ADR-001 for **product priority**. **M-PR2** aligns ru
 
 ### Architectural Findings (ADR needed)
 
-- **ADR-019 (accepted, Option A):** Hosted observe/lineage; CLI executes customer Python — **M-PR8 implements (not done)**.  
+- **ADR-019 (accepted, Option A):** Hosted observe/lineage; CLI executes customer Python — **M-PR8A–E done**.  
 - **ADR-020 (accepted, M-PR6):** Policy-general seeds/mutators.  
 - **ADR-021 (accepted, M-PR7):** Single-tenant Bearer token.  
 - Align CLI defaults with **ADR-017** (done via M-PR2).
@@ -709,10 +709,10 @@ See checklists under [Definition of Done](#definition-of-done) for Target A and 
 
 - **Created:** `docs/PRODUCTION_READINESS.md` (this file)  
 - **Updated for consistency pointers / ADR proposals / stale-status notes:** `docs/README.md`, `docs/ARCHITECTURE.md`, `docs/ROADMAP.md`, `docs/DECISION_LOG.md`, `docs/IMPLEMENTATION_PLAN.md`, `SECURITY.md`  
-- **ADR-019 acceptance (docs-only):** `docs/DECISION_LOG.md`, `docs/ARCHITECTURE.md`, `docs/SYSTEM_DESIGN.md`, `docs/ROADMAP.md`, `docs/PRODUCTION_READINESS.md`, `SECURITY.md` — **M-PR8E runtime removal not implemented**  
+- **M-PR8E:** Hosted customer `exec_module` permanently removed (`410 hosted_customer_execution_removed`); docs updated across ADR-019 surfaces  
 - **M-PR8A (docs):** `docs/HOSTED_INGESTION.md` (+ pointers) — contract defined
 - **M-PR8C (CLI):** `mutiny run --hosted` = local Core + end-of-run redacted ingest sync — **done**
 - **M-PR8D (Web):** Hosted UI observe-only copy / Local CLI execution badges — **done**
-- **Remaining:** M-PR8E (remove production customer `exec_module`)
+- **Versioning:** No package version bump in M-PR8E commit — packages remain `0.1.0`; ROADMAP maps full ADR-019 Hosted work to **0.4.0** as a separate release/tag step (same as M-PR8A–D).
 
-**STOP:** Do not implement M-PR8E in the same change set as M-PR8D unless explicitly requested.
+**STOP:** M-PR8E complete — do not begin additional milestones in this change set.

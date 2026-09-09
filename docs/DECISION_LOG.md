@@ -304,7 +304,7 @@ Add new ADRs at the bottom. Do not rewrite history; supersede with a new ADR.
 3. **Local demo rollback:** If unset/empty, auth is disabled (explicit insecure localhost/demo mode). Operators must set the token before any shared-network Hosted.
 4. **Public routes:** `GET /api/health` and `GET /api/meta` only. Meta may advertise `auth_required` / `auth_env` — never the secret.
 5. **Not in scope:** OAuth, users, sessions, refresh tokens, RBAC, multi-tenant isolation.
-6. **Orthogonal to M-PR1:** Valid auth does not enable `MUTINY_ALLOW_PROJECT_EXEC` or customer adapter `exec_module`. Execution isolation is **ADR-019** (accepted observe-only); implementation is **M-PR8** (not yet).
+6. **Orthogonal to M-PR1/M-PR8E:** Valid auth does not enable customer adapter `exec_module`. Execution isolation is **ADR-019** (observe-only); implemented by **M-PR8A–E**.
 
 **Alternatives:** Always-on auth with startup failure if unset; per-user accounts; mTLS; API-gateway-only auth.
 
@@ -323,7 +323,7 @@ Add new ADRs at the bottom. Do not rewrite history; supersede with a new ADR.
 1. **Target architecture:** Hosted API/UI is a **control, persistence, and lineage plane** — campaigns, SSE, SQLite artifacts, minimize/regression *metadata*. It does **not** execute customer project Python in the shared API process.
 2. **Customer adapter execution** belongs on the **developer machine** (primary: `mutiny run` / `mutiny test` → Core → Adapter #1), same trust domain as Local CLI (ADR-017). Hosted may later accept **uploaded events/artifacts** (or equivalent push) from that local runner; that ingestion path is **M-PR8**, not this ADR’s implementation.
 3. **Trusted in-process harness** (`target=in_process_demo`) may remain in the API for reliability demos — it is Mutiny-shipped code, not customer `project_path`.
-4. **Interim (current code, until M-PR8):** M-PR1 stays fail-closed by default; `MUTINY_ALLOW_PROJECT_EXEC=1` remains single-operator localhost risk acceptance only — **not** the Target B model and **not** a sandbox.
+4. **Implemented (M-PR8E):** Hosted customer `project_path` → `load_adapter_factory` → `exec_module` is permanently refused (`410 hosted_customer_execution_removed`). `MUTINY_ALLOW_PROJECT_EXEC` is ignored and cannot restore production customer execution.
 5. **Orthogonal:** ADR-020 (policy-derived seeds) and ADR-021 (Bearer token) are unchanged. Auth does not grant execution; observe-only does not replace auth.
 6. **Does not supersede** ADR-020 or ADR-021. **Complements** ADR-017/018. **Partially supersedes** ADR-001’s implication that Hosted is the primary *execution* surface (product priority already moved by ADR-017; this ADR locks Hosted *execution* out of customer Python). **Does not** adopt ADR-007 workers for Target B; workers remain deferred (Option B rejected for now).
 
@@ -339,4 +339,4 @@ Add new ADRs at the bottom. Do not rewrite history; supersede with a new ADR.
 
 **Reconsider when:** A concrete multi-tenant or CI-remote requirement forces server-side customer execution with a written worker threat model (new ADR superseding this one toward Option B); or observe-only ingest proves insufficient for the primary Hosted UX.
 
-**M-PR8A/B/C/D follow-up:** The CLI → Hosted ingestion envelope, Hosted `/api/ingest/v1/*` observe-only API, CLI `--hosted` = local exec + end-of-run sync, and Web observe-only copy are specified/implemented per [HOSTED_INGESTION.md](./HOSTED_INGESTION.md). **Remove production customer exec (M-PR8E)** remains. This does **not** supersede ADR-020/021.
+**M-PR8A–E follow-up:** The CLI → Hosted ingestion envelope, Hosted `/api/ingest/v1/*` observe-only API, CLI `--hosted` = local exec + end-of-run sync, Web observe-only copy, and **production customer exec removal** are specified/implemented per [HOSTED_INGESTION.md](./HOSTED_INGESTION.md). This does **not** supersede ADR-020/021.

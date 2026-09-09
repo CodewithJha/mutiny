@@ -76,6 +76,7 @@ def _code_for_status(status: int) -> str:
         403: "forbidden",
         404: "not_found",
         409: "conflict",
+        410: "gone",
         422: "validation_error",
         429: "rate_limited",
         500: "internal_error",

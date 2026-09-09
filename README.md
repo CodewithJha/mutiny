@@ -206,7 +206,7 @@ CLI campaigns default to **local** Core. Use `mutiny run --hosted` (or
 `--hosted-url`) for optional Hosted lineage (**local execute + Hosted observe/sync** —
 not remote adapter execution).
 
-**Hosted safety (M-PR1):** By default the Hosted API will **not** load/execute a customer `.mutiny/adapter.py` via `project_path` (returns `403`). Prefer `mutiny run` / `mutiny run --hosted` for customer projects. The bundled `in_process_demo` harness still works in Hosted as a labeled demo.
+**Hosted safety (M-PR8E):** The Hosted API will **not** load/execute a customer `.mutiny/adapter.py` via `project_path` (returns `410 hosted_customer_execution_removed`). Prefer `mutiny run` / `mutiny run --hosted` for customer projects. The bundled `in_process_demo` harness still works in Hosted as a labeled demo. `MUTINY_ALLOW_PROJECT_EXEC` is ignored.
 
 **Hosted auth (M-PR7):** Set `MUTINY_API_TOKEN` on the API (and the same value on the web process for UI rewrites) to require `Authorization: Bearer` on protected routes. Unset = local demo only. Auth does not sandbox customer Python. See [SECURITY.md](./SECURITY.md).
 

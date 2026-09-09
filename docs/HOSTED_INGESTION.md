@@ -2,9 +2,9 @@
 
 | Field | Value |
 |---|---|
-| **Status** | **Partial** — **M-PR8A–D implemented** (contract + Hosted ingest API + CLI local-exec sync + Web observe copy). **M-PR8E pending** |
-| **Milestone** | M-PR8A (contract) + M-PR8B (server ingest) + M-PR8C (CLI sync) + **M-PR8D (Web observe UX)** |
-| **Anchors** | ADR-019 (Option A observe-only), ADR-021 (Bearer auth), M-PR3 (redaction), M-PR1 (kill-switch) |
+| **Status** | **Complete (M-PR8A–E)** — contract + Hosted ingest API + CLI local-exec sync + Web observe copy + **production customer `exec_module` removed** |
+| **Milestone** | M-PR8A–E (ADR-019 observe-only Hosted) |
+| **Anchors** | ADR-019 (Option A observe-only), ADR-021 (Bearer auth), M-PR3 (redaction), M-PR1 (historical kill-switch; superseded by M-PR8E) |
 | **Last updated** | 2026-09-09 |
 
 This document defines the **CLI → Hosted ingestion contract**: how a completed (or streaming) Local CLI campaign/test becomes Hosted lineage without Hosted executing customer Python.
@@ -27,21 +27,18 @@ Give Mutiny a smallest stable contract so that:
 
 ## 2. Architecture diagram
 
-### Current (interim — still in code)
+### Retired (pre-M-PR8E — no longer reachable)
 
 ```text
-CLI --hosted / Hosted UI "Run"
-        │
+Hosted API  ──(MUTINY_ALLOW_PROJECT_EXEC)──► load_adapter_factory
+        │                                    exec_module(customer)
         ▼
-Hosted API  ──(opt-in MUTINY_ALLOW_PROJECT_EXEC=1)──► load_adapter_factory
-        │                                              exec_module(customer)
-        ▼
-CampaignSupervisor (in-process) → SQLite → SSE → Web
+CampaignSupervisor customer path → REMOVED (410 hosted_customer_execution_removed)
 ```
 
-Trusted `in_process_demo` may still run in-process without customer `project_path`.
+`MUTINY_ALLOW_PROJECT_EXEC` is ignored. Trusted `in_process_demo` may still run in-process without customer `project_path`.
 
-### Target (ADR-019 / this contract — **Implemented** through M-PR8C)
+### Current (ADR-019 / this contract — **Implemented** through M-PR8E)
 
 ```text
 Local CLI (mutiny run / mutiny test)
@@ -335,7 +332,7 @@ mutiny run --hosted     = local + Hosted sync (observe-only ingest)
 
 `hosted.api_url` in `mutiny.yaml` alone never activates sync (M-PR2). Auth header: `Authorization: Bearer` from `MUTINY_API_TOKEN` when set.
 
-The interim Hosted supervisor create/start path remains available to API clients/`in_process_demo` until **M-PR8E**; the CLI `--hosted` path no longer calls it.
+The Hosted supervisor create/start path remains for **trusted `in_process_demo` only**. Customer `openai_agents` + `project_path` create/start returns **`410 Gone`** / `hosted_customer_execution_removed` (M-PR8E). The CLI `--hosted` path uses ingest only.
 
 ---
 
@@ -376,7 +373,7 @@ Prefer **campaign-centric** routes over a parallel `/runs` resource. New write p
 
 - Do not overload `POST /api/campaigns/{id}/start` to mean “execute customer project” for Production Hosted.
 - Trusted `in_process_demo` may keep a Hosted-executed path separately labeled.
-- Minimize/regression **execution** endpoints that call `_make_adapter` on customer `project_path` remain interim debt until removed/disabled for Production Hosted (M-PR8E).
+- Customer `project_path` create/start/minimize/regression/test execution on Hosted returns **`410 hosted_customer_execution_removed`** (M-PR8E).
 - Web observe-only UX copy is **done (M-PR8D)** — Local CLI executes; Hosted observes; trusted `in_process_demo` remains labeled as demo.
 
 Validation on ingest: schema_version, required IDs, known event types, artifact kinds, payload shape (Pydantic), size limits, duplicate IDs, `redaction.applied`, Bearer auth.
@@ -420,26 +417,25 @@ CLI ingest batch
 | **M-PR8B** | Hosted ingest endpoints + persistence wiring + contract tests (no customer exec required) | **Done (server)** |
 | **M-PR8C** | CLI local-exec + end-of-run sync for `--hosted`; pending-file on sync fail | **Done (CLI)** |
 | **M-PR8D** | Web copy “run locally, observe here” (SSE already wired from ingest) | **Done (Web)** |
-| **M-PR8E** | Remove/disable Production Hosted customer `project_path` `exec_module` path; keep `in_process_demo` | Planned |
+| **M-PR8E** | Remove/disable Production Hosted customer `project_path` `exec_module` path; keep `in_process_demo` | **Done** |
 | **Later** | Optional `mutiny sync` / `mutiny test --hosted`; size-limit tuning; regression `project_id` column if join proves insufficient | Deferred |
 
-Each stage ships behind tests; no silent claim that Target B is done until M-PR8E DoD in PRODUCTION_READINESS.
+Each stage ships behind tests. M-PR8E completes the ADR-019 Hosted execution boundary (customer Python never in shared API process).
 
 ---
 
 ## Compatibility checklist
 
-Preserved by M-PR8C (CLI local + ingest sync; supervisor path retained for API/demo):
+Preserved by M-PR8E (customer Hosted exec retired; demo + ingest retained):
 
 - Local `mutiny run` / `mutiny test`
 - Deterministic `PolicyEvaluator`, minimize, regression semantics
-- M-PR1–M-PR8B behavior
-- ADR-020 (policy-general seeds), ADR-021 (Bearer), ADR-019 (observe-only decision)
-- Interim Hosted supervisor / `in_process_demo` path unchanged until M-PR8E (CLI `--hosted` no longer uses it)
+- M-PR1–M-PR8D behavior (M-PR1 opt-in superseded — ALLOW flag ignored)
+- ADR-020 (policy-general seeds), ADR-021 (Bearer), ADR-019 (observe-only)
+- Trusted Hosted `in_process_demo` harness; CLI `--hosted` uses ingest only
 
-### Current limitations (post M-PR8D)
+### Current limitations (post M-PR8E)
 
 - `mutiny test --hosted` not wired (payload builder only) — remaining CLI sync work / later
 - Automatic retry / `mutiny sync` command deferred (pending JSON written on sync failure)
-- Production Hosted customer `exec_module` path still exists behind M-PR1 — **M-PR8E**
 - Web cannot distinguish local-success + sync-failure from a missing Hosted row: sync failures do not fully ingest, so Hosted never claims those runs were received. A terminal `failed` status on an ingested `execution_mode=local_cli` campaign means the CLI reported campaign failure, not Hosted sync failure.

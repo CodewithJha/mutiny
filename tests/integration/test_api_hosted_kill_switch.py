@@ -1,4 +1,4 @@
-"""M-PR1 API: Hosted refuses arbitrary project_path adapter execution by default."""
+"""M-PR1→M-PR8E API: Hosted refuses arbitrary project_path adapter execution."""
 
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ from pathlib import Path
 Path({str(marker)!r}).write_text("executed", encoding="utf-8")
 
 def create_adapter():
-    raise RuntimeError("adapter factory must not run under kill-switch")
+    raise RuntimeError("adapter factory must not run under M-PR8E")
 """,
         encoding="utf-8",
     )
@@ -49,8 +49,8 @@ def create_adapter():
 def test_a_create_campaign_rejects_arbitrary_project_exec(
     client: TestClient, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Test A: POST /api/campaigns must not exec customer adapter; clear 403."""
-    monkeypatch.delenv("MUTINY_ALLOW_PROJECT_EXEC", raising=False)
+    """POST /api/campaigns must not exec customer adapter; clear 410."""
+    monkeypatch.setenv("MUTINY_ALLOW_PROJECT_EXEC", "1")
     project = _malicious_project(tmp_path)
     marker = project / MARKER_NAME
 
@@ -63,22 +63,21 @@ def test_a_create_campaign_rejects_arbitrary_project_exec(
             "project_path": str(project),
         },
     )
-    assert r.status_code == 403, r.text
+    assert r.status_code == 410, r.text
     body = r.json()
-    assert body["error"]["code"] == "project_exec_disabled"
-    assert "disabled" in body["error"]["message"].lower()
+    assert body["error"]["code"] == "hosted_customer_execution_removed"
+    assert "removed" in body["error"]["message"].lower()
     assert not marker.exists(), "adapter.py must not have been executed"
 
 
 def test_b_start_and_project_id_cannot_bypass(
     client: TestClient, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Test B: project_id / start / tests paths cannot bypass the kill-switch."""
-    monkeypatch.delenv("MUTINY_ALLOW_PROJECT_EXEC", raising=False)
+    """project_id / start / tests paths cannot bypass removal."""
+    monkeypatch.setenv("MUTINY_ALLOW_PROJECT_EXEC", "1")
     project = _malicious_project(tmp_path)
     marker = project / MARKER_NAME
 
-    # Registering a project resolves path + policy YAML only (no adapter exec).
     created = client.post(
         "/api/projects",
         json={"path": str(project), "name": "Probe"},
@@ -96,12 +95,10 @@ def test_b_start_and_project_id_cannot_bypass(
             "project_id": pid,
         },
     )
-    assert via_id.status_code == 403, via_id.text
-    assert via_id.json()["error"]["code"] == "project_exec_disabled"
+    assert via_id.status_code == 410, via_id.text
+    assert via_id.json()["error"]["code"] == "hosted_customer_execution_removed"
     assert not marker.exists()
 
-    # Harness create still works; openai_agents create never succeeds so start
-    # cannot be used as a bypass for fresh customer projects.
     harness = client.post(
         "/api/campaigns",
         json={
@@ -117,10 +114,10 @@ def test_b_start_and_project_id_cannot_bypass(
 def test_c_trusted_demo_campaign_still_works(
     client: TestClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Test C: in_process_demo harness remains usable without the opt-in flag."""
+    """in_process_demo harness remains usable; ALLOW flag irrelevant."""
     import time
 
-    monkeypatch.delenv("MUTINY_ALLOW_PROJECT_EXEC", raising=False)
+    monkeypatch.setenv("MUTINY_ALLOW_PROJECT_EXEC", "1")
     created = client.post(
         "/api/campaigns",
         json={
@@ -151,16 +148,13 @@ def test_c_trusted_demo_campaign_still_works(
     raise AssertionError("demo campaign did not finish")
 
 
-def test_meta_advertises_kill_switch(
+def test_meta_advertises_removal(
     client: TestClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.delenv("MUTINY_ALLOW_PROJECT_EXEC", raising=False)
+    monkeypatch.setenv("MUTINY_ALLOW_PROJECT_EXEC", "1")
     meta = client.get("/api/meta").json()
     safety = meta["safety"]
     assert safety.get("hosted_customer_adapter_exec") is False
+    assert safety.get("hosted_customer_execution") == "removed"
     health = client.get("/api/health").json()
-    assert health["adapter_loading"] in {
-        "disabled",
-        "project_path_opt_in",
-        "kill_switch",
-    }
+    assert health["adapter_loading"] == "trusted_demo_only"
