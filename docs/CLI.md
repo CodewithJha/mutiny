@@ -86,6 +86,26 @@ mutiny test some_regression_id --json
 
 ---
 
+## `mutiny db` (Hosted SQLite — P2-6)
+
+Operator tooling for **Hosted lineage** SQLite durability. Requires the workspace / `mutiny-api` package. **Not** a customer project-path or HTTP API.
+
+| Subcommand | Flags | Meaning |
+|---|---|---|
+| `backup` | `--out PATH` (required), `--db PATH`, `--overwrite` | Consistent snapshot via SQLite backup API |
+| `restore` | `--from PATH` (required), `--db PATH`, `--force` | Destructive replace; `--force` required if dest exists |
+
+**DB path precedence:** `--db` → `MUTINY_DB_PATH` → `data/mutiny.sqlite`.
+
+```bash
+mutiny db backup --db data/mutiny.sqlite --out /secure/mutiny-backup.sqlite
+mutiny db restore --from /secure/mutiny-backup.sqlite --db data/mutiny.sqlite --force
+```
+
+Exit codes follow CLI norms: `0` success; `2` invalid input / refused overwrite without flag; `1` validation or I/O failure. Details: [SECURITY.md](../SECURITY.md#hosted-sqlite-backup--restore-p2-6).
+
+---
+
 ## Typical loop
 
 ```bash

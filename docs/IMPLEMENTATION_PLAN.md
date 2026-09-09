@@ -49,7 +49,8 @@ Behavioral contracts → SYSTEM_DESIGN. Boundaries → ARCHITECTURE. Product int
 | P0-3 | Customer `project_path` filesystem-inert / opaque on Hosted | **Done** |
 | P0-1 / P0-4 | Non-loopback binds require `MUTINY_API_TOKEN`; `python -m mutiny_api` fails closed | **Done** |
 | P1-2 | In-process Hosted API rate limits (not distributed) | **Done** (allowlisting remainder open) |
-| P2-5 / P2-6 / P2-8 | regression `project_id`; SQLite backup/export; Dependabot/CODEOWNERS | **Not done** — do not invent completion |
+| P2-5 / P2-8 | regression `project_id`; Dependabot/CODEOWNERS | **Not done** — do not invent completion |
+| P2-6 | SQLite backup/export + restore operator CLI | **Done** — `mutiny db backup` / `mutiny db restore` (SQLite backup API; not HTTP) |
 | Distributed rate limits / Hosted Beta / 1.0 Target B | — | **Not done** |
 
 ---
@@ -328,4 +329,4 @@ See ROADMAP stages beyond current scope (LangGraph, CrewAI, PydanticAI, AutoGen,
 
 ## 7. Handoff criteria to “implementation complete” (post-pivot)
 
-M1–M5 **done** for OpenAI Agents SDK local path; M6–M7 **done** as observe-only Hosted + trusted demo harness (not customer Hosted exec); M8 narrative polish optional; M9 CLI `mutiny test` **done**. Hosted security hardening through P1-2 **done**. Remaining PRODUCTION_READINESS Target A/B gaps (backup, AuthZ, Dependabot, 1.0) are **out of this plan’s “done” claim** — see ROADMAP / PRODUCTION_READINESS.
+M1–M5 **done** for OpenAI Agents SDK local path; M6–M7 **done** as observe-only Hosted + trusted demo harness (not customer Hosted exec); M8 narrative polish optional; M9 CLI `mutiny test` **done**. Hosted security hardening through P1-2 **done**. P2-6 SQLite backup/restore operator CLI **done**. Remaining PRODUCTION_READINESS Target A/B gaps (AuthZ, Dependabot, 1.0) are **out of this plan’s “done” claim** — see ROADMAP / PRODUCTION_READINESS.

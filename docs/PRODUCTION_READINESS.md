@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | **Document** | Canonical production-readiness master plan |
-| **Status** | Active — readiness gate reconciled with implementation through **P0-3**, **P0-1/P0-4**, **P1-2** (docs-only P1-7) |
+| **Status** | Active — readiness gate reconciled with implementation through **P0-3**, **P0-1/P0-4**, **P1-2**, **P2-6** (docs-only P1-7) |
 | **Audit date** | 2026-09-09 |
 | **Repo version audited** | `v0.1.0` / `main` @ post-M-PR8E + P0-3 + P0-1/P0-4 + P1-2 |
 | **Method** | Claims verified against current code under `packages/`, `apps/`, `tests/`, `.github/`, and canonical docs |
@@ -19,11 +19,11 @@
 
 Mutiny **v0.1.0** is a credible **alpha OSS behavioral fuzz engine**: Core oracle, Adapter #1 (OpenAI Agents SDK), CLI (`init` / `run` / `test`), sample project, and a local Hosted lineage UI/API. Unit tests are green (`126` passed in this audit). PyPI packages are published.
 
-It is **not** production-ready as a **public or multi-tenant Hosted** service. With **M-PR8E**, customer `project_path` adapter `exec_module` is **permanently removed** from Hosted (`410 hosted_customer_execution_removed`; `MUTINY_ALLOW_PROJECT_EXEC` ignored). With **P0-3**, customer `project_path` is also **filesystem-inert** on Hosted (`410 hosted_filesystem_access_removed` — no resolve/read/write of customer trees or policy files). With M-PR7 + **P0-1/P0-4**, Bearer auth is required for non-loopback Hosted binds (`python -m mutiny_api` fails closed without a non-empty `MUTINY_API_TOKEN`); loopback may omit the token for local demo. With **P1-2**, Hosted applies **in-process** (per-process, not distributed) rate limits when auth is configured. Residual Hosted risks: attestation is not authorization, and multi-tenant / durable ops remain open. Public multi-tenant Hosted remains out of scope.
+It is **not** production-ready as a **public or multi-tenant Hosted** service. With **M-PR8E**, customer `project_path` adapter `exec_module` is **permanently removed** from Hosted (`410 hosted_customer_execution_removed`; `MUTINY_ALLOW_PROJECT_EXEC` ignored). With **P0-3**, customer `project_path` is also **filesystem-inert** on Hosted (`410 hosted_filesystem_access_removed` — no resolve/read/write of customer trees or policy files). With M-PR7 + **P0-1/P0-4**, Bearer auth is required for non-loopback Hosted binds (`python -m mutiny_api` fails closed without a non-empty `MUTINY_API_TOKEN`); loopback may omit the token for local demo. With **P1-2**, Hosted applies **in-process** (per-process, not distributed) rate limits when auth is configured. With **P2-6**, operators can `mutiny db backup` / `mutiny db restore` Hosted SQLite lineage (local tooling ≠ off-site durability). Residual Hosted risks: attestation is not authorization, and multi-tenant ops remain open. Public multi-tenant Hosted remains out of scope.
 
 **Target A — Production Local CLI** is the strongest supported surface: local execution, opt-in Hosted sync, and an alpha→beta path per ROADMAP. Remaining Target A gaps are polish/release gating (not Hosted RCE).
 
-**Target B — Production Hosted** is **not** met. **ADR-019 / M-PR8A–E** are implemented (CLI executes customer agents; Hosted observes via ingest). Non-loopback binds require auth; Hosted is filesystem-inert for customer `project_path` and has **in-process** rate limits. Residual blockers: attestation≠authorization, no durable backup story, path/URL allowlisting still a target enum, not multi-tenant. Do not market public multi-tenant Hosted.
+**Target B — Production Hosted** is **not** met. **ADR-019 / M-PR8A–E** are implemented (CLI executes customer agents; Hosted observes via ingest). Non-loopback binds require auth; Hosted is filesystem-inert for customer `project_path` and has **in-process** rate limits. **P2-6** adds operator SQLite backup/restore CLI (not off-site automation). Residual blockers: attestation≠authorization, path/URL allowlisting still a target enum, not multi-tenant. Do not market public multi-tenant Hosted.
 
 ---
 
@@ -176,7 +176,7 @@ MVP limitations are labeled as such, not “bugs.”
 | P2-3 | Featherless concrete client lives in Core (port OK; **provider-named** surface in kernel package) | `mutiny_core/llm/featherless.py`, ADR-012 |
 | P2-4 | `publish.yml` verify step **hardcodes `0.1.0`** — **resolved (M-PR5)**; reads each package `pyproject.toml` | Was fail/misleading on next version |
 | P2-5 | Regressions table has **no `project_id`**; filtering joins via campaigns | `db.py` schema |
-| P2-6 | No SQLite backup/export tooling for Hosted data | ops gap |
+| P2-6 | SQLite backup/export tooling for Hosted data — **resolved (P2-6)** | `mutiny db backup` / `restore`; `mutiny_api.backup` |
 | P2-7 | Empty `integrations/` vs ARCHITECTURE diagram mentioning MCP/skills | placeholder only |
 | P2-8 | No Dependabot/Renovate; no CODEOWNERS | OSS maintainer load |
 | P2-9 | CLI help mentions `--no-attestation` in error text but **flag not defined** | `run_cmd.py` vs `main.py` |
@@ -282,7 +282,7 @@ MVP limitations are labeled as such, not “bugs.”
 | Safe customer code execution | **Pass (M-PR8E)** — customer `exec_module` removed; CLI executes |
 | FS sandbox | **Pass (P0-3)** — customer `project_path` filesystem-inert / opaque |
 | Rate limits | **Partial (P1-2)** — in-process limits shipped; not distributed; path/URL allowlist still enum |
-| Durable multi-user data | **Fail** (SQLite + no backup story — P2-6) |
+| Durable multi-user data | **Partial** (SQLite + operator backup/restore CLI — P2-6; not multi-tenant / off-site automation) |
 | Internet deploy | **Not Target B** — token + observe-only reduce blast radius; still single-tenant / no durable ops |
 
 **Operating rule for Hosted deploys:** Prefer loopback / single-operator. Non-loopback requires `MUTINY_API_TOKEN`. Do not market Railway/public URLs as multi-tenant production. Customer adapter exec is removed (M-PR8E); customer FS access removed (P0-3); `MUTINY_ALLOW_PROJECT_EXEC` has no effect. ADR-019 observe-only = CLI exec + Hosted ingest. In-process rate limits apply when auth is configured (P1-2).
@@ -310,11 +310,11 @@ MVP limitations are labeled as such, not “bugs.”
 
 | Topic | Status |
 |---|---|
-| SQLite WAL + migrations | Present (`SCHEMA_VERSION = "10"`) |
+| SQLite WAL + migrations | Present (`SCHEMA_VERSION = "11"`) |
 | Core free of SQL | Pass |
 | Env-configurable DB path | **Pass** (M-PR4) |
 | Regressions linked to projects | Indirect via campaign only (P2-5) |
-| Backup / restore | Missing (P2-6) |
+| Backup / restore | **Pass (operator CLI)** — `mutiny db backup` / `restore` (P2-6); not off-site automation |
 | Trace size caps | Documented in ARCHITECTURE; enforcement incomplete at API edge |
 | Local CLI artifacts | JSON under `.mutiny/tests/` — adequate for Target A |
 
@@ -445,7 +445,7 @@ Order is dependency-aware. Each milestone is independently testable.
 | **DoD** | Env controls DB location |
 | **Rollback** | Revert main.py |
 | **Release** | 0.2.0 |
-| **Status** | **Implemented** — `resolve_db_path` (explicit → `MUTINY_DB_PATH` → `data/mutiny.sqlite`); fail-closed on invalid/empty path; parent dirs created; **backup/restore still a gap (P2-6)** |
+| **Status** | **Implemented** — `resolve_db_path` (explicit → `MUTINY_DB_PATH` → `data/mutiny.sqlite`); fail-closed on invalid/empty path; parent dirs created. **P2-6** completes operator backup/restore via `mutiny db` |
 
 ### M-PR5 — CI completeness
 
@@ -543,7 +543,7 @@ Scheduled after Target A gate; do not block 0.2.0.
 - [x] No customer `exec_module` in API process for Production Hosted (ADR-019 → **M-PR8E**)  
 - [x] Customer `project_path` filesystem-inert / opaque (P0-3)  
 - [x] In-process rate limits enforced (P1-2) — distributed limits **not** claimed  
-- [ ] DB backup/export procedure (P2-6); `MUTINY_DB_PATH` configurable (**done M-PR4**)  
+- [x] DB backup/export procedure (P2-6 — `mutiny db backup` / `restore`); `MUTINY_DB_PATH` configurable (**done M-PR4**)  
 - [x] Threat model in SECURITY.md matches observe-only + bind/auth + rate limits  
 - [ ] Version **1.0.0** (or explicit 0.4+ “Hosted beta” with same technical bar, labeled beta)  
 - [ ] AuthZ beyond attestation (P1-1); multi-tenant / durable ops as needed for full Target B

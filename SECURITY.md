@@ -99,7 +99,23 @@ Hosted API persistence uses a single SQLite file resolved by `mutiny_api.db.reso
 
 Parent directories are created when missing. Empty or unusable paths **fail closed** — Mutiny does **not** silently open another database. `docker-compose.yml` sets `MUTINY_DB_PATH=/app/data/mutiny.sqlite` and the API uses that path.
 
-**Not provided:** automated backup/export/restore. Operators own filesystem snapshots of the configured SQLite file. Ephemeral deploy disks (e.g. Railway without a volume) remain a data-loss risk.
+## Hosted SQLite backup / restore (P2-6)
+
+Operator tooling (CLI only — **not** a Hosted HTTP filesystem/DB API):
+
+```bash
+mutiny db backup --db /path/to/mutiny.sqlite --out /secure/backups/mutiny-YYYYMMDD.sqlite
+mutiny db restore --from /secure/backups/mutiny-YYYYMMDD.sqlite --db /path/to/mutiny.sqlite --force
+```
+
+- **Mechanism:** SQLite online backup API (`Connection.backup`) — transactionally consistent, WAL-aware. Do **not** treat `cp mutiny.sqlite` (+ `-wal`/`-shm`) as the supported live backup.
+- **Path precedence:** explicit `--db` → `MUTINY_DB_PATH` → `data/mutiny.sqlite` (same as API; `MUTINY_API_TOKEN` never selects the DB path).
+- **Safety:** no silent overwrite on backup (needs `--overwrite`); restore is destructive and requires `--force` when the destination exists; failed runs avoid leaving apparently-valid partial files; previous DB is moved aside as `*.pre-restore.bak` when practical.
+- **Validation:** open + `PRAGMA integrity_check` + required tables + exact compatible `schema_meta.version` (incompatible / future schema refuses restore).
+- **Sensitivity:** backup files are **sensitive operational data** (lineage may include redacted-but-still-confidential campaign artifacts). Store and transmit them securely. Local backup ≠ off-site / ephemeral-disk protection — operators still need an off-host copy strategy.
+- **Atomicity:** `os.replace` is atomic on the same filesystem; cross-device moves are not guaranteed atomic — keep dest on the same volume when possible.
+
+**Not provided:** automated off-site replication, PostgreSQL, or Web `POST /api/db/*` endpoints.
 
 ## Reporting a vulnerability
 

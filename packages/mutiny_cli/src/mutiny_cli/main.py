@@ -1,4 +1,4 @@
-"""CLI entrypoint: ``mutiny init`` / ``mutiny run`` / ``mutiny test``."""
+"""CLI entrypoint: ``mutiny init`` / ``mutiny run`` / ``mutiny test`` / ``mutiny db``."""
 
 from __future__ import annotations
 
@@ -12,10 +12,14 @@ def main(argv: list[str] | None = None) -> int:
         prog="mutiny",
         description=(
             "Mutiny — behavioral fuzz-testing engine for AI agents. "
-            "Commands: init, run, test."
+            "Commands: init, run, test, db."
         ),
     )
     sub = parser.add_subparsers(dest="command", required=True)
+
+    from mutiny_cli.db_cmd import add_db_parser
+
+    add_db_parser(sub)
 
     init_p = sub.add_parser(
         "init",
@@ -135,6 +139,10 @@ def main(argv: list[str] | None = None) -> int:
             json_out=args.json_out,
             write_report=not args.no_report,
         )
+    if args.command == "db":
+        from mutiny_cli.db_cmd import run_db_command
+
+        return run_db_command(args)
     parser.error(f"unknown command: {args.command}")
     return 2
 

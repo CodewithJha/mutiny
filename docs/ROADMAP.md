@@ -88,7 +88,7 @@ New adapters on the **same** `TargetAdapter` interface (Core unchanged):
 - **AutoGen** adapter + additional adapters as demand warrants (still one Core)  
 - Postgres optional when SQLite concurrency hurts  
 - Distributed / multi-replica Hosted abuse controls (beyond in-process P1-2)  
-- SQLite backup/export tooling and durable deploy story  
+- SQLite backup/export tooling (**P2-6 done** — `mutiny db backup` / `restore`) and broader durable deploy / off-site story  
 
 ---
 

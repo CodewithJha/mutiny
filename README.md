@@ -210,7 +210,7 @@ not remote adapter execution).
 
 **Hosted auth (M-PR7 / P0-1 / P0-4):** Loopback (`127.0.0.1` / `localhost` / `::1`) may omit `MUTINY_API_TOKEN` for local demo. Non-loopback binds require a non-empty token or `python -m mutiny_api` refuses to start. When set, protected routes require `Authorization: Bearer` (same value on the web process for UI rewrites). Auth does not sandbox customer Python. See [SECURITY.md](./SECURITY.md).
 
-**Hosted FS / rate limits:** Customer `project_path` is opaque on Hosted (no server-side project tree access — P0-3). The API applies **in-process** rate limits when auth is configured (P1-2; not distributed).
+**Hosted FS / rate limits / backup:** Customer `project_path` is opaque on Hosted (no server-side project tree access — P0-3). The API applies **in-process** rate limits when auth is configured (P1-2; not distributed). Operators back up Hosted lineage with `mutiny db backup` / `mutiny db restore` (P2-6; not an HTTP API) — see [SECURITY.md](./SECURITY.md).
 
 ---
 
@@ -334,6 +334,8 @@ Building an adapter? Start from `packages/mutiny_core`’s `TargetAdapter` port 
 | `mutiny init [--path] [--force]` | Scaffold `.mutiny/adapter.py` + `policy.yaml` + `mutiny.yaml` |
 | `mutiny run [--path] [--hosted] [--hosted-url] [--no-hosted] [--attestation]` | Local campaign by default; Hosted only with `--hosted` / `--hosted-url` |
 | `mutiny test [id] [--path] [--failed] [--json] [--no-report]` | Replay `.mutiny/tests/` (PASS / FAIL / SKIPPED); optional single id |
+| `mutiny db backup --out … [--db] [--overwrite]` | Consistent Hosted SQLite backup (operator; WAL-aware) |
+| `mutiny db restore --from … [--db] [--force]` | Destructive restore into an explicit DB path (requires `--force` if dest exists) |
 
 Full flag reference: [`docs/CLI.md`](./docs/CLI.md) (from `mutiny --help`). Quick check: `mutiny <cmd> --help`.
 

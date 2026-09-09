@@ -448,7 +448,9 @@ sequenceDiagram
 
 Core returns objects; API serializes JSON columns. Core never opens SQLite.
 
-**Hosted DB path (M-PR4):** resolved by `mutiny_api.db.resolve_db_path` — explicit `create_app` argument → `MUTINY_DB_PATH` → default `data/mutiny.sqlite`. Parent dirs are created; invalid/empty paths fail without fallback. No automated backup/restore contract yet.
+**Hosted DB path (M-PR4):** resolved by `mutiny_api.db.resolve_db_path` — explicit `create_app` argument → `MUTINY_DB_PATH` → default `data/mutiny.sqlite`. Parent dirs are created; invalid/empty paths fail without fallback.
+
+**Hosted DB backup / restore (P2-6):** operator CLI `mutiny db backup` / `mutiny db restore` uses SQLite’s online backup API for a consistent snapshot (including committed WAL state). Restore is destructive (`--force` required to replace an existing DB). Validated for integrity + compatible `schema_meta.version`. Not an HTTP/FS API. Local backups remain sensitive and are not a substitute for off-host durability on ephemeral disks.
 
 ### Logical schema (Hosted)
 
