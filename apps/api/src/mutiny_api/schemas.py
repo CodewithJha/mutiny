@@ -85,11 +85,12 @@ class HealthResponse(BaseModel):
     max_concurrent_campaigns: int = 1
     running_campaigns: int = 0
     demo_pin: str | None = "iris-demo-pin"
-    # Supported campaign targets (openai_agents requires project_path)
+    # Supported campaign targets (openai_agents requires project_path + opt-in exec)
     target_allowlist: list[str] = Field(
         default_factory=lambda: ["in_process_demo", "openai_agents"]
     )
-    adapter_loading: str = "project_path"
+    # M-PR1: customer project_path adapter exec is disabled unless opted in.
+    adapter_loading: str = "disabled"
 
 
 class MetaResponse(BaseModel):
@@ -113,6 +114,8 @@ class MetaResponse(BaseModel):
             "attestation_required": True,
             "targets": ["in_process_demo", "openai_agents"],
             "project_path_required_for": ["openai_agents"],
+            "hosted_customer_adapter_exec": False,
+            "hosted_customer_adapter_exec_env": "MUTINY_ALLOW_PROJECT_EXEC",
             "mock_tools": True,
             "open_proxy": False,
         }

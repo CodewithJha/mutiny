@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { DEFAULT_PROJECT_PATH, mutinyApi, type Campaign } from "@/lib/api";
+import { mutinyApi, type Campaign } from "@/lib/api";
 import { campaignStatusChip, campaignStatusLabel } from "@/lib/campaigns";
 import { Button, EmptyState, Skeleton } from "@/components/ui";
 
@@ -62,8 +62,8 @@ export default function CampaignsPage() {
         max_turns: 4,
         rng_seed: 5,
         use_boundary_seeds: true,
-        target: "openai_agents",
-        project_path: DEFAULT_PROJECT_PATH,
+        // M-PR1: Hosted default is trusted harness only (no customer adapter exec).
+        target: "in_process_demo",
       });
       await mutinyApi.startCampaign(camp.id, true);
       router.push(`/campaign/${camp.id}`);
@@ -80,12 +80,12 @@ export default function CampaignsPage() {
           <p className="page-kicker">Operate</p>
           <h1 className="page-title">Campaigns</h1>
           <p className="page-sub">
-            Evolutionary runs against project policies. Open a campaign for the
-            evolution graph and verified evidence above the fold.
+            Evolutionary runs against the trusted Hosted harness. Customer
+            projects use <code>mutiny run --no-hosted</code> (Hosted adapter
+            exec is disabled by default).
           </p>
         </div>
       </header>
-
       <section className="campaigns-hero" aria-labelledby="campaigns-start">
         <div className="campaigns-hero-row">
           <div>

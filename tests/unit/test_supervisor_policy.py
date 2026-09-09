@@ -16,7 +16,8 @@ ROOT = Path(__file__).resolve().parents[2]
 SAMPLE = ROOT / "examples" / "openai_support_agent"
 
 
-def test_product_campaign_loads_project_policy_yaml():
+def test_product_campaign_loads_project_policy_yaml(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("MUTINY_ALLOW_PROJECT_EXEC", "1")
     cfg = validate_campaign_config(
         {
             "target": "openai_agents",
@@ -40,7 +41,10 @@ def test_harness_still_uses_demo_fixture():
     assert policy.target == "demo_support_agent"
 
 
-def test_invalid_project_policy_blocks_campaign(tmp_path: Path):
+def test_invalid_project_policy_blocks_campaign(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.setenv("MUTINY_ALLOW_PROJECT_EXEC", "1")
     mutiny = tmp_path / ".mutiny"
     mutiny.mkdir()
     (mutiny / "adapter.py").write_text(

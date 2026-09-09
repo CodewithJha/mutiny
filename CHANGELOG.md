@@ -7,6 +7,10 @@ Published on PyPI as **`mutiny-ai`** (+ [`mutiny-core`](https://pypi.org/project
 
 ## [Unreleased]
 
+### Security
+
+- **M-PR1 Hosted kill-switch** — Hosted API refuses `openai_agents` + `project_path` customer adapter execution by default (`403 project_exec_disabled`). Trusted `in_process_demo` harness unchanged. Opt-in: `MUTINY_ALLOW_PROJECT_EXEC=1` (single-operator localhost only; not a sandbox). Local CLI adapter loading unchanged.
+
 ### Planned
 
 - Additional framework adapters (LangGraph, CrewAI, PydanticAI, …)

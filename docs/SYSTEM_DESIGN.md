@@ -591,6 +591,7 @@ flowchart TB
 - Treat attack text and customer adapter code as untrusted relative to Mutiny’s control plane.  
 - Do not pass target output into Mutiny’s control prompts without sanitizing/structuring.  
 - Target allowlist enforced in API before adapter construction (Hosted).  
+- **M-PR1:** Hosted does **not** execute arbitrary customer `.mutiny/adapter.py` by default. Only the trusted `in_process_demo` harness runs in-process without opt-in. Customer `project_path` execution requires `MUTINY_ALLOW_PROJECT_EXEC=1` (localhost / single-operator risk acceptance — not isolation). Local CLI remains the supported path for customer adapters.  
 
 ---
 

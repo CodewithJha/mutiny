@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+import os
 import threading
 import time
 import uuid
@@ -44,6 +45,32 @@ SUPPORTED_TARGETS = frozenset({HARNESS_TARGET, PRODUCT_TARGET})
 # Local Hosted default — same sample project as Milestone A UI.
 DEFAULT_SAMPLE_PROJECT = "examples/openai_support_agent"
 HARNESS_POLICY_ID = "demo_support"
+
+# M-PR1: Hosted must not exec arbitrary customer adapters unless explicitly opted in.
+ALLOW_PROJECT_EXEC_ENV = "MUTINY_ALLOW_PROJECT_EXEC"
+HOSTED_PROJECT_EXEC_DISABLED_MSG = (
+    "Hosted arbitrary customer adapter execution is disabled. "
+    "Run customer projects via local CLI (`mutiny run --no-hosted`). "
+    "The trusted in_process_demo harness remains available. "
+    "Single-operator localhost only: set MUTINY_ALLOW_PROJECT_EXEC=1 to re-enable "
+    "(not a sandbox; see docs/PRODUCTION_READINESS.md)."
+)
+
+
+class HostedProjectExecDisabled(RuntimeError):
+    """Hosted refused customer ``.mutiny/adapter.py`` execution (M-PR1 kill-switch)."""
+
+
+def hosted_project_exec_allowed() -> bool:
+    """True only when an operator explicitly opts into Hosted project_path exec."""
+    raw = os.environ.get(ALLOW_PROJECT_EXEC_ENV, "").strip().lower()
+    return raw in {"1", "true", "yes", "on"}
+
+
+def require_hosted_project_exec() -> None:
+    """Fail closed before any Hosted ``load_adapter_factory`` / ``exec_module``."""
+    if not hosted_project_exec_allowed():
+        raise HostedProjectExecDisabled(HOSTED_PROJECT_EXEC_DISABLED_MSG)
 
 
 def _find_harness_policy() -> Path:
@@ -104,6 +131,8 @@ def validate_campaign_config(cfg: dict[str, Any]) -> dict[str, Any]:
             raise ValueError(
                 "project_path is required when target is 'openai_agents'"
             )
+        # Kill-switch before path resolve / import (fail closed; static message).
+        require_hosted_project_exec()
         root = resolve_project_root(str(project_path))
         out["project_path"] = str(root)
         # Fail fast: factory must import + project policy must validate
@@ -166,6 +195,7 @@ def _make_adapter(cfg: dict[str, Any], *, fixed_agent: bool = False):
             agent=DemoSupportAgent(enforce_refund_policy=fixed_agent)
         )
     if target == PRODUCT_TARGET:
+        require_hosted_project_exec()
         root = resolve_project_root(str(cfg["project_path"]))
         factory = load_adapter_factory(root)
         if fixed_agent:

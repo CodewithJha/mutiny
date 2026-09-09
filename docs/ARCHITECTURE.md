@@ -165,7 +165,7 @@ Placement may be `integrations/cli` or a published `mutiny` package entrypoint; 
 - Mapping DB rows ↔ Core objects  
 - Campaign task supervision (`asyncio`)  
 - Authz attestation checks, rate limits, target allowlisting  
-- Wiring concrete adapters and LLM clients (including sample/demo reference adapter)
+- Wiring the trusted `in_process_demo` harness and (opt-in only) customer adapters  
 
 **Must not contain**
 
@@ -173,6 +173,7 @@ Placement may be `integrations/cli` or a published `mutiny` package entrypoint; 
 - Custom fitness math divergent from Core  
 - Mutation prompt logic copied out of Core  
 
+**M-PR1 (current):** By default the API **refuses** `openai_agents` + `project_path` customer adapter `exec_module` (`403 project_exec_disabled`). Opt-in: `MUTINY_ALLOW_PROJECT_EXEC=1` for single-operator localhost only — not a sandbox. Local CLI adapter execution is unchanged.
 ### `apps/web` — Hosted presentation
 
 **Owns**

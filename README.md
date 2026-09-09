@@ -204,6 +204,8 @@ cd apps/web && npm install && npm run dev
 
 CLI campaigns without Hosted: pass `--no-hosted` to `mutiny run`.
 
+**Hosted safety (M-PR1):** By default the Hosted API will **not** load/execute a customer `.mutiny/adapter.py` via `project_path` (returns `403`). Use `mutiny run --no-hosted` for customer projects. The bundled `in_process_demo` harness still works in Hosted. See [SECURITY.md](./SECURITY.md).
+
 ---
 
 ## Quick start

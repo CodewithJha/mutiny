@@ -13,6 +13,16 @@ Mutiny is under active development. Security fixes land on `main` first. There i
 
 Mutiny is a **behavioral fuzz-testing engine** for agents you own or are authorized to test. It is **not** an open-internet attack proxy. Default targets are local projects, in-process adapters, or localhost with sandboxed mock tools.
 
+## Hosted execution (M-PR1)
+
+| Path | Behavior |
+|---|---|
+| **Local CLI** (`mutiny run --no-hosted`, `mutiny test`) | Executes the project's `.mutiny/adapter.py` in-process. Intentional — same trust model as running project tests. |
+| **Hosted trusted harness** (`target=in_process_demo`) | Uses the bundled demo agent only. No customer `project_path` import. |
+| **Hosted customer project** (`target=openai_agents` + `project_path`) | **Disabled by default.** The API returns `403 project_exec_disabled` and does not import/execute customer Python. |
+
+Operators who accept the risk on a **single-operator localhost** machine may set `MUTINY_ALLOW_PROJECT_EXEC=1`. That flag is **not** a sandbox and **not** authorization. Do not expose Hosted on a shared or public network with this flag enabled. Full Hosted isolation remains an ADR-019 decision.
+
 ## Reporting a vulnerability
 
 Please **do not** open a public GitHub issue for security-sensitive reports.

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { DEFAULT_PROJECT_PATH, mutinyApi } from "@/lib/api";
+import { mutinyApi } from "@/lib/api";
 import { GitHubStarLink } from "@/components/GitHubStarLink";
 import { Button, CopyButton } from "@/components/ui";
 
@@ -103,8 +103,8 @@ export default function HomePage() {
         max_turns: 4,
         rng_seed: 5,
         use_boundary_seeds: true,
-        target: "openai_agents",
-        project_path: DEFAULT_PROJECT_PATH,
+        // M-PR1: Hosted default is trusted harness only (no customer adapter exec).
+        target: "in_process_demo",
       });
       await mutinyApi.startCampaign(camp.id, true);
       router.push(`/campaign/${camp.id}`);

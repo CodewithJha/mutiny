@@ -33,6 +33,7 @@ def test_resolve_rejects_missing_adapter(tmp_path: Path) -> None:
 
 
 def test_validate_and_make_adapter_from_sample(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("MUTINY_ALLOW_PROJECT_EXEC", "1")
     monkeypatch.setenv("MUTINY_SAMPLE_OFFLINE", "1")
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     cfg = validate_campaign_config(

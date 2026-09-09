@@ -46,7 +46,7 @@ def test_health(client: TestClient):
     assert body["status"] == "ok"
     assert "openai_agents" in body["target_allowlist"]
     assert "in_process_demo" in body["target_allowlist"]
-    assert body["adapter_loading"] == "project_path"
+    assert body["adapter_loading"] == "disabled"
     assert "openai_support_agent" not in body["target_allowlist"]
 
 
@@ -56,7 +56,8 @@ def test_meta_project_path_model(client: TestClient):
     safety = r.json()["safety"]
     assert "openai_agents" in safety["targets"]
     assert "openai_agents" in safety["project_path_required_for"]
-
+    assert safety["hosted_customer_adapter_exec"] is False
+    assert safety["hosted_customer_adapter_exec_env"] == "MUTINY_ALLOW_PROJECT_EXEC"
 
 def test_policies_load_from_project(client: TestClient):
     r = client.get(
@@ -310,7 +311,8 @@ def test_legacy_openai_support_agent_target_rejected(client: TestClient):
     assert r.status_code == 422
 
 
-def test_relative_project_path_resolves_to_sample(client: TestClient):
+def test_relative_project_path_rejected_without_opt_in(client: TestClient):
+    """M-PR1: Hosted refuses openai_agents + project_path by default."""
     created = client.post(
         "/api/campaigns",
         json={
@@ -320,18 +322,13 @@ def test_relative_project_path_resolves_to_sample(client: TestClient):
             "project_path": "examples/openai_support_agent",
         },
     )
-    assert created.status_code == 201, created.text
-    body = created.json()
-    resolved = Path(body["config"]["project_path"])
-    assert resolved.name == "openai_support_agent"
-    assert (resolved / ".mutiny" / "adapter.py").is_file()
-    # Milestone C: project_path upserts a project and links the campaign
-    assert body.get("project_id")
-    assert body.get("project", {}).get("path") == str(resolved)
+    assert created.status_code == 403, created.text
+    assert created.json()["error"]["code"] == "project_exec_disabled"
 
 
 def test_hosted_campaign_via_sample_project_path(client: TestClient, monkeypatch):
-    """Hosted loads Adapter #1 sample via project_path — not allowlist magic."""
+    """Opt-in Hosted path: Adapter #1 sample via project_path (not allowlist magic)."""
+    monkeypatch.setenv("MUTINY_ALLOW_PROJECT_EXEC", "1")
     monkeypatch.setenv("MUTINY_SAMPLE_OFFLINE", "1")
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
 
@@ -378,8 +375,9 @@ def test_hosted_campaign_via_sample_project_path(client: TestClient, monkeypatch
     assert len(cands.json()["candidates"]) >= 1
 
 
-def test_projects_crud_and_campaign_list(client: TestClient):
+def test_projects_crud_and_campaign_list(client: TestClient, monkeypatch):
     """Milestone C: projects as first-class entities + campaign history API."""
+    monkeypatch.setenv("MUTINY_ALLOW_PROJECT_EXEC", "1")
     empty = client.get("/api/projects")
     assert empty.status_code == 200
     assert empty.json()["projects"] == []
