@@ -1,9 +1,9 @@
-# Hosted Ingestion Contract (M-PR8A)
+# Hosted Ingestion Contract (M-PR8A / M-PR8B)
 
 | Field | Value |
 |---|---|
-| **Status** | **Contract / Planned** — design only; **not implemented** |
-| **Milestone** | M-PR8A (docs). Implementation starts at **M-PR8B+** |
+| **Status** | **Partial** — **M-PR8B Hosted ingest API implemented**; **CLI sync (M-PR8C) still pending** |
+| **Milestone** | M-PR8A (contract) + M-PR8B (server ingest). CLI sync starts at **M-PR8C** |
 | **Anchors** | ADR-019 (Option A observe-only), ADR-021 (Bearer auth), M-PR3 (redaction), M-PR1 (kill-switch) |
 | **Last updated** | 2026-09-09 |
 
@@ -323,17 +323,17 @@ Hosted stores:
 | `mutiny test` | Local replay only by default. |
 | `mutiny test --hosted` | Local replay, then upload `test_run` (+ ensure regression artifact present). **Planned.** |
 
-Until M-PR8B ships, today’s CLI `--hosted` still drives the **interim** Hosted supervisor path (create/start campaign on API). Docs and UX must label that path **deprecated interim** once ingest lands; this contract is the replacement meaning.
+Until M-PR8C ships CLI sync, today’s CLI `--hosted` still drives the **interim** Hosted supervisor path (create/start campaign on API). Docs and UX must label that path **deprecated interim**; the ingest API (M-PR8B) is the replacement upload surface.
 
 Auth header: send `MUTINY_API_TOKEN` when set (already true for explicit Hosted).
 
 ---
 
-## 16. Hosted API behavior (**Planned** surface)
+## 16. Hosted API behavior (**Implemented** — M-PR8B)
 
 Prefer **campaign-centric** routes over a parallel `/runs` resource. New write paths are additive; existing GET/SSE stay.
 
-### Proposed minimal ingest API
+### Implemented ingest API
 
 | Method | Path | Role |
 |---|---|---|
@@ -342,6 +342,18 @@ Prefer **campaign-centric** routes over a parallel `/runs` resource. New write p
 | `POST` | `/api/ingest/v1/campaigns/{campaign_id}/complete` | Set terminal status + metrics. |
 | `POST` | `/api/ingest/v1/regressions` | Upsert regression artifact (links `campaign_id` / `candidate_id`). |
 | `POST` | `/api/ingest/v1/test-runs` | Upsert observed test-run result. |
+
+### Auth / validation / idempotency (M-PR8B)
+
+- **Auth:** same M-PR7 Bearer gate (`MUTINY_API_TOKEN`); ingest routes are protected.
+- **Envelope:** `schema_version` must be `1` (`400 unsupported_ingest_schema` otherwise).
+- **Redaction:** `redaction.applied: true` required (`400 redaction_required`); Hosted re-applies `redact_secrets` before persist.
+- **Project identity:** `project_id` or opaque `local_project_key` (stored as `projects.path = local_key:<key>` — never opened as FS).
+- **Idempotency:** campaign / event (`event_id`) / regression / test_run natural IDs; duplicates are no-ops; divergent bodies → `409`.
+- **Candidates/traces:** last-writer-wins upsert (same as supervisor).
+- **Ordering:** best-effort; optional `seq` stored for debug; gaps/out-of-order accepted.
+- **Size limits:** defaults from §13 (`413 payload_too_large`); env overrides reserved.
+- **SSE:** ingested events publish through the existing `EventHub` after persist (same SSE protocol).
 
 ### Existing routes (read / live UI — reuse)
 
@@ -354,9 +366,10 @@ Prefer **campaign-centric** routes over a parallel `/runs` resource. New write p
 
 - Do not overload `POST /api/campaigns/{id}/start` to mean “execute customer project” for Production Hosted.
 - Trusted `in_process_demo` may keep a Hosted-executed path separately labeled.
-- Minimize/regression **execution** endpoints that call `_make_adapter` on customer `project_path` remain interim debt until removed/disabled for Production Hosted (M-PR8C+).
+- Minimize/regression **execution** endpoints that call `_make_adapter` on customer `project_path` remain interim debt until removed/disabled for Production Hosted (M-PR8E).
+- **CLI sync** (`mutiny run --hosted` = local exec + upload) is **M-PR8C** — not claimed here.
 
-Validation on ingest (**Planned**): schema_version, required IDs, known event types, artifact kinds, timestamp parseability, payload shape (Pydantic), size limits, duplicate IDs, `redaction.applied`, Bearer auth. Reject arbitrary untyped bags where a model exists.
+Validation on ingest: schema_version, required IDs, known event types, artifact kinds, payload shape (Pydantic), size limits, duplicate IDs, `redaction.applied`, Bearer auth.
 
 ---
 
@@ -393,10 +406,10 @@ CLI ingest batch
 
 | Stage | Scope | Status |
 |---|---|---|
-| **M-PR8A** | This contract + doc consistency | **This document** |
-| **M-PR8B** | Hosted ingest endpoints + persistence wiring + contract tests (no customer exec required) | Planned |
+| **M-PR8A** | This contract + doc consistency | **Done (docs)** |
+| **M-PR8B** | Hosted ingest endpoints + persistence wiring + contract tests (no customer exec required) | **Done (server)** |
 | **M-PR8C** | CLI local-exec + sync for `--hosted`; pending-file / retry UX | Planned |
-| **M-PR8D** | Wire SSE hub for ingest; Web copy “run locally, observe here” | Planned |
+| **M-PR8D** | Web copy “run locally, observe here” (SSE already wired from ingest) | Planned |
 | **M-PR8E** | Remove/disable Production Hosted customer `project_path` `exec_module` path; keep `in_process_demo` | Planned |
 | **Later** | Optional `mutiny sync`; size-limit tuning; regression `project_id` column if join proves insufficient | Deferred |
 
@@ -406,9 +419,16 @@ Each stage ships behind tests; no silent claim that Target B is done until M-PR8
 
 ## Compatibility checklist
 
-Preserved by this contract (no runtime change in M-PR8A):
+Preserved by M-PR8B (additive ingest; no CLI sync yet):
 
 - Local `mutiny run` / `mutiny test`
 - Deterministic `PolicyEvaluator`, minimize, regression semantics
 - M-PR1–M-PR7 behavior
 - ADR-020 (policy-general seeds), ADR-021 (Bearer), ADR-019 (observe-only decision)
+- Interim Hosted supervisor / `in_process_demo` path unchanged until M-PR8E
+
+### Current limitations (post M-PR8B)
+
+- CLI does **not** yet upload via ingest (`mutiny run --hosted` still interim supervisor path) — **M-PR8C**
+- Production Hosted customer `exec_module` path still exists behind M-PR1 — **M-PR8E**
+- Web UX copy for observe-only still pending — **M-PR8D**

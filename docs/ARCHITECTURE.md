@@ -179,7 +179,7 @@ Placement may be `integrations/cli` or a published `mutiny` package entrypoint; 
 
 **ADR-019 (decision; M-PR8 not yet implemented):** Target Hosted role for customer projects is **observe/lineage** — persist campaigns, SSE, artifacts; customer Python runs on Local CLI. Production Hosted must not execute arbitrary customer `.mutiny/adapter.py` in the shared API process. Trusted `in_process_demo` harness may remain. See DECISION_LOG ADR-019.
 
-**M-PR8A (contract defined; runtime unchanged):** CLI → Hosted ingest contract — identity, redaction-before-upload, idempotency, planned `/api/ingest/v1/*`, SSE reuse, `--hosted` → local exec + sync — lives in [HOSTED_INGESTION.md](./HOSTED_INGESTION.md). Implementation is M-PR8B+.
+**M-PR8A/B:** CLI → Hosted ingest contract + Hosted `/api/ingest/v1/*` observe-only API — identity, redaction-before-upload, idempotency, SSE reuse — in [HOSTED_INGESTION.md](./HOSTED_INGESTION.md). **CLI sync (M-PR8C)** and **remove production customer exec (M-PR8E)** remain.
 ### `apps/web` — Hosted presentation
 
 **Owns**

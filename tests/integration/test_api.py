@@ -505,7 +505,7 @@ def test_projects_crud_and_campaign_list(client: TestClient, monkeypatch):
 def test_schema_version_includes_projects(client: TestClient, api_db: Path):
     health = client.get("/api/health")
     assert health.status_code == 200
-    assert health.json()["schema_version"] == "10"
+    assert health.json()["schema_version"] == "11"
     conn = sqlite3.connect(api_db)
     tables = {
         r[0]

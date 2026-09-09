@@ -42,7 +42,7 @@ with sandboxed mock tools for demos.
 |---|---|---|
 | [PRD.md](./PRD.md) | Product intent, users, requirements, non-goals | Algorithms, package layout, day-by-day tasks |
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | Principles, layering, package ownership, constraints | Product roadmap, competitor detail |
-| [HOSTED_INGESTION.md](./HOSTED_INGESTION.md) | CLI → Hosted ingest contract (M-PR8A; Planned runtime) | Ingest implementation / schema migrations |
+| [HOSTED_INGESTION.md](./HOSTED_INGESTION.md) | CLI → Hosted ingest contract + Hosted ingest API (M-PR8A/B; CLI sync pending) | CLI sync / remove production exec |
 | [SYSTEM_DESIGN.md](./SYSTEM_DESIGN.md) | Lifecycles, data contracts, flows, diagrams | Milestone scheduling, demo narration |
 | [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) | Milestones, DoD, sequencing | Product vision, long-term roadmap |
 | [DEMO_SCRIPT.md](./DEMO_SCRIPT.md) | Live demo scripts, backup, Q&A | System internals |

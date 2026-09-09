@@ -89,6 +89,8 @@ CREATE TABLE IF NOT EXISTS events (
     ts TEXT NOT NULL,
     type TEXT NOT NULL,
     payload_json TEXT NOT NULL,
+    client_event_id TEXT,
+    payload_hash TEXT,
     FOREIGN KEY (campaign_id) REFERENCES campaigns(id)
 );
 
@@ -127,12 +129,15 @@ CREATE INDEX IF NOT EXISTS idx_campaigns_status ON campaigns(status);
 CREATE INDEX IF NOT EXISTS idx_projects_path ON projects(path);
 CREATE INDEX IF NOT EXISTS idx_test_runs_regression ON test_runs(regression_id);
 CREATE INDEX IF NOT EXISTS idx_test_runs_created ON test_runs(created_at);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_events_client_id
+    ON events(campaign_id, client_event_id)
+    WHERE client_event_id IS NOT NULL;
 """
 # NOTE: idx_campaigns_project is created in migrate() after ensuring project_id
 # exists — CREATE TABLE IF NOT EXISTS will not add project_id to older DBs, so
 # indexing it inside SCHEMA would fail before migrate() can ALTER.
 
-SCHEMA_VERSION = "10"
+SCHEMA_VERSION = "11"
 
 
 def _table_columns(conn: sqlite3.Connection, table: str) -> set[str]:
@@ -183,6 +188,23 @@ def migrate(conn: sqlite3.Connection) -> None:
     )
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_test_runs_created ON test_runs(created_at)"
+    )
+    # M-PR8B: client event IDs for ingest idempotency (older DBs need ALTER).
+    if "events" in {
+        r[0]
+        for r in conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table'"
+        ).fetchall()
+    }:
+        ev_cols = _table_columns(conn, "events")
+        if "client_event_id" not in ev_cols:
+            conn.execute("ALTER TABLE events ADD COLUMN client_event_id TEXT")
+        if "payload_hash" not in ev_cols:
+            conn.execute("ALTER TABLE events ADD COLUMN payload_hash TEXT")
+    conn.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_events_client_id "
+        "ON events(campaign_id, client_event_id) "
+        "WHERE client_event_id IS NOT NULL"
     )
 
 

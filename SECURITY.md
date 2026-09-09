@@ -23,9 +23,9 @@ Mutiny is a **behavioral fuzz-testing engine** for agents you own or are authori
 
 Operators who accept the risk on a **single-operator localhost** machine may set `MUTINY_ALLOW_PROJECT_EXEC=1`. That flag is **not** a sandbox and **not** authorization. Do not expose Hosted on a shared or public network with this flag enabled.
 
-**Target architecture (ADR-019 accepted; M-PR8 not implemented):** Hosted is **observe/lineage only** for customer projects — customer `.mutiny/adapter.py` executes on the Local CLI trust domain; the shared API process must not `exec_module` customer trees in Production Hosted. Until M-PR8, treat any Hosted customer exec path as localhost-only opt-in debt.
+**Target architecture (ADR-019 accepted; M-PR8 in progress):** Hosted is **observe/lineage only** for customer projects — customer `.mutiny/adapter.py` executes on the Local CLI trust domain; the shared API process must not `exec_module` customer trees in Production Hosted. **M-PR8B** ships authenticated `/api/ingest/v1/*` (data only). Until M-PR8E, treat any Hosted customer exec path as localhost-only opt-in debt.
 
-**Ingestion contract (M-PR8A, docs only):** Future CLI → Hosted uploads must send **already-redacted** JSON evidence (data, not executable). See [docs/HOSTED_INGESTION.md](./docs/HOSTED_INGESTION.md). Upload endpoints are **not** implemented yet.
+**Ingestion (M-PR8A contract + M-PR8B API):** CLI → Hosted uploads must send **already-redacted** JSON evidence (data, not executable). See [docs/HOSTED_INGESTION.md](./docs/HOSTED_INGESTION.md). Hosted ingest endpoints are implemented; **CLI sync is not** (M-PR8C).
 
 ## Hosted authentication (M-PR7)
 

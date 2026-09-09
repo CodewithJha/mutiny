@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import sqlite3
 import uuid
@@ -11,14 +12,34 @@ from typing import Any
 
 from mutiny_core.redact import redact_secrets
 
+# Opaque project.path prefix for observe-only ingest (never a filesystem mount).
+INGEST_LOCAL_KEY_PREFIX = "local_key:"
+
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def stable_json_hash(value: Any) -> str:
+    """SHA-256 of canonical JSON for conflict detection (not request signing)."""
+    blob = json.dumps(value, sort_keys=True, separators=(",", ":"), default=str)
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()
+
+
+def local_key_path(local_project_key: str) -> str:
+    """Store local_project_key as an opaque projects.path label."""
+    return f"{INGEST_LOCAL_KEY_PREFIX}{local_project_key}"
+
+
 class Repository:
     def __init__(self, conn: sqlite3.Connection) -> None:
         self.conn = conn
+
+    def commit(self) -> None:
+        self.conn.commit()
+
+    def rollback(self) -> None:
+        self.conn.rollback()
 
     # --- projects ---
     def create_project(
@@ -28,6 +49,7 @@ class Repository:
         path: str,
         adapter: str = "openai_agents",
         project_id: str | None = None,
+        commit: bool = True,
     ) -> dict[str, Any]:
         pid = project_id or str(uuid.uuid4())
         ts = _now()
@@ -36,7 +58,8 @@ class Repository:
             "VALUES (?, ?, ?, ?, ?, ?)",
             (pid, name, path, adapter, ts, ts),
         )
-        self.conn.commit()
+        if commit:
+            self.conn.commit()
         return self.get_project(pid)  # type: ignore[return-value]
 
     def upsert_project_by_path(
@@ -69,18 +92,45 @@ class Repository:
             return None
         return self._project_row(row)
 
+    def get_project_by_local_key(self, local_project_key: str) -> dict[str, Any] | None:
+        """Lookup ingest project by opaque local_project_key (not a filesystem path)."""
+        return self.get_project_by_path(local_key_path(local_project_key))
+
+    def ensure_ingest_project(
+        self,
+        *,
+        local_project_key: str,
+        name: str | None = None,
+        adapter: str = "openai_agents",
+        project_id: str | None = None,
+        commit: bool = True,
+    ) -> dict[str, Any]:
+        """Create-or-return project for an opaque local key. Never touches the FS."""
+        existing = self.get_project_by_local_key(local_project_key)
+        if existing:
+            return existing
+        display = (name or local_project_key[:32] or "project").strip() or "project"
+        return self.create_project(
+            name=display,
+            path=local_key_path(local_project_key),
+            adapter=adapter,
+            project_id=project_id,
+            commit=commit,
+        )
+
     def list_projects(self) -> list[dict[str, Any]]:
         rows = self.conn.execute(
             "SELECT * FROM projects ORDER BY updated_at DESC, created_at DESC"
         ).fetchall()
         return [self._project_row(r) for r in rows]
 
-    def touch_project(self, project_id: str) -> None:
+    def touch_project(self, project_id: str, *, commit: bool = True) -> None:
         self.conn.execute(
             "UPDATE projects SET updated_at = ? WHERE id = ?",
             (_now(), project_id),
         )
-        self.conn.commit()
+        if commit:
+            self.conn.commit()
 
     def _project_row(self, row: sqlite3.Row) -> dict[str, Any]:
         return {
@@ -99,6 +149,8 @@ class Repository:
         config: dict[str, Any],
         *,
         project_id: str | None = None,
+        status: str = "created",
+        commit: bool = True,
     ) -> dict[str, Any]:
         ts = _now()
         self.conn.execute(
@@ -107,7 +159,7 @@ class Repository:
             "VALUES (?, ?, ?, ?, ?, ?)",
             (
                 campaign_id,
-                "created",
+                status,
                 json.dumps(config),
                 None,
                 ts,
@@ -119,7 +171,8 @@ class Repository:
                 "UPDATE projects SET updated_at = ? WHERE id = ?",
                 (ts, project_id),
             )
-        self.conn.commit()
+        if commit:
+            self.conn.commit()
         return self.get_campaign(campaign_id)  # type: ignore[return-value]
 
     def get_campaign(self, campaign_id: str) -> dict[str, Any] | None:
@@ -172,6 +225,8 @@ class Repository:
         *,
         metrics: dict[str, Any] | None = None,
         completed: bool = False,
+        completed_at: str | None = None,
+        commit: bool = True,
     ) -> None:
         if completed:
             self.conn.execute(
@@ -179,7 +234,7 @@ class Repository:
                 (
                     status,
                     json.dumps(metrics) if metrics is not None else None,
-                    _now(),
+                    completed_at or _now(),
                     campaign_id,
                 ),
             )
@@ -192,7 +247,8 @@ class Repository:
                     campaign_id,
                 ),
             )
-        self.conn.commit()
+        if commit:
+            self.conn.commit()
 
     def _campaign_row(self, row: sqlite3.Row) -> dict[str, Any]:
         # sqlite3.Row supports key access; older rows may lack project_id key
@@ -237,6 +293,7 @@ class Repository:
         status: str,
         violated: bool,
         hits: list[dict[str, Any]] | None = None,
+        commit: bool = True,
     ) -> None:
         self.conn.execute(
             "INSERT INTO candidates "
@@ -251,23 +308,27 @@ class Repository:
                 campaign_id,
                 parent_id,
                 generation,
-                json.dumps(genome),
+                json.dumps(redact_secrets(genome)),
                 fitness,
                 status,
                 1 if violated else 0,
                 json.dumps(redact_secrets(hits or [])),
             ),
         )
-        self.conn.commit()
+        if commit:
+            self.conn.commit()
 
-    def upsert_trace(self, candidate_id: str, trace: dict[str, Any]) -> None:
+    def upsert_trace(
+        self, candidate_id: str, trace: dict[str, Any], *, commit: bool = True
+    ) -> None:
         safe_trace = redact_secrets(trace)
         self.conn.execute(
             "INSERT INTO traces (candidate_id, trace_json) VALUES (?, ?) "
             "ON CONFLICT(candidate_id) DO UPDATE SET trace_json=excluded.trace_json",
             (candidate_id, json.dumps(safe_trace)),
         )
-        self.conn.commit()
+        if commit:
+            self.conn.commit()
 
     def list_candidates(self, campaign_id: str) -> list[dict[str, Any]]:
         rows = self.conn.execute(
@@ -304,21 +365,81 @@ class Repository:
 
     # --- events ---
     def append_event(
-        self, campaign_id: str, event_type: str, payload: dict[str, Any]
+        self,
+        campaign_id: str,
+        event_type: str,
+        payload: dict[str, Any],
+        *,
+        client_event_id: str | None = None,
+        ts: str | None = None,
+        commit: bool = True,
     ) -> dict[str, Any]:
-        ts = _now()
+        event_ts = ts or _now()
         safe_payload = redact_secrets(payload)
+        payload_hash = stable_json_hash({"type": event_type, "payload": safe_payload})
+        if client_event_id:
+            existing = self.get_event_by_client_id(campaign_id, client_event_id)
+            if existing is not None:
+                existing_hash = existing.get("payload_hash") or stable_json_hash(
+                    {"type": existing["type"], "payload": existing["payload"]}
+                )
+                if existing_hash != payload_hash:
+                    raise LookupError("event_conflict")
+                # Same identity + same body → idempotent no-op
+                return {
+                    "id": existing["id"],
+                    "campaign_id": campaign_id,
+                    "ts": existing["ts"],
+                    "type": existing["type"],
+                    "payload": existing["payload"],
+                    "client_event_id": client_event_id,
+                    "duplicate": True,
+                }
         cur = self.conn.execute(
-            "INSERT INTO events (campaign_id, ts, type, payload_json) VALUES (?, ?, ?, ?)",
-            (campaign_id, ts, event_type, json.dumps(safe_payload)),
+            "INSERT INTO events "
+            "(campaign_id, ts, type, payload_json, client_event_id, payload_hash) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (
+                campaign_id,
+                event_ts,
+                event_type,
+                json.dumps(safe_payload),
+                client_event_id,
+                payload_hash,
+            ),
         )
-        self.conn.commit()
+        if commit:
+            self.conn.commit()
         return {
             "id": cur.lastrowid,
             "campaign_id": campaign_id,
-            "ts": ts,
+            "ts": event_ts,
             "type": event_type,
             "payload": safe_payload,
+            "client_event_id": client_event_id,
+            "duplicate": False,
+        }
+
+    def get_event_by_client_id(
+        self, campaign_id: str, client_event_id: str
+    ) -> dict[str, Any] | None:
+        row = self.conn.execute(
+            "SELECT * FROM events WHERE campaign_id = ? AND client_event_id = ?",
+            (campaign_id, client_event_id),
+        ).fetchone()
+        if not row:
+            return None
+        keys = row.keys()
+        return {
+            "id": row["id"],
+            "campaign_id": row["campaign_id"],
+            "ts": row["ts"],
+            "type": row["type"],
+            "payload": json.loads(row["payload_json"]),
+            "client_event_id": row["client_event_id"]
+            if "client_event_id" in keys
+            else None,
+            "payload_hash": row["payload_hash"] if "payload_hash" in keys else None,
         }
 
     def list_events(
@@ -348,8 +469,10 @@ class Repository:
         candidate_id: str | None,
         path: str | None,
         artifact: dict[str, Any],
+        commit: bool = True,
     ) -> dict[str, Any]:
         ts = _now()
+        safe_artifact = redact_secrets(artifact)
         self.conn.execute(
             "INSERT INTO regressions (id, campaign_id, candidate_id, path, artifact_json, created_at) "
             "VALUES (?, ?, ?, ?, ?, ?)",
@@ -358,12 +481,47 @@ class Repository:
                 campaign_id,
                 candidate_id,
                 path,
-                json.dumps(artifact),
+                json.dumps(safe_artifact),
                 ts,
             ),
         )
-        self.conn.commit()
+        if commit:
+            self.conn.commit()
         return self.get_regression(reg_id)  # type: ignore[return-value]
+
+    def upsert_regression_ingest(
+        self,
+        reg_id: str,
+        *,
+        campaign_id: str | None,
+        candidate_id: str | None,
+        path: str | None,
+        artifact: dict[str, Any],
+        commit: bool = True,
+    ) -> tuple[dict[str, Any], bool]:
+        """Create-or-return regression. Returns (row, created). Raises LookupError on conflict."""
+        existing = self.get_regression(reg_id)
+        safe_artifact = redact_secrets(artifact)
+        if existing:
+            if stable_json_hash(existing["artifact"]) != stable_json_hash(safe_artifact):
+                raise LookupError("regression_conflict")
+            # Also conflict if campaign/candidate linkage diverges materially
+            if campaign_id and existing.get("campaign_id") not in (None, campaign_id):
+                raise LookupError("regression_conflict")
+            if candidate_id and existing.get("candidate_id") not in (None, candidate_id):
+                raise LookupError("regression_conflict")
+            return existing, False
+        return (
+            self.save_regression(
+                reg_id,
+                campaign_id=campaign_id,
+                candidate_id=candidate_id,
+                path=path,
+                artifact=safe_artifact,
+                commit=commit,
+            ),
+            True,
+        )
 
     def get_regression(
         self, reg_id: str, *, with_runs: bool = False, runs_limit: int = 50
@@ -438,6 +596,7 @@ class Repository:
         violated_rule_ids: list[str],
         evidence: list[dict[str, Any]],
         summary: str | None = None,
+        commit: bool = True,
     ) -> dict[str, Any]:
         ts = _now()
         self.conn.execute(
@@ -459,8 +618,64 @@ class Repository:
                 ts,
             ),
         )
-        self.conn.commit()
+        if commit:
+            self.conn.commit()
         return self.get_test_run(run_id)  # type: ignore[return-value]
+
+    def upsert_test_run_ingest(
+        self,
+        run_id: str,
+        *,
+        regression_id: str,
+        status: str,
+        duration_ms: float | None,
+        policy_version: str | None,
+        agent_version: str | None,
+        fixed_agent: bool,
+        violated_rule_ids: list[str],
+        evidence: list[dict[str, Any]],
+        summary: str | None = None,
+        commit: bool = True,
+    ) -> tuple[dict[str, Any], bool]:
+        """Create-or-return test run. Raises LookupError on divergent identity."""
+        existing = self.get_test_run(run_id)
+        safe_evidence = redact_secrets(evidence)
+        if existing:
+            fingerprint = {
+                "regression_id": regression_id,
+                "status": status,
+                "violated_rule_ids": violated_rule_ids,
+                "evidence": safe_evidence,
+                "summary": summary,
+                "fixed_agent": fixed_agent,
+            }
+            existing_fp = {
+                "regression_id": existing["regression_id"],
+                "status": existing["status"],
+                "violated_rule_ids": existing["violated_rule_ids"],
+                "evidence": existing["evidence"],
+                "summary": existing["summary"],
+                "fixed_agent": existing["fixed_agent"],
+            }
+            if stable_json_hash(fingerprint) != stable_json_hash(existing_fp):
+                raise LookupError("test_run_conflict")
+            return existing, False
+        return (
+            self.save_test_run(
+                run_id,
+                regression_id=regression_id,
+                status=status,
+                duration_ms=duration_ms,
+                policy_version=policy_version,
+                agent_version=agent_version,
+                fixed_agent=fixed_agent,
+                violated_rule_ids=violated_rule_ids,
+                evidence=safe_evidence,
+                summary=summary,
+                commit=commit,
+            ),
+            True,
+        )
 
     def get_test_run(self, run_id: str) -> dict[str, Any] | None:
         row = self.conn.execute(

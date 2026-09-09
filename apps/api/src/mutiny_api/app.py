@@ -35,6 +35,14 @@ from mutiny_api.errors import (
     raise_api,
     unhandled_exception_handler,
 )
+from mutiny_api.ingest import IngestService
+from mutiny_api.ingest_schemas import (
+    IngestBatchRequest,
+    IngestCampaignOpenRequest,
+    IngestCompleteRequest,
+    IngestRegressionRequest,
+    IngestTestRunRequest,
+)
 from mutiny_api.logging_setup import configure_logging
 from mutiny_api.repository import Repository
 from mutiny_api.schemas import (
@@ -77,9 +85,13 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
         conn = connect(resolved_db)
         repo = Repository(conn)
         supervisor = CampaignSupervisor(repo, hub)
-        supervisor.set_loop(asyncio.get_running_loop())
+        ingest = IngestService(repo, hub)
+        loop = asyncio.get_running_loop()
+        supervisor.set_loop(loop)
+        ingest.set_loop(loop)
         app.state.repo = repo
         app.state.supervisor = supervisor
+        app.state.ingest = ingest
         app.state.hub = hub
         app.state.db_path = str(resolved_db)
         log.info("mutiny_api.startup db=%s version=%s", resolved_db, __version__)
@@ -91,11 +103,13 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
         title="Mutiny Hosted API",
         version=__version__,
         description=(
-            "Hosted control plane for Mutiny: campaigns, SSE, minimize, regressions. "
+            "Hosted control plane for Mutiny: campaigns, SSE, minimize, regressions, "
+            "and observe-only ingest (/api/ingest/v1). "
             "AI proposes; deterministic PolicyEvaluator proves. "
             "Trusted harness: in_process_demo. "
             "Customer openai_agents + project_path execution is disabled by default "
             "(MUTINY_ALLOW_PROJECT_EXEC=1 opt-in for single-operator localhost only). "
+            "Ingest never executes customer adapters (ADR-019 / M-PR8B). "
             "When MUTINY_API_TOKEN is set, protected /api routes require "
             "Authorization: Bearer <token> (M-PR7). Auth is not a sandbox."
         ),
@@ -607,5 +621,37 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
             raise_api(404, "regression_not_found", "regression not found")
         except ValueError as exc:
             raise_api(400, "invalid_tests_run", str(exc))
+
+    # --- M-PR8B: observe-only ingest (never executes customer adapters) ---
+
+    @app.post("/api/ingest/v1/campaigns", status_code=201, tags=["ingest"])
+    def ingest_open_campaign(body: IngestCampaignOpenRequest) -> dict[str, Any]:
+        ingest_svc: IngestService = app.state.ingest
+        result = ingest_svc.open_campaign(body)
+        return result
+
+    @app.post("/api/ingest/v1/campaigns/{campaign_id}/batch", tags=["ingest"])
+    def ingest_campaign_batch(
+        campaign_id: str, body: IngestBatchRequest
+    ) -> dict[str, Any]:
+        ingest_svc: IngestService = app.state.ingest
+        return ingest_svc.ingest_batch(campaign_id, body)
+
+    @app.post("/api/ingest/v1/campaigns/{campaign_id}/complete", tags=["ingest"])
+    def ingest_campaign_complete(
+        campaign_id: str, body: IngestCompleteRequest
+    ) -> dict[str, Any]:
+        ingest_svc: IngestService = app.state.ingest
+        return ingest_svc.complete_campaign(campaign_id, body)
+
+    @app.post("/api/ingest/v1/regressions", status_code=201, tags=["ingest"])
+    def ingest_regression(body: IngestRegressionRequest) -> dict[str, Any]:
+        ingest_svc: IngestService = app.state.ingest
+        return ingest_svc.ingest_regression(body)
+
+    @app.post("/api/ingest/v1/test-runs", status_code=201, tags=["ingest"])
+    def ingest_test_run(body: IngestTestRunRequest) -> dict[str, Any]:
+        ingest_svc: IngestService = app.state.ingest
+        return ingest_svc.ingest_test_run(body)
 
     return app

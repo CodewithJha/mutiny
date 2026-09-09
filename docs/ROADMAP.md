@@ -24,8 +24,9 @@
 - **M-PR2:** CLI `mutiny run` defaults to local Core; Hosted requires `--hosted` / `--hosted-url` (config URL alone never selects Hosted)  
 - **M-PR1:** Hosted customer `project_path` adapter execution disabled by default (`MUTINY_ALLOW_PROJECT_EXEC=1` opt-in; trusted `in_process_demo` only otherwise)  
 - **M-PR7:** Optional single-tenant Hosted Bearer auth (`MUTINY_API_TOKEN`); not multi-tenant / not a sandbox  
-- **ADR-019 (accepted decision; M-PR8 planned):** Hosted observe/lineage for customer projects; customer adapter exec on Local CLI — **not yet implemented**  
-- **M-PR8A (docs):** CLI → Hosted ingestion contract defined in [HOSTED_INGESTION.md](./HOSTED_INGESTION.md) — **runtime ingest not shipped** 
+- **ADR-019 (accepted decision; M-PR8 in progress):** Hosted observe/lineage for customer projects; customer adapter exec on Local CLI — ingest API shipped (M-PR8B); CLI sync / remove production exec still pending  
+- **M-PR8A (docs):** CLI → Hosted ingestion contract defined in [HOSTED_INGESTION.md](./HOSTED_INGESTION.md)
+- **M-PR8B (server):** Hosted `/api/ingest/v1/*` observe-only ingest shipped — **CLI sync not shipped** 
 - Reliability smoke (≥2/3 on harness)  
 - Docs matching engine-first + customer-project primary  
 
@@ -50,7 +51,7 @@
 - Keep demo assets under `docs/assets/` current with Hosted UI
 - Keep good-first-issue queue fresh ([GOOD_FIRST_ISSUES.md](./GOOD_FIRST_ISSUES.md))
 - Clarify sample vs customer-project paths in UX copy as adapters land
-- **M-PR8 (planned):** Implement ADR-019 observe-only Hosted — split: **8A** contract ([HOSTED_INGESTION.md](./HOSTED_INGESTION.md), done as docs), **8B+** ingest API / CLI sync / SSE wiring / remove production customer `exec_module`
+- **M-PR8 (in progress):** Implement ADR-019 observe-only Hosted — **8A** contract (done), **8B** ingest API (done), **8C+** CLI sync / Web copy / remove production customer `exec_module`
 
 ---
 

@@ -107,6 +107,7 @@ class MetaResponse(BaseModel):
             "minimize",
             "regressions",
             "tests",
+            "ingest",
         ]
     )
     safety: dict[str, Any] = Field(
