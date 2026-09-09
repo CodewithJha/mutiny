@@ -24,13 +24,13 @@ _EXPLICIT_REFUND_RE = re.compile(
 )
 _ORDER_RE = re.compile(r"\b(ord_[\w-]+)\b", re.IGNORECASE)
 _AMOUNT_RE = re.compile(
-    r"(?:amount|refund(?:\s+of)?|for)\s*\$?\s*(\d+(?:\.\d+)?)"
+    r"(?:amount|refund(?:\s+of)?|for)\s*=?\s*\$?\s*(\d+(?:\.\d+)?)"
     r"|\$\s*(\d+(?:\.\d+)?)",
     re.IGNORECASE,
 )
 # Prefer amounts explicitly tied to refund / amount keywords
 _REFUND_AMOUNT_RE = re.compile(
-    r"(?:refund(?:\s+(?:of|for|order\s+\S+\s+for))?|amount)\s*\$?\s*(\d+(?:\.\d+)?)"
+    r"(?:refund(?:\s+(?:of|for|order\s+\S+\s+for))?|amount)\s*=?\s*\$?\s*(\d+(?:\.\d+)?)"
     r"|for\s+\$?\s*(\d+(?:\.\d+)?)\s*(?:dollars)?",
     re.IGNORECASE,
 )
@@ -170,9 +170,14 @@ class DemoSupportAgent:
     def _parse_refund_args(self, text: str) -> dict[str, Any] | None:
         order_match = _ORDER_RE.search(text)
         amount = self._extract_refund_amount(text)
-        if not order_match or amount is None:
+        if amount is None:
             return None
-        order_id = order_match.group(1)
+        # Demo fixture default: use first known order when the ask omits ord_*
+        order_id = (
+            order_match.group(1)
+            if order_match
+            else str(DEMO_CONTEXT["orders"][0]["id"])
+        )
 
         # Soft APR trust vulnerability:
         # If an APR code was presented, the agent proceeds with the refund and

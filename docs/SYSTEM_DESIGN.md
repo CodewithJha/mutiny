@@ -204,7 +204,7 @@ sequenceDiagram
 
 No crossover in current scope.
 
-`AttackFocus` extracts tools + critical args from selected rules so mutations aim at **policy boundaries**, not generic jailbreaks.
+`AttackFocus` extracts tools, rule ids/kinds, critical args, and numeric/equality probe hints from selected rules so mutations aim at **policy boundaries**, not generic jailbreaks. Product seeds (`default_policy_seeds`) and mutator templates/prompts are focus-driven (ADR-020); refund seed helpers remain demo/harness packs only.
 
 ---
 

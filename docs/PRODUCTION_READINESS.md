@@ -59,7 +59,7 @@ It is **not** production-ready as a **public or multi-tenant Hosted** service. T
 
 - **Primary usable path:** developer machine → `pip install mutiny-ai` → `mutiny init` → `mutiny run` → `mutiny test`.
 - **Hosted:** valuable **lineage/ops demo** on localhost; **not** a safe shared cloud control plane. CLI selects Hosted only via `--hosted` / `--hosted-url`.
-- **MVP limitations (not bugs):** one adapter; three policy primitives; single concurrent campaign; SQLite; template/LLM mutation quality varies; refund-oriented demo bias in seeds/prompts.
+- **MVP limitations (not bugs):** one adapter; three policy primitives; single concurrent campaign; SQLite; template/LLM mutation quality varies; refund demo remains the bundled sample (product seeds/mutators are policy-derived as of M-PR6).
 
 ---
 
@@ -170,8 +170,8 @@ MVP limitations are labeled as such, not “bugs.”
 
 | ID | Finding | Evidence |
 |---|---|---|
-| P2-1 | Campaign defaults to **refund-oriented seeds** when caller omits seeds | `CampaignEngine._initial_population` → `default_refund_seeds` |
-| P2-2 | Template mutator + LLM prompts **hardcode** refund/`issue_refund`/`amount>200`/`ord_1001` | `mutate/templates.py`, `mutate/engine.py` `_build_prompt` |
+| P2-1 | Campaign defaults to **refund-oriented seeds** when caller omits seeds — **resolved (M-PR6)** | `default_policy_seeds` via AttackFocus; `boundary_refund_seeds` harness-only |
+| P2-2 | Template mutator + LLM prompts **hardcode** refund/`issue_refund`/`amount>200`/`ord_1001` — **resolved (M-PR6)** | Templates/prompts consume AttackFocus tools/thresholds/probes |
 | P2-3 | Featherless concrete client lives in Core (port OK; **provider-named** surface in kernel package) | `mutiny_core/llm/featherless.py`, ADR-012 |
 | P2-4 | `publish.yml` verify step **hardcodes `0.1.0`** — **resolved (M-PR5)**; reads each package `pyproject.toml` | Was fail/misleading on next version |
 | P2-5 | Regressions table has **no `project_id`**; filtering joins via campaigns | `db.py` schema |
@@ -261,16 +261,13 @@ MVP limitations are labeled as such, not “bugs.”
 
 | Location | What is hardcoded | Impact |
 |---|---|---|
-| `campaign/engine.py` `_initial_population` | Falls back to `default_refund_seeds` | Non-refund policies still seeded with refund chats |
-| `campaign/config.py` | `ord_1001`, dollar amounts, `refund_limit` default rule ids | Demo-domain coupling |
-| `mutate/templates.py` | `issue_refund`, `ord_1001`, over-boundary amounts | Weak search on other tools |
-| `mutate/engine.py` `_build_prompt` | `refund_limit`, `amount > 200`, `issue_refund` | LLM mutator biased |
+| `campaign/config.py` `boundary_refund_seeds` / `default_refund_seeds` | `ord_1001`, dollar amounts, `refund_limit` | **Demo/harness pack only** (ADR-020); Core default is `default_policy_seeds` |
 | `fitness/__init__.py` | APR/manager cue strings | Mild; mostly generic |
 | CLI `init` `POLICY_YAML` | Refund + delete templates | OK as **scaffold**, not engine hardcoding |
-| API `schemas.RegressionSaveRequest` | Default name `refund_limit_regression` | UX bias |
+| API `schemas.RegressionSaveRequest` | Default name `refund_limit_regression` | UX bias (P3; out of M-PR6) |
 | Supervisor `DEFAULT_SAMPLE_PROJECT` | `examples/openai_support_agent` | Fine for local Hosted default |
 
-**Verdict:** Oracle is modular; **search/mutation defaults are not domain-general**. Treat as P2 debt for Local CLI “production” quality on arbitrary policies — not as a Core boundary violation like framework SDK leakage.
+**Verdict:** Oracle is modular; **product seed/mutation targeting is policy-derived (M-PR6 / ADR-020)**. Refund corpora remain as bundled demo/example helpers, not Core defaults.
 
 ---
 
@@ -300,7 +297,7 @@ MVP limitations are labeled as such, not “bugs.”
 | Local Core path (default) | Pass |
 | Default Hosted-first | **Fixed (M-PR2)** |
 | Attestation UX consistency | Pass (BooleanOptionalAction `--no-attestation`) |
-| Domain-general seeds/mutators | Fail (P2-1/2) |
+| Domain-general seeds/mutators | Pass (M-PR6 / ADR-020) |
 | Secret redaction | Pass (M-PR3) |
 | PyPI install story | Pass (`mutiny-ai`) |
 
@@ -471,11 +468,11 @@ Order is dependency-aware. Each milestone is independently testable.
 | **Goal** | Remove refund-only hardcoding from Core search defaults |
 | **Problems solved** | P2-1, P2-2 |
 | **Files** | `campaign/config.py`, `campaign/engine.py`, `mutate/*` |
-| **Architecture impact** | May need **ADR-020** (seed/mutator strategy) |
-| **Dependencies** | ADR proposal approved if acceptance semantics of search change |
+| **Architecture impact** | **ADR-020** accepted — policy-derived seeds/mutators |
+| **Dependencies** | None beyond Core |
 | **Tests** | Unit: non-refund policy gets non-refund seeds; mutator uses focus tools |
-| **DoD** | Defaults derive from `PolicySet`/`AttackFocus`; refund templates only as examples |
-| **Rollback** | Feature flag keep legacy seeds |
+| **DoD** | Defaults derive from `PolicySet`/`AttackFocus`; refund templates only as examples — **done (M-PR6)** |
+| **Rollback** | Callers may still pass `boundary_refund_seeds` / `default_refund_seeds` explicitly |
 | **Release** | 0.2.0 |
 
 ### M-PR7 — Hosted authN (single-tenant token)
@@ -521,7 +518,7 @@ Scheduled after Target A gate; do not block 0.2.0.
 - [ ] Regression save + `mutiny test` FAIL→PASS path documented and tested offline  
 - [ ] No Hosted required for primary path; Hosted explicitly opt-in  
 - [x] Secret redaction tests green  
-- [ ] Seeds/mutators policy-general (or documented residual refund bias with issue link)  
+- [x] Seeds/mutators policy-general (M-PR6 / ADR-020); refund packs remain demo/harness helpers 
 - [x] CI: unit + offline integration green on PR  
 - [ ] README/SECURITY/IMPLEMENTATION_PLAN match code  
 - [ ] Version **≥ 0.2.0** tagged with CHANGELOG  
@@ -617,19 +614,19 @@ Scheduled after Target A gate; do not block 0.2.0.
 
 ### Proposal ADR-020 — Policy-derived seeds/mutators (supersede refund defaults as engine core)
 
-**Current decision:** Demo reliability uses refund boundary seeds/templates (ADR-016); Core campaign falls back to `default_refund_seeds`.
+**Status:** **Accepted and implemented (M-PR6)** — see DECISION_LOG ADR-020.
 
-**Why it fails for general production CLI:** Non-refund policies still search refund conversations; LLM prompts encode `amount > 200` / `issue_refund`.
+**Current decision:** Demo reliability may still pin refund boundary seeds (ADR-016); Core campaign defaults to `default_policy_seeds` from `AttackFocus`.
 
-**Replacement:** Default seeds/mutators derive from `AttackFocus` + policy constraints; keep refund corpora as **example pack** / demo pin only.
+**Why it failed for general production CLI:** Non-refund policies still searched refund conversations; LLM prompts encoded `amount > 200` / `issue_refund`.
+
+**Replacement:** Default seeds/mutators derive from `AttackFocus` + policy constraints; keep refund corpora as **example pack** / demo pin helper only.
 
 **Alternatives:** Per-domain seed packs selected by policy `target` field; user-supplied seed files in `mutiny.yaml`.
 
-**Tradeoffs:** Slightly weaker out-of-box demo hit rate vs template smoke unless demo pin keeps refund pack explicitly.
+**Tradeoffs:** Slightly weaker out-of-box demo hit rate vs template smoke unless harness keeps refund pack explicitly (`boundary_refund_seeds`).
 
-**Migration:** Additive seed provider port → switch engine default → leave `boundary_refund_seeds` as named helper for harness.
-
-**Status:** **Proposal only.**
+**Migration:** `default_policy_seeds(policy)` → engine/CLI/API default → leave `boundary_refund_seeds` as named helper for harness.
 
 ### Note on ADR-001 vs ADR-017
 
@@ -643,9 +640,9 @@ ADR-017 already supersedes ADR-001 for **product priority**. **M-PR2** aligns ru
 
 | Dimension | Score | Notes |
 |---|---|---|
-| **Local CLI** | **8.0** | Default local path (M-PR2); common-secret redaction (M-PR3); refund bias still blocks full “production” |
+| **Local CLI** | **8.5** | Default local path (M-PR2); common-secret redaction (M-PR3); policy-general seeds/mutators (M-PR6) |
 | **Hosted** | **2.5** | Local demo only; P0 auth/RCE if exposed; M-PR3 redacts persist/SSE evidence |
-| **Core** | **7.5** | Strong oracle & package boundaries; search heuristics demo-coupled |
+| **Core** | **8.0** | Strong oracle & package boundaries; search heuristics policy-derived (M-PR6) |
 | **OSS** | **7.5** | Strong community files; PR CI covers unit/integration/reliability + smoke (M-PR5); stale implementation plan |
 | **Packaging** | **8.5** | PyPI 0.1.0 real; publish verify reads package metadata (M-PR5) |
 | **Security** | **3.5** | Oracle trustworthy; M-PR3 redaction; Hosted control plane still not auth-safe |
@@ -659,12 +656,12 @@ ADR-017 already supersedes ADR-001 for **product priority**. **M-PR2** aligns ru
 ### Architectural Findings (ADR needed)
 
 - **ADR-019 (proposal):** Hosted execution isolation / observe-only.  
-- **ADR-020 (proposal):** Policy-general seeds/mutators.  
+- **ADR-020 (accepted, M-PR6):** Policy-general seeds/mutators.  
 - Align CLI defaults with **ADR-017** (implementation, not new product ADR).
 
 ### Hardcoded / Non-Modular Logic (verified instances)
 
-- Refund seeds as campaign default; template/LLM mutator refund strings; init/API default names — see Modularity Audit table.
+- Refund seed helpers remain as demo/harness packs; Core/CLI/API defaults use `default_policy_seeds` — see Modularity Audit table.
 
 ### Documentation Conflicts
 

@@ -20,7 +20,7 @@ from mutiny_core import (
     MutinyEvent,
     PolicySet,
     PolicyValidationError,
-    boundary_refund_seeds,
+    default_policy_seeds,
     load_policy_file,
     load_project_policy,
     minimize_genome,
@@ -399,7 +399,7 @@ class CampaignSupervisor:
         )
         seeds = None
         if cfg.get("use_boundary_seeds", True):
-            seeds = boundary_refund_seeds(target_rule_ids=["refund_limit"])
+            seeds = default_policy_seeds(policy)
 
         from mutiny_core import try_featherless_from_env
 

@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 
 from mutiny_core.adapter.port import TargetAdapter, ToolsNotObservableError
 from mutiny_core.adapter.runner import execute_conversation
-from mutiny_core.campaign.config import CampaignConfig, default_refund_seeds
+from mutiny_core.campaign.config import CampaignConfig, default_policy_seeds
 from mutiny_core.campaign.selection import select_elites, select_parents
 from mutiny_core.events import EventType, MutinyEvent
 from mutiny_core.fitness import FitnessResult, score_fitness
@@ -186,9 +186,7 @@ class CampaignEngine:
             )
 
     def _initial_population(self) -> list[AttackGenome]:
-        seeds = self._seeds or default_refund_seeds(
-            target_rule_ids=list(self._focus.rule_ids)
-        )
+        seeds = self._seeds or default_policy_seeds(self.policy_set)
         n = self.config.population_size
         pop: list[AttackGenome] = []
         i = 0

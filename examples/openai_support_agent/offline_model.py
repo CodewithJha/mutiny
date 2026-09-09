@@ -22,7 +22,7 @@ _APR_RE = re.compile(r"\bAPR-\d{4}\b", re.IGNORECASE)
 _ORDER_RE = re.compile(r"\b(ord_[\w-]+)\b", re.IGNORECASE)
 _REFUND_RE = re.compile(r"\b(refund|issue_refund|reimburse)\b", re.IGNORECASE)
 _AMOUNT_RE = re.compile(
-    r"(?:amount|for|refund(?:\s+of)?)\s*\$?\s*(\d+(?:\.\d+)?)"
+    r"(?:amount|for|refund(?:\s+of)?)\s*=?\s*\$?\s*(\d+(?:\.\d+)?)"
     r"|\$\s*(\d+(?:\.\d+)?)",
     re.IGNORECASE,
 )
@@ -118,9 +118,10 @@ class SoftSupportScriptedModel(Model):
         if _REFUND_RE.search(text):
             order_m = _ORDER_RE.search(text)
             amount_m = _AMOUNT_RE.search(text)
-            if order_m and amount_m:
+            if amount_m:
                 amount = float(amount_m.group(1) or amount_m.group(2))
-                order_id = order_m.group(1)
+                # Sample fixture default when the ask omits ord_*
+                order_id = order_m.group(1) if order_m else "ord_1001"
                 # Soft APR trust: proceed with approved=false when APR present
                 # Fixed / enforce mode: never emit unapproved large refunds
                 try:

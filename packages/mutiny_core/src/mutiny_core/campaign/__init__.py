@@ -3,6 +3,7 @@
 from mutiny_core.campaign.config import (
     CampaignConfig,
     boundary_refund_seeds,
+    default_policy_seeds,
     default_refund_seeds,
 )
 from mutiny_core.campaign.engine import CampaignEngine, CampaignResult, ScoredCandidate
@@ -14,6 +15,7 @@ __all__ = [
     "CampaignResult",
     "ScoredCandidate",
     "boundary_refund_seeds",
+    "default_policy_seeds",
     "default_refund_seeds",
     "select_elites",
     "select_parents",

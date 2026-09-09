@@ -166,4 +166,7 @@ def test_prompt_includes_attack_focus_boundary():
     engine.mutate(_parent(), focus, generation=1, operator="confirmation_bypass")
     assert "issue_refund" in llm.prompts[0]
     assert "refund_limit" in llm.prompts[0]
-    assert "200" in llm.prompts[0] or "gt" in llm.prompts[0]
+    assert "amount" in llm.prompts[0]
+    assert "200" in llm.prompts[0]
+    # Must not hardcode refund-only prose outside AttackFocus fields
+    assert "for refund_limit, amount > 200" not in llm.prompts[0]

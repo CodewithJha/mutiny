@@ -18,7 +18,7 @@ from mutiny_core import (
     MutinyEvent,
     PolicySet,
     PolicyValidationError,
-    boundary_refund_seeds,
+    default_policy_seeds,
     load_project_policy,
     minimize_genome,
     save_regression,
@@ -305,8 +305,7 @@ def _run_local(root: Path, config: dict[str, Any], policy: PolicySet) -> int:
     )
     seeds = None
     if config.get("use_boundary_seeds", True):
-        rule_ids = [r.id for r in policy.rules] or ["refund_limit"]
-        seeds = boundary_refund_seeds(target_rule_ids=rule_ids[:1])
+        seeds = default_policy_seeds(policy)
 
     llm = try_featherless_from_env()
     mutator = "featherless" if llm else "template"

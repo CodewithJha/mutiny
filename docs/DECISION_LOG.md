@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | **Status** | Canonical decision log |
-| **Last updated** | 2026-08-07 |
+| **Last updated** | 2026-09-09 |
 | **Format** | ADR: Problem → Decision → Alternatives → Tradeoffs → Reconsider when |
 
 Add new ADRs at the bottom. Do not rewrite history; supersede with a new ADR.
@@ -271,3 +271,22 @@ Add new ADRs at the bottom. Do not rewrite history; supersede with a new ADR.
 **Tradeoffs:** Slightly more abstraction and packaging work for Adapter #1 vs a direct SDK embed. Prevents positioning drift and Core rewrites when Beta adapters land. Docs must consistently say “engine + first adapter,” not “SDK tool.”
 
 **Reconsider when:** A concrete design partner requires a second adapter before Adapter #1 is green (still add adapter, do not fork Core); or if the `TargetAdapter` contract proves insufficient for a major framework (extend the port via ADR—do not move framework logic into campaign/policy).
+
+---
+
+## ADR-020 — Policy-derived seeds and mutators (M-PR6)
+
+**Problem:** Core campaign defaults and mutation templates/prompts were coupled to the refund demo (`issue_refund`, `ord_1001`, `amount > 200`). Non-refund policies still searched refund conversations, undermining the product thesis that `PolicySet → AttackFocus →` adversarial search.
+
+**Decision:**
+
+1. **Product default seeds** are `default_policy_seeds(policy_set)`, derived deterministically from `AttackFocus` (tools, rule ids, kinds, critical args, numeric thresholds, equality probes).  
+2. **Mutation operators** stay strategy-level (rephrase, authority, APR bypass, argument nudge, …); templates and LLM prompts consume `AttackFocus` instead of refund-specific prose. Policy info chooses *what* to probe — it is not dumped as “please violate this rule” text to the target agent.  
+3. **`boundary_refund_seeds` / `default_refund_seeds`** remain named **demo/harness helpers** (ADR-016 reliability, explicit caller opt-in). They are not the Core/CLI/API default.  
+4. **Acceptance model unchanged:** deterministic `PolicyEvaluator` remains authoritative; no LLM judges.
+
+**Alternatives:** Per-domain seed packs keyed by `target`; user-supplied seed files only; keep refund defaults with docs disclaimer.
+
+**Tradeoffs:** Out-of-box refund demo hit rate may rely on harness-pinned boundary seeds for the offline smoke gate; general policies get relevant search without a second engine.
+
+**Reconsider when:** Search quality on diverse policies needs richer constraint-aware generators or optional user seed corpora in `mutiny.yaml`.
