@@ -439,6 +439,150 @@ class TestContextConstraints:
 
 
 # ---------------------------------------------------------------------------
+# Empty tool args and nested path edges
+# ---------------------------------------------------------------------------
+
+
+class TestEmptyArgsAndNestedPaths:
+    def test_deny_tool_violated_with_empty_arguments(self):
+        ev = PolicyEvaluator()
+        hits = ev.evaluate(
+            _deny_send_email_policy(),
+            _trace(_tool("send_email", {})),
+            {},
+        )
+        assert _hit_for(hits, "deny_send_email").violated is True
+
+    def test_forbid_args_not_violated_with_empty_arguments(self):
+        policy = PolicySet(
+            version="1",
+            target="demo",
+            rules=[
+                PolicyRule(
+                    id="forbid_evil_recipient",
+                    description="Must not email attacker",
+                    tool="send_email",
+                    kind=RuleKind.FORBID_ARGS,
+                    forbid={"recipient": ArgConstraint(eq="attacker@evil.com")},
+                )
+            ],
+        )
+        ev = PolicyEvaluator()
+        hits = ev.evaluate(policy, _trace(_tool("send_email", {})), {})
+        assert _hit_for(hits, "forbid_evil_recipient").violated is False
+
+    def test_require_context_match_violated_when_args_empty(self):
+        policy = PolicySet(
+            version="1",
+            target="demo",
+            rules=[
+                PolicyRule(
+                    id="email_must_match_customer",
+                    description="Email recipient must match customer.email",
+                    tool="send_email",
+                    kind=RuleKind.REQUIRE_ARGS,
+                    require={"recipient": ArgConstraint(eq="$context.customer.email")},
+                )
+            ],
+        )
+        context = {"customer": {"email": "alice@example.com"}}
+        ev = PolicyEvaluator()
+        hits = ev.evaluate(policy, _trace(_tool("send_email", {})), context)
+        assert _hit_for(hits, "email_must_match_customer").violated is True
+
+    def test_nested_context_path_resolves_for_require(self):
+        policy = PolicySet(
+            version="1",
+            target="demo",
+            rules=[
+                PolicyRule(
+                    id="email_must_match_order_customer",
+                    description="Recipient must match order.customer.email",
+                    tool="send_email",
+                    kind=RuleKind.REQUIRE_ARGS,
+                    require={
+                        "recipient": ArgConstraint(
+                            eq="$context.order.customer.email"
+                        )
+                    },
+                )
+            ],
+        )
+        context = {"order": {"customer": {"email": "alice@example.com"}}}
+        ev = PolicyEvaluator()
+
+        ok = ev.evaluate(
+            policy,
+            _trace(_tool("send_email", {"recipient": "alice@example.com"})),
+            context,
+        )
+        assert _hit_for(ok, "email_must_match_order_customer").violated is False
+
+        bad = ev.evaluate(
+            policy,
+            _trace(_tool("send_email", {"recipient": "other@example.com"})),
+            context,
+        )
+        assert _hit_for(bad, "email_must_match_order_customer").violated is True
+
+    def test_nested_context_missing_intermediate_path_fails(self):
+        policy = PolicySet(
+            version="1",
+            target="demo",
+            rules=[
+                PolicyRule(
+                    id="email_must_match_order_customer",
+                    description="Recipient must match order.customer.email",
+                    tool="send_email",
+                    kind=RuleKind.REQUIRE_ARGS,
+                    require={
+                        "recipient": ArgConstraint(
+                            eq="$context.order.customer.email"
+                        )
+                    },
+                )
+            ],
+        )
+        ev = PolicyEvaluator()
+        hits = ev.evaluate(
+            policy,
+            _trace(_tool("send_email", {"recipient": "alice@example.com"})),
+            {"order": {}},
+        )
+        assert _hit_for(hits, "email_must_match_order_customer").violated is True
+
+    def test_nested_arg_value_eq_constraint(self):
+        policy = PolicySet(
+            version="1",
+            target="demo",
+            rules=[
+                PolicyRule(
+                    id="require_gold_tier",
+                    description="Metadata tier must be gold",
+                    tool="upgrade_account",
+                    kind=RuleKind.REQUIRE_ARGS,
+                    require={"metadata": ArgConstraint(eq={"tier": "gold"})},
+                )
+            ],
+        )
+        ev = PolicyEvaluator()
+
+        ok = ev.evaluate(
+            policy,
+            _trace(_tool("upgrade_account", {"metadata": {"tier": "gold"}})),
+            {},
+        )
+        assert _hit_for(ok, "require_gold_tier").violated is False
+
+        bad = ev.evaluate(
+            policy,
+            _trace(_tool("upgrade_account", {"metadata": {"tier": "silver"}})),
+            {},
+        )
+        assert _hit_for(bad, "require_gold_tier").violated is True
+
+
+# ---------------------------------------------------------------------------
 # Multiple calls / rules / empty
 # ---------------------------------------------------------------------------
 
