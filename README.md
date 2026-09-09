@@ -371,9 +371,39 @@ If this engine is useful, a star helps other agent builders find it. Fork the re
 
 Thanks to everyone who has contributed. New faces welcome — pick up a [`good first issue`](https://github.com/CodewithJha/mutiny/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).
 
-<a href="https://github.com/CodewithJha/mutiny/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=CodewithJha/mutiny" alt="Contributors to Mutiny" />
-</a>
+<!--
+  Gallery is regenerated from the GitHub Contributors API by
+  .github/workflows/contributors.yml (on push to main + weekly cron).
+  Do not use contrib.rocks here — its production CDN can lag the API
+  for days (Cache-Control max-age=259200); cache-bust query params do
+  not refresh that server-side snapshot.
+-->
+<!-- readme: contributors -start -->
+<table>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/CodewithJha">
+        <img src="https://avatars.githubusercontent.com/u/155089480?v=4&s=100" width="100px;" alt="CodewithJha"/><br />
+        <sub><b>CodewithJha</b></sub>
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://github.com/kkkhs">
+        <img src="https://avatars.githubusercontent.com/u/141250392?v=4&s=100" width="100px;" alt="kkkhs"/><br />
+        <sub><b>kkkhs</b></sub>
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://github.com/Mr-Neutr0n">
+        <img src="https://avatars.githubusercontent.com/u/64578610?v=4&s=100" width="100px;" alt="Mr-Neutr0n"/><br />
+        <sub><b>Mr-Neutr0n</b></sub>
+      </a>
+    </td>
+  </tr>
+</table>
+<!-- readme: contributors -end -->
+
+Full graph: [github.com/CodewithJha/mutiny/graphs/contributors](https://github.com/CodewithJha/mutiny/graphs/contributors).
 
 ---
 

@@ -1,0 +1,37 @@
+# Keeps the README contributors gallery in sync with GitHub's Contributors API.
+# Replaces contrib.rocks (CDN can stay stale for ~3 days; cache-bust params do not help).
+name: Update contributors
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      # Avoid a loop when this workflow commits README-only updates.
+      - "README.md"
+  schedule:
+    # Safety net if a push run is skipped or the API lags briefly after merge.
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  contributors:
+    runs-on: ubuntu-latest
+    name: Refresh README contributors
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Need full history so the action can push a follow-up commit.
+          fetch-depth: 0
+
+      - name: Update contributors in README
+        uses: akhilmhdh/contributors-readme-action@v2.3.11
+        with:
+          image_size: 100
+          columns_per_row: 6
+          readme_path: README.md
+          commit_message: "docs: refresh README contributors gallery"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
