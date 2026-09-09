@@ -23,6 +23,21 @@ Mutiny is a **behavioral fuzz-testing engine** for agents you own or are authori
 
 Operators who accept the risk on a **single-operator localhost** machine may set `MUTINY_ALLOW_PROJECT_EXEC=1`. That flag is **not** a sandbox and **not** authorization. Do not expose Hosted on a shared or public network with this flag enabled. Full Hosted isolation remains an ADR-019 decision.
 
+## Secret redaction (M-PR3)
+
+Mutiny applies a **small, deterministic, local** redactor (`mutiny_core.redact.redact_secrets`) before durable/user-visible evidence surfaces:
+
+| Covered | Examples |
+|---|---|
+| Credential field values (case-insensitive keys) | `api_key` / `apiKey`, `token`, `password` / `passwd`, `secret`, `access_token`, `refresh_token`, `authorization` |
+| Inline Authorization headers | `Authorization: Bearer …` inside strings |
+
+**Where:** campaign event dumps (trace/hits), Hosted SQLite persistence (traces, hits, event payloads, test-run evidence), Hosted API responses fed from those stores, CLI `mutiny test` evidence / reports.
+
+**Boundary:** raw runtime traces remain available in-memory for `PolicyEvaluator` / fitness / minimize. Redaction runs on serialized persist/display copies. Marker: `[REDACTED]`.
+
+**Not a guarantee:** Mutiny does **not** detect every possible secret format (no LLM / external scanner). Unusual encodings, custom header schemes, and secrets embedded only in attack genomes may still appear. Rollback: `MUTINY_DISABLE_SECRET_REDACTION=1`.
+
 ## Reporting a vulnerability
 
 Please **do not** open a public GitHub issue for security-sensitive reports.

@@ -19,6 +19,7 @@ from mutiny_core.llm.port import LLMClient
 from mutiny_core.mutate import MutationEngine, derive_attack_focus
 from mutiny_core.policy.evaluator import PolicyEvaluator
 from mutiny_core.policy.models import PolicyHit, PolicySet
+from mutiny_core.redact import redact_secrets
 from mutiny_core.trace.models import ExecutionTrace
 
 EventCallback = Callable[[MutinyEvent], None]
@@ -249,8 +250,11 @@ class CampaignEngine:
                 "strategy": genome.strategy,
                 "target_rule_ids": list(genome.target_rule_ids),
                 "genome": genome.model_dump(),
-                "trace": trace.model_dump(mode="json"),
-                "hits": [h.model_dump(mode="json") for h in hits],
+                # Sanitize durable/event surfaces; in-memory ``trace``/``hits`` stay raw for oracle.
+                "trace": redact_secrets(trace.model_dump(mode="json")),
+                "hits": redact_secrets(
+                    [h.model_dump(mode="json") for h in hits]
+                ),
                 "signals": dict(fitness_result.signals),
             },
         )

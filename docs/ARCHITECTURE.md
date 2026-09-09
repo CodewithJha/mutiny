@@ -227,6 +227,7 @@ Unit tests prefer Core. Integration tests may boot API + sample/demo adapter. Re
 | `genome` | Attack candidate structure | None |
 | `adapter` | `TargetAdapter` ABC | I/O only in implementations |
 | `trace` | Trace / PolicyHit models | None |
+| `redact` | Deterministic secret redaction for persist/display copies | None |
 | `fitness` | Score traces given PolicySet | None |
 | `mutate` | Produce child genomes | May call `LLMClient` port |
 | `campaign` | Generational loop driving adapter + fitness + mutate | Calls ports; emits events via callback |

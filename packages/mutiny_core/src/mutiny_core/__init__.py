@@ -62,6 +62,7 @@ from mutiny_core.regress import (
     replay_regression,
     save_regression,
 )
+from mutiny_core.redact import REDACTED, redact_secrets, redaction_enabled
 from mutiny_core.trace import (
     AdapterTurnResult,
     ExecutionTrace,
@@ -97,6 +98,7 @@ __all__ = [
     "PolicyRule",
     "PolicySet",
     "PolicyValidationError",
+    "REDACTED",
     "RegressionNotReproducibleError",
     "RegressionTest",
     "ReplayResult",
@@ -119,6 +121,8 @@ __all__ = [
     "minimize_genome",
     "parse_policy_text",
     "policy_set_to_public",
+    "redact_secrets",
+    "redaction_enabled",
     "replay_regression",
     "resolve_policy_path",
     "save_regression",

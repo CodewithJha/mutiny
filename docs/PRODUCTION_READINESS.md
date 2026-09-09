@@ -51,7 +51,7 @@ It is **not** production-ready as a **public or multi-tenant Hosted** service. T
 | [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) marks M2–M5 largely **Planned/Partial** (2026-08-07) | Adapter #1 + CLI init/run/test + sample path are **shipped in 0.1.0** |
 | ARCHITECTURE: API owns “rate limits” + “target allowlisting” | **No rate limiter** implemented; “allowlist” is a **target enum** (`in_process_demo` \| `openai_agents`), not a filesystem/URL sandbox |
 | SYSTEM_DESIGN §20: arbitrary remote hosts blocked; treat customer adapter as untrusted vs control plane | Hosted **executes** customer adapter via `importlib` `exec_module` in the API process (`load_adapter_factory`) |
-| PRD / plan: “Redact secrets in traces” | **No redaction implementation** found in Core/API |
+| PRD / plan: “Redact secrets in traces” | **M-PR3:** deterministic redaction on persist/display (`mutiny_core.redact`) |
 | `docker-compose.yml` sets `MUTINY_DB_PATH` | `mutiny_api.main:app` hardcodes `Path("data/mutiny.sqlite")` — **env ignored** |
 | ADR-001 “Hosted first” | Superseded for **product priority** by ADR-017; **M-PR2:** CLI default is local; Hosted requires `--hosted` / `--hosted-url` |
 
@@ -160,7 +160,7 @@ MVP limitations are labeled as such, not “bugs.”
 |---|---|---|---|
 | P1-1 | Attestation is **not authorization** (boolean only) | `CampaignStartRequest.attestation`; supervisor `PermissionError` if false | Hosted (and weak Local messaging) |
 | P1-2 | Docs/architecture claim **rate limits** and **path/URL allowlisting**; missing or reduced to target enum | ARCHITECTURE §4 API owns; no limiter in API; no FS root allowlist | Hosted |
-| P1-3 | **Secret redaction** required by PRD — unimplemented | PRD / IMPLEMENTATION_PLAN checklist; no `redact` code | Both |
+| P1-3 | **Secret redaction** required by PRD — **implemented (M-PR3)** | `mutiny_core.redact`; persist/display wiring | Both (resolved for common patterns) |
 | P1-4 | CLI **Hosted-first** when `api_url` reachable — surprises operators; pushes `project_path` to API | `run_cmd.py` | Local (ops safety); Hosted blast radius |
 | P1-5 | `MUTINY_DB_PATH` in compose **ignored**; DB path hardcoded | `main.py` vs `docker-compose.yml` | Hosted / Data |
 | P1-6 | CI runs **unit only** — integration + reliability not gated on PR | `.github/workflows/ci.yml` | Both / OSS |
@@ -224,7 +224,7 @@ MVP limitations are labeled as such, not “bugs.”
 | Target isolation | Same process as developer agent | **Kill-switch (M-PR1):** customer adapter exec disabled by default; trusted `in_process_demo` only unless `MUTINY_ALLOW_PROJECT_EXEC=1` |
 | Network bind | N/A (CLI) | `0.0.0.0` in deploy templates |
 | Rate limit | N/A | **Missing** (error code only) |
-| Secret redaction | **Missing** | **Missing** |
+| Secret redaction | Pass (M-PR3) | Pass (M-PR3; Hosted persist/SSE) |
 | Oracle integrity | Deterministic evaluator (strong) | Same (strong) |
 | Open-internet attack proxy | Not implemented as product | Not a proxy; but **RCE on API host** is worse |
 
@@ -301,7 +301,7 @@ MVP limitations are labeled as such, not “bugs.”
 | Default Hosted-first | **Fixed (M-PR2)** |
 | Attestation UX consistency | Pass (BooleanOptionalAction `--no-attestation`) |
 | Domain-general seeds/mutators | Fail (P2-1/2) |
-| Secret redaction | Fail (P1-3) |
+| Secret redaction | Pass (M-PR3) |
 | PyPI install story | Pass (`mutiny-ai`) |
 
 **Closest path to Target A:** local `mutiny run` is the production default (M-PR2); harden artifacts; generalize seeds/mutators; keep Hosted optional and opt-in via `--hosted`.
@@ -429,8 +429,9 @@ Order is dependency-aware. Each milestone is independently testable.
 | **Dependencies** | None |
 | **Tests** | Unit: key-shaped strings redacted; regression golden |
 | **DoD** | Saved artifacts and Hosted traces redact configured patterns |
-| **Rollback** | Flag to disable |
+| **Rollback** | Flag to disable (`MUTINY_DISABLE_SECRET_REDACTION=1`) or revert |
 | **Release** | 0.2.0 |
+| **Status** | **Implemented** — `mutiny_core.redact`; wired at campaign event dumps + SQLite/API evidence + CLI test evidence |
 
 ### M-PR4 — DB path + persistence hygiene
 
@@ -516,7 +517,7 @@ Scheduled after Target A gate; do not block 0.2.0.
 - [ ] Sample: `mutiny run` finds or honestly reports no violation without crashing  
 - [ ] Regression save + `mutiny test` FAIL→PASS path documented and tested offline  
 - [ ] No Hosted required for primary path; Hosted explicitly opt-in  
-- [ ] Secret redaction tests green  
+- [x] Secret redaction tests green  
 - [ ] Seeds/mutators policy-general (or documented residual refund bias with issue link)  
 - [ ] CI: unit + offline integration green on PR  
 - [ ] README/SECURITY/IMPLEMENTATION_PLAN match code  
@@ -639,18 +640,18 @@ ADR-017 already supersedes ADR-001 for **product priority**. **M-PR2** aligns ru
 
 | Dimension | Score | Notes |
 |---|---|---|
-| **Local CLI** | **7.5** | Default local path (M-PR2); refund bias + no redaction still block full “production” |
-| **Hosted** | **2.0** | Local demo only; P0 auth/RCE if exposed |
+| **Local CLI** | **8.0** | Default local path (M-PR2); common-secret redaction (M-PR3); refund bias still blocks full “production” |
+| **Hosted** | **2.5** | Local demo only; P0 auth/RCE if exposed; M-PR3 redacts persist/SSE evidence |
 | **Core** | **7.5** | Strong oracle & package boundaries; search heuristics demo-coupled |
 | **OSS** | **7.0** | Strong community files; stale implementation plan; thin automation |
 | **Packaging** | **8.0** | PyPI 0.1.0 real; publish verify hardcoded |
-| **Security** | **3.0** | Oracle trustworthy; Hosted control plane not |
-| **Overall** | **4.0** | Alpha suitable for authorized local fuzzing; not dual-target production |
+| **Security** | **3.5** | Oracle trustworthy; M-PR3 redaction; Hosted control plane still not auth-safe |
+| **Overall** | **4.5** | Alpha suitable for authorized local fuzzing; not dual-target production |
 
 ### Critical Findings (P0/P1)
 
 - **P0:** Unauthenticated Hosted + in-process adapter exec + policy write + public bind templates.  
-- **P1:** Fake authz (attestation), missing rate limits/allowlist vs docs, no secret redaction, DB env ignored, CI unit-only, stale IMPLEMENTATION_PLAN. *(P1-4 CLI Hosted-first resolved by M-PR2.)*
+- **P1:** Fake authz (attestation), missing rate limits/allowlist vs docs, DB env ignored, CI unit-only, stale IMPLEMENTATION_PLAN. *(P1-3 secret redaction resolved by M-PR3 for common patterns; P1-4 CLI Hosted-first resolved by M-PR2.)*
 
 ### Architectural Findings (ADR needed)
 
@@ -668,7 +669,7 @@ ADR-017 already supersedes ADR-001 for **product priority**. **M-PR2** aligns ru
 - ARCHITECTURE rate limits / allowlisting vs code.  
 - SYSTEM_DESIGN trust boundary vs Hosted exec.  
 - ADR-001 historical vs ADR-017 + CLI Hosted-first behavior.  
-- PRD secret redaction vs missing implementation.  
+- PRD secret redaction — **addressed by M-PR3** (deterministic common-pattern redactor; not universal detection).  
 - compose `MUTINY_DB_PATH` vs hardcoded DB path.
 
 ### Proposed Milestones (exact order)

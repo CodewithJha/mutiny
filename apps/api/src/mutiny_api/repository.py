@@ -9,6 +9,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from mutiny_core.redact import redact_secrets
+
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -253,16 +255,17 @@ class Repository:
                 fitness,
                 status,
                 1 if violated else 0,
-                json.dumps(hits or []),
+                json.dumps(redact_secrets(hits or [])),
             ),
         )
         self.conn.commit()
 
     def upsert_trace(self, candidate_id: str, trace: dict[str, Any]) -> None:
+        safe_trace = redact_secrets(trace)
         self.conn.execute(
             "INSERT INTO traces (candidate_id, trace_json) VALUES (?, ?) "
             "ON CONFLICT(candidate_id) DO UPDATE SET trace_json=excluded.trace_json",
-            (candidate_id, json.dumps(trace)),
+            (candidate_id, json.dumps(safe_trace)),
         )
         self.conn.commit()
 
@@ -304,9 +307,10 @@ class Repository:
         self, campaign_id: str, event_type: str, payload: dict[str, Any]
     ) -> dict[str, Any]:
         ts = _now()
+        safe_payload = redact_secrets(payload)
         cur = self.conn.execute(
             "INSERT INTO events (campaign_id, ts, type, payload_json) VALUES (?, ?, ?, ?)",
-            (campaign_id, ts, event_type, json.dumps(payload)),
+            (campaign_id, ts, event_type, json.dumps(safe_payload)),
         )
         self.conn.commit()
         return {
@@ -314,7 +318,7 @@ class Repository:
             "campaign_id": campaign_id,
             "ts": ts,
             "type": event_type,
-            "payload": payload,
+            "payload": safe_payload,
         }
 
     def list_events(
@@ -450,7 +454,7 @@ class Repository:
                 agent_version,
                 1 if fixed_agent else 0,
                 json.dumps(violated_rule_ids),
-                json.dumps(evidence),
+                json.dumps(redact_secrets(evidence)),
                 summary,
                 ts,
             ),

@@ -28,6 +28,7 @@ from mutiny_core import (
     save_regression,
 )
 from mutiny_core.genome import AttackGenome
+from mutiny_core.redact import redact_secrets
 from mutiny_core.regress import RegressionNotReproducibleError, RegressionTest
 from mutiny_openai_agents.loader import load_adapter_factory
 
@@ -740,14 +741,16 @@ class CampaignSupervisor:
                 artifact, adapter=adapter, policy_set=policy
             )
             duration_ms = round((time.perf_counter() - t0) * 1000, 2)
-            evidence = [
-                {
-                    "tool": c.name,
-                    "arguments": dict(c.arguments or {}),
-                    "id": c.id,
-                }
-                for c in (result.trace.all_tool_calls if result.trace else [])[:12]
-            ]
+            evidence = redact_secrets(
+                [
+                    {
+                        "tool": c.name,
+                        "arguments": dict(c.arguments or {}),
+                        "id": c.id,
+                    }
+                    for c in (result.trace.all_tool_calls if result.trace else [])[:12]
+                ]
+            )
             summary = (
                 f"violated {', '.join(result.violated_rule_ids)}"
                 if result.status == "FAIL"

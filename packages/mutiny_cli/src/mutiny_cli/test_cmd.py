@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from mutiny_core import PolicyValidationError, load_project_policy
+from mutiny_core.redact import redact_secrets
 from mutiny_core.regress import RegressionTest, ReplayResult, replay_regression
 from mutiny_openai_agents.loader import ensure_project_on_path, load_adapter_factory
 
@@ -338,7 +339,7 @@ def _evidence_from_replay(replay: ReplayResult) -> list[dict[str, Any]]:
                 "id": call.id,
             }
         )
-    return out
+    return redact_secrets(out)
 
 
 def _print_line(result: CaseResult) -> None:

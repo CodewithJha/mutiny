@@ -277,6 +277,8 @@ Evaluation is **pure**: `(PolicySet, ExecutionTrace, context) → list[PolicyHit
 
 Context supplies deterministic facts (e.g. `customer.email`). No LLM calls.
 
+**Secret redaction (M-PR3):** Policy evaluation runs on raw in-memory traces. Durable/user-visible copies (campaign event dumps, Hosted SQLite traces/hits/events/test evidence, CLI test evidence) pass through `mutiny_core.redact.redact_secrets` before persist/display. This is a small deterministic filter for common credential keys and `Authorization: Bearer` strings — not a universal secret detector.
+
 ### Policy generation (product surface)
 
 `mutiny init` may seed `policy.yaml` from templates and/or discovered tool names. **Human review is required** before treating policies as authoritative. Auto-suggested rules are never the acceptance oracle without explicit content.
