@@ -3,16 +3,16 @@
 | Field | Value |
 |---|---|
 | **Status** | Canonical engineering execution plan |
-| **Last updated** | 2026-08-07 |
+| **Last updated** | 2026-09-09 |
 | **Build window** | Current open-source scope |
-| **Verdict** | Pivot in progress — docs ahead of install-path code |
-| **Related** | [PRD](./PRD.md) · [ARCHITECTURE](./ARCHITECTURE.md) · [SYSTEM_DESIGN](./SYSTEM_DESIGN.md) · [ROADMAP](./ROADMAP.md) · [DEMO_SCRIPT](./DEMO_SCRIPT.md) · [ADR-017](./DECISION_LOG.md#adr-017--customer-owned-local-projects-primary-bundled-demo-secondary) · [ADR-018](./DECISION_LOG.md#adr-018--adapter-first-architecture) |
+| **Verdict** | Adapter #1 + CLI + observe-only Hosted shipped in `0.1.0` tree; Hosted security hardening (M-PR8E, P0-3, P0-1/P0-4, P1-2) landed — Target B / 1.0 not claimed |
+| **Related** | [PRD](./PRD.md) · [ARCHITECTURE](./ARCHITECTURE.md) · [SYSTEM_DESIGN](./SYSTEM_DESIGN.md) · [ROADMAP](./ROADMAP.md) · [PRODUCTION_READINESS](./PRODUCTION_READINESS.md) · [HOSTED_INGESTION](./HOSTED_INGESTION.md) · [DEMO_SCRIPT](./DEMO_SCRIPT.md) · [ADR-017](./DECISION_LOG.md#adr-017--customer-owned-local-projects-primary-bundled-demo-secondary) · [ADR-018](./DECISION_LOG.md#adr-018--adapter-first-architecture) · [ADR-019](./DECISION_LOG.md#adr-019--hosted-observelineage-only-customer-python-executes-on-cli) |
 
 This plan is **milestone-driven**. Calendar days only allocate work; they do not redefine scope.
 
-Behavioral contracts → SYSTEM_DESIGN. Boundaries → ARCHITECTURE. Product intent → PRD.
+Behavioral contracts → SYSTEM_DESIGN. Boundaries → ARCHITECTURE. Product intent → PRD. Ship/no-ship gates → PRODUCTION_READINESS.
 
-**Honest codebase note:** The repo implements Core + Hosted against a **bundled demo agent** (reference harness) and the OpenAI Agents SDK customer-project path. DoD boxes below reflect shipped vs remaining work. Architecture already supports additional adapters; they are **not** on the current critical path.
+**Honest codebase note:** The repo implements Core + Adapter #1 (OpenAI Agents SDK) + CLI (`init` / `run` / `test`) + sample project + Hosted API/UI. Hosted customer path is **observe-only** (CLI executes; ingest sync). Trusted `in_process_demo` remains. Architecture already supports additional adapters; they are **not** on the current critical path.
 
 ---
 
@@ -29,18 +29,28 @@ Behavioral contracts → SYSTEM_DESIGN. Boundaries → ARCHITECTURE. Product int
 
 ## 1. Milestone map
 
-| ID | Milestone | Primary outcome | Status (2026-08-07) |
+| ID | Milestone | Primary outcome | Status (2026-09-09) |
 |---|---|---|---|
-| M1 | Core | Models + policy evaluator + kernel ports tested | **Done** (existing) |
-| M2 | Adapter #1 (OpenAI Agents SDK) | `TargetAdapter` impl loads a real OpenAI Agents SDK agent | **Planned** (also: demo reference adapter) |
-| M3 | Policy generation | `mutiny init` scaffolds adapter stub + `policy.yaml` + `mutiny.yaml` | **Planned** |
-| M4 | Campaign | Generational search runs via Adapter #1 | **Partial** — Core campaign exists vs demo; customer-path pending |
-| M5 | Regression | Minimize + save + PASS/FAIL replay on adapter target | **Partial** — Core engines done vs demo; customer-path pending |
-| M6 | Hosted API | REST + SSE + SQLite (may attach sample/customer later) | **Done** for demo harness; attach to new adapter TBD |
-| M7 | Hosted UI | Campaign → exploit → tests UX | **Done** for demo harness; narrative/wiring TBD |
-| M8 | Demo | Sample project story: init → run → Hosted; reliability | **Rework needed** for new narrative |
+| M1 | Core | Models + policy evaluator + kernel ports tested | **Done** |
+| M2 | Adapter #1 (OpenAI Agents SDK) | `TargetAdapter` impl loads a real OpenAI Agents SDK agent | **Done** (`packages/mutiny_openai_agents`) |
+| M3 | Policy generation | `mutiny init` scaffolds adapter stub + `policy.yaml` + `mutiny.yaml` | **Done** |
+| M4 | Campaign | Generational search runs via Adapter #1 | **Done** — local CLI / Core; Hosted customer via ingest |
+| M5 | Regression | Minimize + save + PASS/FAIL replay on adapter target | **Done** — local CLI `mutiny test`; Hosted customer exec removed |
+| M6 | Hosted API | REST + SSE + SQLite + observe-only ingest | **Done** for demo harness + ingest; customer Hosted exec **removed** (M-PR8E) |
+| M7 | Hosted UI | Campaign → exploit → tests UX | **Done** for demo harness; observe-only copy for customer (M-PR8D) |
+| M8 | Demo | Sample project story: init → run → Hosted; reliability | **Partial** — sample + reliability green; narrative polish TBD |
+| M9 | Integrations (CLI test) | `mutiny test` regression replay | **Done** (CLI); Skill/MCP still roadmap |
 
-Optional after M8 green: **M9 Integrations** (CLI `mutiny test`; Skill/MCP stretch). LangGraph/CrewAI/etc. are **roadmap adapters** — not current-scope milestones — see ROADMAP. Architecture can support them without Core changes.
+### Hosted security / readiness (cross-cutting; see PRODUCTION_READINESS)
+
+| ID | Outcome | Status |
+|---|---|---|
+| M-PR8A–E | Observe-only Hosted + ingest + CLI `--hosted` sync + Web observe + customer `exec_module` removed | **Done** |
+| P0-3 | Customer `project_path` filesystem-inert / opaque on Hosted | **Done** |
+| P0-1 / P0-4 | Non-loopback binds require `MUTINY_API_TOKEN`; `python -m mutiny_api` fails closed | **Done** |
+| P1-2 | In-process Hosted API rate limits (not distributed) | **Done** (allowlisting remainder open) |
+| P2-5 / P2-6 / P2-8 | regression `project_id`; SQLite backup/export; Dependabot/CODEOWNERS | **Not done** — do not invent completion |
+| Distributed rate limits / Hosted Beta / 1.0 Target B | — | **Not done** |
 
 ---
 
@@ -82,11 +92,11 @@ Optional after M8 green: **M9 Integrations** (CLI `mutiny test`; Skill/MCP stret
 
 **Definition of Done**
 
-- [ ] Adapter runs a real OpenAI Agents SDK agent conversation and records tool calls in trace JSON  
-- [ ] `adapter.context()` returns deterministic facts usable by policies  
-- [ ] Failure if tools cannot be observed is explicit  
-- [ ] No campaign/policy/fitness/minimize/regression logic inside the adapter  
-- [ ] Core remains importable without the OpenAI Agents SDK
+- [x] Adapter runs a real OpenAI Agents SDK agent conversation and records tool calls in trace JSON  
+- [x] `adapter.context()` returns deterministic facts usable by policies  
+- [x] Failure if tools cannot be observed is explicit  
+- [x] No campaign/policy/fitness/minimize/regression logic inside the adapter  
+- [x] Core remains importable without the OpenAI Agents SDK
 ---
 
 ### M3 — Policy generation
@@ -103,10 +113,10 @@ Optional after M8 green: **M9 Integrations** (CLI `mutiny test`; Skill/MCP stret
 
 **Definition of Done**
 
-- [ ] `mutiny init` in an empty/sample OpenAI Agents SDK project creates the three artifacts  
-- [ ] Generated `policy.yaml` validates against Core PolicySet schema  
-- [ ] Stub adapter imports and documents connection points  
-- [ ] No claim that generated policies are verified without a campaign  
+- [x] `mutiny init` in an empty/sample OpenAI Agents SDK project creates the three artifacts  
+- [x] Generated `policy.yaml` validates against Core PolicySet schema  
+- [x] Stub adapter imports and documents connection points  
+- [x] No claim that generated policies are verified without a campaign  
 
 ---
 
@@ -126,12 +136,12 @@ Optional after M8 green: **M9 Integrations** (CLI `mutiny test`; Skill/MCP stret
 
 **Definition of Done**
 
-- [ ] N×G campaign completes via OpenAI Agents SDK adapter without requiring Hosted UI  
-- [ ] Candidates have parent/generation metadata  
-- [ ] Fitness in `[0,1]` with violation ⇒ `1.0`  
-- [ ] At least one run can produce `violated=true` with real tool evidence on sample or user agent (no synthetic insertion)  
+- [x] N×G campaign completes via OpenAI Agents SDK adapter without requiring Hosted UI  
+- [x] Candidates have parent/generation metadata  
+- [x] Fitness in `[0,1]` with violation ⇒ `1.0`  
+- [x] At least one run can produce `violated=true` with real tool evidence on sample or user agent (no synthetic insertion)  
 
-*Core campaign vs demo may remain green as a harness while M2/M4 customer path is unfinished.*
+*Customer campaigns execute on Local CLI. Hosted receives sanitized lineage via ingest (`mutiny run --hosted`), not via Hosted `exec_module`.*
 
 ---
 
@@ -150,16 +160,16 @@ Optional after M8 green: **M9 Integrations** (CLI `mutiny test`; Skill/MCP stret
 
 **Definition of Done**
 
-- [ ] Minimized genome still violates under re-exec on OpenAI Agents SDK adapter  
-- [ ] Save refused if not reproducible  
-- [ ] Documented agent fix flips FAIL → PASS on same artifact  
-- [ ] Artifacts land in the customer/sample project path by default  
+- [x] Minimized genome still violates under re-exec on OpenAI Agents SDK adapter  
+- [x] Save refused if not reproducible  
+- [x] Documented agent fix flips FAIL → PASS on same artifact  
+- [x] Artifacts land in the customer/sample project path by default  
 
 ---
 
 ### M6 — Hosted API
 
-**Intent:** Optional control plane for lineage / ops.
+**Intent:** Optional control plane for lineage / ops (observe-only for customer projects).
 
 **Build**
 
@@ -167,17 +177,21 @@ Optional after M8 green: **M9 Integrations** (CLI `mutiny test`; Skill/MCP stret
 - SQLite repositories  
 - SSE event fan-out  
 - `/api/health`  
-- Attestation + localhost/in-process/sample allowlist  
-- Campaign asyncio supervisor (concurrency=1)  
-- **Later:** attach OpenAI Agents SDK / project adapter (not required to keep existing demo wiring green)  
+- Attestation + target enum (`in_process_demo` \| `openai_agents`)  
+- Campaign asyncio supervisor (concurrency=1) for **trusted `in_process_demo` only**  
+- **M-PR8B:** `/api/ingest/v1/*` observe-only ingest from Local CLI  
+- **M-PR8E / P0-3:** customer `project_path` adapter exec + filesystem access **removed** (`410`)  
+- **M-PR7 / P0-1/P0-4:** Bearer auth; non-loopback fail-closed  
+- **P1-2:** in-process rate limits  
 
 **Definition of Done**
 
-- [x] Create/start campaign via HTTP (demo harness)  
+- [x] Create/start campaign via HTTP (**trusted demo harness**)  
 - [x] SSE emits `candidate.scored` / `violation.detected`  
-- [x] Minimize + regression endpoints enforce re-exec gate  
+- [x] Minimize + regression endpoints enforce re-exec gate (demo path)  
 - [x] Core still has no SQL  
-- [ ] Campaign can target OpenAI Agents SDK adapter / sample project (planned)  
+- [x] Customer OpenAI Agents SDK campaigns use **CLI + ingest**, not Hosted `exec_module` (M-PR8A–E)  
+- [x] Customer `project_path` is opaque / filesystem-inert on Hosted (P0-3)  
 
 ---
 
@@ -202,7 +216,8 @@ Optional after M8 green: **M9 Integrations** (CLI `mutiny test`; Skill/MCP stret
 - [x] Violation evidence readable without opening DevTools  
 - [x] Web does not evaluate policies locally  
 - [x] Visual language matches DESIGN.md (Inngest canon)  
-- [ ] UI narrative / wiring supports sample OpenAI Agents SDK project story (planned)  
+- [x] Observe-only product copy for customer runs (M-PR8D); Web does not POST ingest or execute customer projects  
+- [ ] Further sample OpenAI Agents SDK narrative polish (optional)  
 
 ---
 
@@ -252,7 +267,7 @@ Optional after M8 green: **M9 Integrations** (CLI `mutiny test`; Skill/MCP stret
 
 **Definition of Done (CLI subset)**
 
-- [ ] FAIL → fix → PASS via CLI using same artifact as campaign  
+- [x] FAIL → fix → PASS via CLI using same artifact as campaign  
 
 ---
 
@@ -313,4 +328,4 @@ See ROADMAP stages beyond current scope (LangGraph, CrewAI, PydanticAI, AutoGen,
 
 ## 7. Handoff criteria to “implementation complete” (post-pivot)
 
-M1 done; M2–M5 DoD checked for OpenAI Agents SDK path; M6–M7 either retargeted or explicitly accepted as harness-backed with honest demo labeling; M8 new narrative rehearsed. M9 CLI test strongly preferred for FAIL→PASS beat.
+M1–M5 **done** for OpenAI Agents SDK local path; M6–M7 **done** as observe-only Hosted + trusted demo harness (not customer Hosted exec); M8 narrative polish optional; M9 CLI `mutiny test` **done**. Hosted security hardening through P1-2 **done**. Remaining PRODUCTION_READINESS Target A/B gaps (backup, AuthZ, Dependabot, 1.0) are **out of this plan’s “done” claim** — see ROADMAP / PRODUCTION_READINESS.

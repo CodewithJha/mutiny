@@ -3,9 +3,9 @@
 | Field | Value |
 |---|---|
 | **Document** | Canonical production-readiness master plan |
-| **Status** | Active — **documentation / architecture planning only** (no implementation in this revision) |
+| **Status** | Active — readiness gate reconciled with implementation through **P0-3**, **P0-1/P0-4**, **P1-2** (docs-only P1-7) |
 | **Audit date** | 2026-09-09 |
-| **Repo version audited** | `v0.1.0` / `main` @ post-0.1.0 docs/CI commits |
+| **Repo version audited** | `v0.1.0` / `main` @ post-M-PR8E + P0-3 + P0-1/P0-4 + P1-2 |
 | **Method** | Claims verified against current code under `packages/`, `apps/`, `tests/`, `.github/`, and canonical docs |
 | **Hierarchy** | PRD → ARCHITECTURE → SYSTEM_DESIGN → IMPLEMENTATION_PLAN → DECISION_LOG → ROADMAP → **this doc (readiness gate)** |
 
@@ -21,9 +21,9 @@ Mutiny **v0.1.0** is a credible **alpha OSS behavioral fuzz engine**: Core oracl
 
 It is **not** production-ready as a **public or multi-tenant Hosted** service. With **M-PR8E**, customer `project_path` adapter `exec_module` is **permanently removed** from Hosted (`410 hosted_customer_execution_removed`; `MUTINY_ALLOW_PROJECT_EXEC` ignored). With **P0-3**, customer `project_path` is also **filesystem-inert** on Hosted (`410 hosted_filesystem_access_removed` — no resolve/read/write of customer trees or policy files). With M-PR7 + **P0-1/P0-4**, Bearer auth is required for non-loopback Hosted binds (`python -m mutiny_api` fails closed without a non-empty `MUTINY_API_TOKEN`); loopback may omit the token for local demo. With **P1-2**, Hosted applies **in-process** (per-process, not distributed) rate limits when auth is configured. Residual Hosted risks: attestation is not authorization, and multi-tenant / durable ops remain open. Public multi-tenant Hosted remains out of scope.
 
-**Target A — Production Local CLI** is approachable with a focused hardening sequence (default local `mutiny run`, secret hygiene, policy-general seeds/mutators, CI completeness).
+**Target A — Production Local CLI** is the strongest supported surface: local execution, opt-in Hosted sync, and an alpha→beta path per ROADMAP. Remaining Target A gaps are polish/release gating (not Hosted RCE).
 
-**Target B — Production Hosted** requires implementing **ADR-019 (accepted: observe-only Hosted)** via **M-PR8** (CLI executes customer agent; Hosted observes lineage) before any internet-facing claim. Until then, Hosted must be documented and operated as **localhost / single-operator demo only**.
+**Target B — Production Hosted** is **not** met. **ADR-019 / M-PR8A–E** are implemented (CLI executes customer agents; Hosted observes via ingest). Non-loopback binds require auth; Hosted is filesystem-inert for customer `project_path` and has **in-process** rate limits. Residual blockers: attestation≠authorization, no durable backup story, path/URL allowlisting still a target enum, not multi-tenant. Do not market public multi-tenant Hosted.
 
 ---
 
@@ -37,7 +37,7 @@ It is **not** production-ready as a **public or multi-tenant Hosted** service. W
 | Adapter #1 | `packages/mutiny_openai_agents` — `OpenAIAgentsAdapter`, file loader for `.mutiny/adapter.py` |
 | CLI | `packages/mutiny_cli` — `mutiny init` / `run` / `test`; PyPI name `mutiny-ai` @ `0.1.0` |
 | Sample project | `examples/openai_support_agent/` with offline scripted model path |
-| Hosted API | `apps/api` — campaigns, SSE, minimize, regressions, projects, policy CRUD |
+| Hosted API | `apps/api` — campaigns, SSE, minimize, regressions, projects, policy routes (customer FS/exec removed), **ingest `/api/ingest/v1/*`** |
 | Hosted UI | `apps/web` — talks HTTP/SSE to API only (ADR-014) |
 | Demo harness | `apps/demo_agent` — `in_process_demo` still supported by supervisor |
 | CI | `.github/workflows/ci.yml` — unit + integration + reliability (3.11/3.12), CLI smoke, web build, package build |
@@ -58,7 +58,7 @@ It is **not** production-ready as a **public or multi-tenant Hosted** service. W
 ### Honest product posture today
 
 - **Primary usable path:** developer machine → `pip install mutiny-ai` → `mutiny init` → `mutiny run` → `mutiny test`.
-- **Hosted:** valuable **lineage/ops demo** on localhost; **not** a safe shared cloud control plane. CLI selects Hosted only via `--hosted` / `--hosted-url`.
+- **Hosted:** observe/lineage for customer runs (`mutiny run --hosted` = local exec + ingest). Trusted `in_process_demo` may still run in-process. Non-loopback requires `MUTINY_API_TOKEN`; in-process rate limits apply when auth is configured. **Not** multi-tenant Production Hosted (Target B DoD incomplete).
 - **MVP limitations (not bugs):** one adapter; three policy primitives; single concurrent campaign; SQLite; template/LLM mutation quality varies; refund demo remains the bundled sample (product seeds/mutators are policy-derived as of M-PR6).
 
 ---
@@ -96,7 +96,7 @@ A release is **Production Hosted ready** when, in addition to Local CLI readines
 7. Deploy story (compose/Railway/etc.) does not contradict the threat model.
 8. SECURITY.md and ops runbooks match the actual attack surface.
 
-**Current Hosted does not meet this definition.** Treating checkbox attestation + localhost marketing as “production Hosted” is incorrect.
+**Current Hosted does not meet this full definition** despite M-PR8E / P0-3 / P0-1/P0-4 / P1-2. Treating checkbox attestation + a public URL as “production Hosted” remains incorrect.
 
 ---
 
@@ -116,21 +116,22 @@ A release is **Production Hosted ready** when, in addition to Local CLI readines
 - **Trusted:** developer OS user, Core binary from PyPI, policy they wrote.
 - **Untrusted relative to oracle:** model outputs, attack genomes (must not become instructions to Mutiny control logic).
 - **Intentional:** executing the customer adapter in-process is **acceptable** for Local CLI — same trust as running `pytest` against their project.
-- **Optional Hosted on same machine:** only safe if API is bound to loopback and the operator understands it shares the process/FS with whatever `project_path` is passed.
+- **Optional Hosted on same machine:** bind to loopback for tokenless demo, or set `MUTINY_API_TOKEN` for any non-loopback bind. Customer `project_path` is **opaque metadata** on Hosted (P0-3) — the API does not mount or write the developer’s project tree. Customer adapter execution stays on the CLI.
 
 ### Hosted (Target B) — required boundary
 
 ```
-┌──────────────┐     authz      ┌──────────────────────────┐
+┌──────────────┐     auth       ┌──────────────────────────┐
 │ Browser / CLI│ ─────────────► │ Hosted API (control)     │
 └──────────────┘                │  - no customer exec      │
+                                │  - no customer FS access │
                                 │  - persist lineage       │
+                                │  - in-process rate limits│
                                 └────────────┬─────────────┘
-                                             │ events / artifacts only
+                                             │ ingest events / artifacts
                                 ┌────────────▼─────────────┐
                                 │ CLI-side execution       │
-                                │ (ADR-019 Option A)       │
-                                │  — M-PR8 not yet shipped │
+                                │ (ADR-019 / M-PR8A–E)     │
                                 └──────────────────────────┘
 ```
 
@@ -159,12 +160,12 @@ MVP limitations are labeled as such, not “bugs.”
 | ID | Finding | Evidence | Targets |
 |---|---|---|---|
 | P1-1 | Attestation is **not authorization** (boolean only) | `CampaignStartRequest.attestation`; supervisor `PermissionError` if false | Hosted (and weak Local messaging) |
-| P1-2 | Docs/architecture claim **rate limits** and **path/URL allowlisting**; missing or reduced to target enum | **Partial (P1-2):** in-process Hosted rate limits shipped; path/URL allowlisting still only the target enum | Hosted |
+| P1-2 | Docs/architecture claim **rate limits** and **path/URL allowlisting** | **Partial:** in-process Hosted rate limits **shipped (P1-2)**; path/URL allowlisting still only the target enum | Hosted |
 | P1-3 | **Secret redaction** required by PRD — **implemented (M-PR3)** | `mutiny_core.redact`; persist/display wiring | Both (resolved for common patterns) |
-| P1-4 | CLI **Hosted-first** when `api_url` reachable — surprises operators; pushes `project_path` to API | `run_cmd.py` | Local (ops safety); Hosted blast radius |
+| P1-4 | CLI **Hosted-first** when `api_url` reachable — surprises operators; pushes `project_path` to API | ~~`run_cmd.py`~~ **Resolved (M-PR2):** local default; Hosted only via `--hosted` / `--hosted-url` | Local (ops safety); Hosted blast radius |
 | P1-5 | `MUTINY_DB_PATH` in compose **ignored**; DB path hardcoded — **resolved (M-PR4)** | `mutiny_api.db.resolve_db_path` | Hosted / Data |
 | P1-6 | CI runs **unit only** — integration + reliability not gated on PR — **resolved (M-PR5)** | `.github/workflows/ci.yml` | Both / OSS |
-| P1-7 | [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) **stale** vs 0.1.0 — misleads maintainers on ship status | Milestone table vs CHANGELOG / code | OSS |
+| P1-7 | [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) **stale** vs 0.1.0 — misleads maintainers on ship status | Milestone table vs CHANGELOG / code | OSS — **resolved (this docs pass)** |
 
 ### P2 — Significant debt
 
@@ -179,7 +180,7 @@ MVP limitations are labeled as such, not “bugs.”
 | P2-7 | Empty `integrations/` vs ARCHITECTURE diagram mentioning MCP/skills | placeholder only |
 | P2-8 | No Dependabot/Renovate; no CODEOWNERS | OSS maintainer load |
 | P2-9 | CLI help mentions `--no-attestation` in error text but **flag not defined** | `run_cmd.py` vs `main.py` |
-| P2-10 | ARCHITECTURE “allowed targets localhost-only” not enforced for Hosted product path (FS paths, not HTTP) | constraint vs `resolve_project_root` |
+| P2-10 | ARCHITECTURE “allowed targets localhost-only” not enforced as a filesystem/URL sandbox for Hosted | Constraint remains a **target enum** + observe-only boundary; not a general path/URL allowlist |
 
 ### P3 — Polish
 
@@ -199,7 +200,7 @@ MVP limitations are labeled as such, not “bugs.”
 | P4-2 | Postgres, multi-campaign workers, org workspaces |
 | P4-3 | MCP / Skills |
 | P4-4 | Policy packs library, richer primitives |
-| P4-5 | Authenticated single-tenant Hosted (ROADMAP v1) — requires ADR before coding |
+| P4-5 | Multi-tenant / org Hosted identity (beyond single-tenant Bearer) | ROADMAP v1; ADR-021 covers single-tenant token only |
 
 ---
 
@@ -209,7 +210,7 @@ MVP limitations are labeled as such, not “bugs.”
 2. **Product narrative vs Hosted-first CLI** — ADR-017 says customer CLI primary; **M-PR2** aligns defaults (local; Hosted via `--hosted`).
 3. **Search heuristics coupled to refund demo** — **resolved for defaults (M-PR6 / ADR-020)**; refund packs remain harness helpers.
 4. **Single-process asyncio + SQLite** — acceptable for Local/demo Hosted; not multi-writer SaaS (ADR-005/007 already acknowledge). ADR-019 deliberately avoids Option B workers for Target B.
-5. **Doc drift (IMPLEMENTATION_PLAN)** — planning hazard; can cause wrong prioritization.
+5. **Doc drift (IMPLEMENTATION_PLAN)** — **addressed (P1-7)**; keep this readiness doc as the ship/no-ship gate.
 
 ---
 
@@ -219,22 +220,22 @@ MVP limitations are labeled as such, not “bugs.”
 
 | Control | Local CLI | Hosted today |
 |---|---|---|
-| AuthN | OS user | Optional Bearer (`MUTINY_API_TOKEN`, M-PR7); unset = open local demo |
-| AuthZ | Operator discipline | Checkbox attestation (not identity) |
+| AuthN | OS user | **Bearer when configured** (`MUTINY_API_TOKEN`, M-PR7). Loopback may omit for local demo; **non-loopback fails closed without token** (P0-1/P0-4). Supported entrypoint: `python -m mutiny_api` |
+| AuthZ | Operator discipline | Checkbox attestation (not identity) — **P1-1 open** |
 | Target isolation | Same process as developer agent | **M-PR8E + P0-3:** customer adapter exec + customer FS access permanently removed from Hosted; trusted `in_process_demo` only. **ADR-019 observe-only implemented** |
-| Network bind | N/A (CLI) | `0.0.0.0` in deploy templates |
-| Rate limit | N/A | **Missing** (error code only) |
+| Network bind | N/A (CLI) | Deploy templates may bind `0.0.0.0` **only with** non-empty `MUTINY_API_TOKEN` |
+| Rate limit | N/A (CLI execution unlimited) | **In-process** token-bucket (P1-2; not distributed). Enabled by default when token set |
 | Secret redaction | Pass (M-PR3) | Pass (M-PR3; Hosted persist/SSE) |
 | Oracle integrity | Deterministic evaluator (strong) | Same (strong) |
-| Open-internet attack proxy | Not implemented as product | Not a proxy; but **RCE on API host** is worse |
+| Open-internet attack proxy | Not implemented as product | Not a proxy; customer RCE path removed from Hosted |
 
 ### Required model for Target B
 
 1. AuthN (at least API token / session) on all non-health routes.
 2. AuthZ: project ownership; no cross-tenant reads.
-3. Execution: **ADR-019 accepted (Option A observe-only)** — implement via **M-PR8** (not yet). Isolate by relocating customer Python to CLI; do not claim workers unless a superseding ADR chooses Option B.
+3. Execution: **ADR-019 Option A (observe-only) implemented via M-PR8A–E.** Customer Python runs on CLI; do not claim workers unless a superseding ADR chooses Option B.
 4. Filesystem: customer `project_path` is opaque on Hosted (P0-3); no server-side project tree access.
-5. Abuse: rate limits, campaign concurrency, payload size caps (ARCHITECTURE numbers → enforced).
+5. Abuse: **in-process** rate limits shipped (P1-2); campaign concurrency=1; payload size caps remain; **distributed** limits / multi-replica not claimed.
 6. Secrets: redact before persist/SSE; never log API keys.
 7. Threat model doc updated in SECURITY.md when Hosted leaves localhost-only.
 
@@ -275,16 +276,16 @@ MVP limitations are labeled as such, not “bugs.”
 
 | Gate | Status |
 |---|---|
-| Lineage UX / SSE | Works locally |
-| Core correctness via API | Works |
-| AuthN/AuthZ | **Fail** |
-| Safe customer code execution | **Fail** |
-| FS sandbox | **Pass (P0-3)** — customer `project_path` filesystem-inert |
-| Rate limits | **Fail** |
-| Durable multi-user data | **Fail** (SQLite + no backup story) |
-| Internet deploy | **Unsafe** with current architecture |
+| Lineage UX / SSE | Works locally; customer lineage via ingest |
+| Core correctness via API | Trusted `in_process_demo` harness; customer campaigns via CLI |
+| AuthN/AuthZ | **Partial** — Bearer + fail-closed non-loopback (M-PR7 / P0-1/P0-4); attestation≠AuthZ (P1-1) |
+| Safe customer code execution | **Pass (M-PR8E)** — customer `exec_module` removed; CLI executes |
+| FS sandbox | **Pass (P0-3)** — customer `project_path` filesystem-inert / opaque |
+| Rate limits | **Partial (P1-2)** — in-process limits shipped; not distributed; path/URL allowlist still enum |
+| Durable multi-user data | **Fail** (SQLite + no backup story — P2-6) |
+| Internet deploy | **Not Target B** — token + observe-only reduce blast radius; still single-tenant / no durable ops |
 
-**Operating rule for Hosted deploys:** Prefer loopback / single-operator until rate limits and durable ops land. Do not market Railway/public URLs as multi-tenant production. Customer adapter exec is removed (M-PR8E); `MUTINY_ALLOW_PROJECT_EXEC` has no effect. ADR-019 observe-only = CLI exec + Hosted ingest.
+**Operating rule for Hosted deploys:** Prefer loopback / single-operator. Non-loopback requires `MUTINY_API_TOKEN`. Do not market Railway/public URLs as multi-tenant production. Customer adapter exec is removed (M-PR8E); customer FS access removed (P0-3); `MUTINY_ALLOW_PROJECT_EXEC` has no effect. ADR-019 observe-only = CLI exec + Hosted ingest. In-process rate limits apply when auth is configured (P1-2).
 
 ---
 
@@ -311,7 +312,7 @@ MVP limitations are labeled as such, not “bugs.”
 |---|---|
 | SQLite WAL + migrations | Present (`SCHEMA_VERSION = "10"`) |
 | Core free of SQL | Pass |
-| Env-configurable DB path | **Broken** (P1-5) |
+| Env-configurable DB path | **Pass** (M-PR4) |
 | Regressions linked to projects | Indirect via campaign only (P2-5) |
 | Backup / restore | Missing (P2-6) |
 | Trace size caps | Documented in ARCHITECTURE; enforcement incomplete at API edge |
@@ -341,7 +342,7 @@ MVP limitations are labeled as such, not “bugs.”
 | LICENSE MIT, COC, SECURITY, SUPPORT, CONTRIBUTING | Present |
 | Issue/PR templates, good-first-issues | Present |
 | Docs hub | Present; must point here |
-| IMPLEMENTATION_PLAN freshness | **Stale** (P1-7) |
+| IMPLEMENTATION_PLAN freshness | **Reconciled (P1-7)** — Hosted security milestones reflected; future work unchanged |
 | Dependabot / CODEOWNERS | Missing (P2-8) |
 | Security disclosure path | Present |
 | Honest non-goals | Mostly good; Hosted risk under-emphasized |
@@ -356,11 +357,11 @@ Do **not** blindly label next as `0.2.0` / `0.3.0` / `1.0.0` without tying versi
 
 | Version | Intent | Exit criteria (summary) |
 |---|---|---|
-| **0.1.x** | Alpha patch line | Docs/CI/safety messaging; no Hosted architecture rewrite required |
-| **0.2.0** | **Production Local CLI** candidate | Target A DoD met; Hosted still localhost-only and labeled |
-| **0.3.0** | Local CLI polish + Hosted **safe-mode** | Hosted cannot exec arbitrary `project_path` on shared deploys; auth token for non-loopback |
-| **0.4.0+** | Hosted architecture per ADR-019 | Observe-only Hosted (CLI exec + ingest) — M-PR8 |
-| **1.0.0** | Production Hosted + stable contracts | Target B DoD + stable public API/CLI contracts (ROADMAP v1 class) |
+| **0.1.x** | Alpha patch line | Docs/CI/safety messaging; Hosted security hardening may land without claiming Target B |
+| **0.2.0** | **Production Local CLI** candidate | Target A DoD met; Hosted still labeled secondary / not multi-tenant Production |
+| **0.3.0** | Local CLI polish + Hosted **safe-mode** | Auth token for non-loopback; Hosted cannot exec/FS customer `project_path` — **substantially landed** (M-PR7/8E, P0-1/3/4) pending release tag |
+| **0.4.0+** | Hosted observe-only lineage | ADR-019 / M-PR8A–E **implemented in code**; version tag may follow |
+| **1.0.0** | Production Hosted + stable contracts | Full Target B DoD + stable public API/CLI contracts (ROADMAP v1 class) |
 
 Patch releases (`0.2.1`, …) for fixes within a gate. Breaking Core/API contracts require minor bump pre-1.0 and ADR.
 
@@ -488,7 +489,7 @@ Order is dependency-aware. Each milestone is independently testable.
 | **DoD** | Protected routes require token when `MUTINY_API_TOKEN` is set — **done (M-PR7)** |
 | **Rollback** | Unset `MUTINY_API_TOKEN` for local unauthenticated demo |
 | **Release** | 0.3.0 |
-| **Status** | **Implemented** — Bearer via `MUTINY_API_TOKEN`; public health/meta; auth does not bypass M-PR1 |
+| **Status** | **Implemented** — Bearer via `MUTINY_API_TOKEN`; public health/meta; **P0-1/P0-4** fail-closed non-loopback binds via `python -m mutiny_api`; auth does not restore customer exec/FS |
 
 ### M-PR8 — ADR-019 implementation (Hosted observe-only)
 
@@ -532,18 +533,20 @@ Scheduled after Target A gate; do not block 0.2.0.
 - [x] Secret redaction tests green  
 - [x] Seeds/mutators policy-general (M-PR6 / ADR-020); refund packs remain demo/harness helpers 
 - [x] CI: unit + offline integration green on PR  
-- [ ] README/SECURITY/IMPLEMENTATION_PLAN match code  
+- [x] README/SECURITY/IMPLEMENTATION_PLAN match code (P1-7 docs reconcile)  
 - [ ] Version **≥ 0.2.0** tagged with CHANGELOG  
 
 ### Measurable — Production Hosted (Target B)
 
 - [ ] All Target A checks  
-- [ ] AuthN on mutating routes when `MUTINY_API_TOKEN` set (M-PR7) 
+- [x] AuthN on mutating routes when `MUTINY_API_TOKEN` set (M-PR7); non-loopback requires token (P0-1/P0-4)  
 - [x] No customer `exec_module` in API process for Production Hosted (ADR-019 → **M-PR8E**)  
-- [ ] Rate limits enforced  
-- [ ] DB path configurable; backup procedure documented  
-- [ ] Threat model in SECURITY.md; no public demo without auth  
+- [x] Customer `project_path` filesystem-inert / opaque (P0-3)  
+- [x] In-process rate limits enforced (P1-2) — distributed limits **not** claimed  
+- [ ] DB backup/export procedure (P2-6); `MUTINY_DB_PATH` configurable (**done M-PR4**)  
+- [x] Threat model in SECURITY.md matches observe-only + bind/auth + rate limits  
 - [ ] Version **1.0.0** (or explicit 0.4+ “Hosted beta” with same technical bar, labeled beta)  
+- [ ] AuthZ beyond attestation (P1-1); multi-tenant / durable ops as needed for full Target B
 
 ### Future implementation protocol (ONE problem at a time)
 
@@ -571,7 +574,7 @@ Scheduled after Target A gate; do not block 0.2.0.
 2. Preferred Target B shape: **(a)** observe-only Hosted (CLI runs agent), **(b)** per-job containers, **(c)** WASM/other sandbox? → **Decided (ADR-019):** **(a)** observe-only; M-PR8 implements; Option B deferred pending superseding ADR.  
 3. Is single shared API token enough for “authenticated single-tenant,” or is user/session required for 1.0? → **Near-term (ADR-021 / M-PR7):** shared Bearer token; multi-user later.  
 4. How long may refund-biased seeds remain if documented as known limitation for 0.2.0? → **Defaults generalized (M-PR6 / ADR-020)**; refund packs = harness helpers.  
-5. Should Railway config be removed or hard-gated until M-PR1?  
+5. Should Railway config be removed or hard-gated until M-PR1? → **Superseded:** M-PR8E + P0-1/P0-4; compose/Railway use `python -m mutiny_api` and require token for non-loopback.  
 6. Who owns Hosted vs CLI release trains (same version vs separate)?  
 
 ---
@@ -592,13 +595,13 @@ Scheduled after Target A gate; do not block 0.2.0.
 
 | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|
-| Public Hosted RCE via adapter load | Med if deployed | Critical | M-PR0/1; ADR-019; no public deploy |
-| Operators trust attestation as security | High | High | Docs + auth milestone |
-| Doc drift causes wrong roadmap work | High | Med | Refresh IMPLEMENTATION_PLAN; this doc as gate |
+| Public Hosted RCE via adapter load | Low (path removed) | Critical | M-PR8E permanent remove; observe-only ingest; no public multi-tenant claim |
+| Operators trust attestation as security | High | High | Docs + M-PR7 auth; P1-1 remains |
+| Doc drift causes wrong roadmap work | Med | Med | P1-7 reconcile; this doc as gate |
 | Refund hardcoding → false “engine doesn’t work” on other tools | Med | Med | M-PR6 |
 | Secret leakage in SQLite/SSE | Med | High | M-PR3 |
-| Publish workflow breaks on next version | High | Low | Fix verify step with dynamic version |
-| Concurrent campaigns / SQLite corruption under abuse | Low locally / Med exposed | Med | Concurrency=1 already; auth + limits |
+| Publish workflow breaks on next version | Low | Low | Fix verify step with dynamic version (M-PR5) |
+| Concurrent campaigns / SQLite corruption under abuse | Low locally / Med exposed | Med | Concurrency=1; auth + in-process rate limits (P1-2) |
 
 ---
 
@@ -620,7 +623,7 @@ Scheduled after Target A gate; do not block 0.2.0.
 | **B** | Ephemeral per-campaign worker (container/VM) | Rejected for now (ops + ADR-007); reconsider via new ADR |
 | **C** | Hosted = `in_process_demo` forever; customer projects CLI-only | Rejected as permanent product shape; M-PR1 already approximates as interim |
 
-**Migration (planned for M-PR8):** Keep M-PR1 fail-closed → ship CLI→Hosted ingest / redesign Hosted Run → remove production in-process customer path → update §12 diagrams to observe-only primary.
+**Migration (completed via M-PR8A–E + P0-3):** M-PR1 fail-closed → CLI→Hosted ingest / Web observe → remove production in-process customer path → customer `project_path` filesystem-inert → diagrams/docs describe observe-only primary for customer projects.
 
 ### ADR-020 — Policy-derived seeds/mutators (supersede refund defaults as engine core)
 
@@ -651,23 +654,23 @@ ADR-017 already supersedes ADR-001 for **product priority**. **M-PR2** aligns ru
 | Dimension | Score | Notes |
 |---|---|---|
 | **Local CLI** | **8.5** | Default local path (M-PR2); common-secret redaction (M-PR3); policy-general seeds/mutators (M-PR6) |
-| **Hosted** | **3.5** | Observe-only customer path (M-PR8E); trusted demo harness; optional M-PR7 auth; still not multi-tenant Production Hosted |
+| **Hosted** | **5.5** | Observe-only + ingest (M-PR8A–E); FS-inert (P0-3); fail-closed bind/auth (P0-1/P0-4); in-process rate limits (P1-2); not multi-tenant Target B |
 | **Core** | **8.0** | Strong oracle & package boundaries; search heuristics policy-derived (M-PR6) |
-| **OSS** | **7.5** | Strong community files; PR CI covers unit/integration/reliability + smoke (M-PR5); stale implementation plan |
+| **OSS** | **8.0** | Strong community files; PR CI covers unit/integration/reliability + smoke (M-PR5); IMPLEMENTATION_PLAN reconciled (P1-7) |
 | **Packaging** | **8.5** | PyPI 0.1.0 real; publish verify reads package metadata (M-PR5) |
-| **Security** | **4.5** | Oracle trustworthy; M-PR3 redaction; M-PR7 optional auth; ADR-019 customer exec removed (M-PR8E); remaining: rate limits, durable deploy, multi-tenant |
-| **Overall** | **4.5** | Alpha suitable for authorized local fuzzing; not dual-target production |
+| **Security** | **6.5** | Oracle + redaction; customer Hosted exec/FS removed; bind/auth fail-closed; in-process rate limits; remaining: AuthZ (P1-1), durable ops, multi-tenant |
+| **Overall** | **5.5** | Strong Local CLI alpha; Hosted usable as authenticated observe/lineage single-tenant — **not** dual-target production |
 
 ### Critical Findings (P0/P1)
 
-- **P0:** Unauthenticated Hosted + in-process adapter exec + policy write + public bind templates.  
-- **P1:** Fake authz (attestation), missing rate limits/allowlist vs docs, stale IMPLEMENTATION_PLAN. *(P1-3 secret redaction resolved by M-PR3; P1-4 CLI Hosted-first resolved by M-PR2; P1-5 `MUTINY_DB_PATH` resolved by M-PR4; P1-6 CI completeness resolved by M-PR5.)*
+- **P0:** ~~Unauthenticated Hosted + in-process adapter exec + policy write + public bind~~ — **mitigated** (M-PR8E, P0-3, P0-1/P0-4).  
+- **P1 open:** Attestation≠authorization (P1-1); path/URL allowlisting still target enum (remainder of P1-2). *(P1-2 rate limits shipped; P1-3…P1-7 resolved.)*
 
 ### Architectural Findings (ADR needed)
 
 - **ADR-019 (accepted, Option A):** Hosted observe/lineage; CLI executes customer Python — **M-PR8A–E done**.  
 - **ADR-020 (accepted, M-PR6):** Policy-general seeds/mutators.  
-- **ADR-021 (accepted, M-PR7):** Single-tenant Bearer token.  
+- **ADR-021 (accepted, M-PR7):** Single-tenant Bearer token (+ P0-1/P0-4 bind fail-closed).  
 - Align CLI defaults with **ADR-017** (done via M-PR2).
 
 ### Hardcoded / Non-Modular Logic (verified instances)
@@ -676,12 +679,12 @@ ADR-017 already supersedes ADR-001 for **product priority**. **M-PR2** aligns ru
 
 ### Documentation Conflicts
 
-- IMPLEMENTATION_PLAN milestone status vs 0.1.0 ship.  
-- ARCHITECTURE rate limits / allowlisting vs code.  
-- SYSTEM_DESIGN trust boundary vs Hosted exec.  
-- ADR-001 historical vs ADR-017 + CLI Hosted-first behavior.  
-- PRD secret redaction — **addressed by M-PR3** (deterministic common-pattern redactor; not universal detection).  
-- compose `MUTINY_DB_PATH` vs hardcoded DB path — **addressed by M-PR4**.
+- ~~IMPLEMENTATION_PLAN milestone status vs 0.1.0 ship~~ — **reconciled (P1-7)**.  
+- ~~ARCHITECTURE rate limits missing~~ — **in-process limits (P1-2)**; allowlisting still enum.  
+- ~~SYSTEM_DESIGN trust boundary vs Hosted exec~~ — **observe-only implemented**.  
+- ADR-001 historical vs ADR-017 + CLI local-default (intentional history).  
+- PRD secret redaction — **addressed by M-PR3**.  
+- compose `MUTINY_DB_PATH` — **addressed by M-PR4**.
 
 ### Proposed Milestones (exact order)
 
@@ -694,12 +697,13 @@ ADR-017 already supersedes ADR-001 for **product priority**. **M-PR2** aligns ru
 7. M-PR6 Policy-general seeds/mutators (ADR-020)  
 8. M-PR7 Hosted authN token  
 9. M-PR8 ADR-019 Hosted execution model  
+10. **P0-3 / P0-1/P0-4 / P1-2 / P1-7** — FS-inert, bind fail-closed, in-process rate limits, docs reconcile (**done**)  
 
-Then P3/P4 items; **1.0.0** only after Target B DoD.
+Then remaining P1-1 / P2-* / P3/P4; **1.0.0** only after Target B DoD.
 
 ### Release Plan
 
-`0.1.x` (safety docs/flags) → `0.2.0` (Production Local CLI) → `0.3.0` (Hosted safe-mode + auth) → `0.4.0` (ADR-019) → `1.0.0` (Production Hosted + stable contracts).
+`0.1.x` (alpha + Hosted security hardening) → `0.2.0` (Production Local CLI) → tagged recognition of Hosted safe-mode / observe-only → `1.0.0` (full Production Hosted + stable contracts).
 
 ### Definition of Production Ready (measurable)
 
@@ -713,6 +717,8 @@ See checklists under [Definition of Done](#definition-of-done) for Target A and 
 - **M-PR8A (docs):** `docs/HOSTED_INGESTION.md` (+ pointers) — contract defined
 - **M-PR8C (CLI):** `mutiny run --hosted` = local Core + end-of-run redacted ingest sync — **done**
 - **M-PR8D (Web):** Hosted UI observe-only copy / Local CLI execution badges — **done**
-- **Versioning:** No package version bump in M-PR8E commit — packages remain `0.1.0`; ROADMAP maps full ADR-019 Hosted work to **0.4.0** as a separate release/tag step (same as M-PR8A–D).
+- **P0-3 / P0-1/P0-4 / P1-2:** customer FS-inert; bind/auth fail-closed; in-process rate limits — **done in code**
+- **P1-7:** this document + IMPLEMENTATION_PLAN / SECURITY / related docs reconciled to current implementation — **done (docs-only)**
+- **Versioning:** Packages remain `0.1.0` until an explicit release tag; do not treat security commits as an automatic 0.2/0.3/1.0 bump.
 
-**STOP:** M-PR8E complete — do not begin additional milestones in this change set.
+**STOP:** P1-7 complete — do not begin P2-* or other milestones in this change set.

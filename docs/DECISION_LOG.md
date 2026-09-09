@@ -301,10 +301,10 @@ Add new ADRs at the bottom. Do not rewrite history; supersede with a new ADR.
 
 1. **One shared server credential:** `MUTINY_API_TOKEN` environment variable. Clients send `Authorization: Bearer <token>`.
 2. **Fail closed when enabled:** If the env var is set to a non-empty value, all protected `/api/*` routes reject missing/invalid credentials with the same `401 unauthorized` body (constant-time compare; no token echo).
-3. **Local demo rollback:** If unset/empty, auth is disabled (explicit insecure localhost/demo mode). Operators must set the token before any shared-network Hosted.
+3. **Local demo rollback:** If unset/empty **and** the bind host is loopback, auth is disabled (explicit insecure localhost/demo mode). **P0-1 / P0-4:** non-loopback binds (`0.0.0.0`, `::`, LAN/public) require a non-empty token or `python -m mutiny_api` fails closed before listen.
 4. **Public routes:** `GET /api/health` and `GET /api/meta` only. Meta may advertise `auth_required` / `auth_env` — never the secret.
 5. **Not in scope:** OAuth, users, sessions, refresh tokens, RBAC, multi-tenant isolation.
-6. **Orthogonal to M-PR1/M-PR8E:** Valid auth does not enable customer adapter `exec_module`. Execution isolation is **ADR-019** (observe-only); implemented by **M-PR8A–E**.
+6. **Orthogonal to M-PR1/M-PR8E / P0-3:** Valid auth does not enable customer adapter `exec_module` or customer filesystem access. Execution/FS isolation is **ADR-019** (+ P0-3); implemented by **M-PR8A–E** and P0-3.
 
 **Alternatives:** Always-on auth with startup failure if unset; per-user accounts; mTLS; API-gateway-only auth.
 
@@ -316,12 +316,12 @@ Add new ADRs at the bottom. Do not rewrite history; supersede with a new ADR.
 
 ## ADR-019 — Hosted observe/lineage only; customer Python executes on CLI
 
-**Problem:** Hosted `CampaignSupervisor` can load customer `.mutiny/adapter.py` via `load_adapter_factory` → `importlib` `exec_module` in the shared API process (`project_path` → `_make_adapter`). That is acceptable for Local CLI (same trust as `pytest`) but violates SYSTEM_DESIGN §20 for a control plane: authenticated or not, a reachable Hosted that executes arbitrary customer trees is an RCE / host-FS write class risk. M-PR1 (`MUTINY_ALLOW_PROJECT_EXEC`) is a kill-switch, not isolation. Target B (Production Hosted) needs a durable execution model.
+**Problem:** Hosted `CampaignSupervisor` previously could load customer `.mutiny/adapter.py` via `load_adapter_factory` → `importlib` `exec_module` in the shared API process (`project_path` → `_make_adapter`). That is acceptable for Local CLI (same trust as `pytest`) but violates SYSTEM_DESIGN §20 for a control plane: authenticated or not, a reachable Hosted that executes arbitrary customer trees is an RCE / host-FS write class risk. M-PR1 (`MUTINY_ALLOW_PROJECT_EXEC`) was a kill-switch, not isolation. Target B (Production Hosted) needs a durable execution model.
 
 **Decision (Option A — observe-only Hosted):**
 
 1. **Target architecture:** Hosted API/UI is a **control, persistence, and lineage plane** — campaigns, SSE, SQLite artifacts, minimize/regression *metadata*. It does **not** execute customer project Python in the shared API process.
-2. **Customer adapter execution** belongs on the **developer machine** (primary: `mutiny run` / `mutiny test` → Core → Adapter #1), same trust domain as Local CLI (ADR-017). Hosted may later accept **uploaded events/artifacts** (or equivalent push) from that local runner; that ingestion path is **M-PR8**, not this ADR’s implementation.
+2. **Customer adapter execution** belongs on the **developer machine** (primary: `mutiny run` / `mutiny test` → Core → Adapter #1), same trust domain as Local CLI (ADR-017). Hosted accepts **uploaded events/artifacts** from that local runner via **M-PR8** ingest (implemented).
 3. **Trusted in-process harness** (`target=in_process_demo`) may remain in the API for reliability demos — it is Mutiny-shipped code, not customer `project_path`.
 4. **Implemented (M-PR8E):** Hosted customer `project_path` → `load_adapter_factory` → `exec_module` is permanently refused (`410 hosted_customer_execution_removed`). `MUTINY_ALLOW_PROJECT_EXEC` is ignored and cannot restore production customer execution.
 5. **Implemented (P0-3):** Hosted customer `project_path` is filesystem-inert — no `Path.resolve` / read / write / mkdir / glob of customer trees or policy files (`410 hosted_filesystem_access_removed`). Project rows store opaque path labels only. `MUTINY_ALLOW_PROJECT_EXEC` cannot restore filesystem access.

@@ -30,7 +30,7 @@ with sandboxed mock tools for demos.
 | Contribute / first PR | [CONTRIBUTING.md](../CONTRIBUTING.md) · [GOOD_FIRST_ISSUES.md](./GOOD_FIRST_ISSUES.md) |
 | Architecture boundaries | [ARCHITECTURE.md](./ARCHITECTURE.md) |
 | How the system runs | [SYSTEM_DESIGN.md](./SYSTEM_DESIGN.md) |
-| What’s next | [ROADMAP.md](./ROADMAP.md) |
+| What's next / readiness | [ROADMAP.md](./ROADMAP.md) · [PRODUCTION_READINESS.md](./PRODUCTION_READINESS.md) |
 | Why we chose X | [DECISION_LOG.md](./DECISION_LOG.md) (esp. ADR-017, ADR-018) |
 | Support / Windows / security | [SUPPORT.md](../SUPPORT.md) · [SECURITY.md](../SECURITY.md) |
 
@@ -54,6 +54,7 @@ with sandboxed mock tools for demos.
 | [COMPETITOR_ANALYSIS.md](./COMPETITOR_ANALYSIS.md) | Competitive landscape (claims freeze) | Mutiny feature specs |
 | [DECISION_LOG.md](./DECISION_LOG.md) | Architecture Decision Records | Ongoing task lists |
 | [ROADMAP.md](./ROADMAP.md) | Phased future work | Near-term execution detail |
+| [PRODUCTION_READINESS.md](./PRODUCTION_READINESS.md) | Ship/no-ship readiness; Local vs Hosted gates | Day-to-day feature scheduling |
 | [DESIGN.md](./DESIGN.md) | Pointer to Hosted visual canon | Product requirements |
 
 Community files at repo root: [CONTRIBUTING](../CONTRIBUTING.md),
@@ -69,6 +70,8 @@ Community files at repo root: [CONTRIBUTING](../CONTRIBUTING.md),
 3. **Behavioral contracts (how the system works)** → SYSTEM_DESIGN  
 4. **What to build next / DoD** → IMPLEMENTATION_PLAN  
 5. **Why we chose X** → DECISION_LOG  
+
+**Supporting:** ROADMAP (phased future), PRODUCTION_READINESS (Local vs Hosted ship/no-ship gates), HOSTED_INGESTION (ingest contract).
 
 If docs disagree, fix the docs in that order—do not silently pick a convenient interpretation in code.
 

@@ -79,9 +79,14 @@ These principles are binding. New features must not violate them without an ADR 
 **Dependency direction:** outer layers may call inward. Core must not import apps, integrations, or framework SDKs.
 
 ```
-CLI / web → (api optional) → mutiny_core → Adapter Layer → OpenAI Agents SDK Adapter → Customer project
-                                              ↘ example: demo_agent (reference harness)
-                                              ↘ future adapters (same port; Core unchanged)
+Local CLI → mutiny_core → Adapter Layer → OpenAI Agents SDK Adapter → Customer project
+         ↘ optional sanitized Hosted ingestion (observe/lineage)
+         ↘ example: demo_agent (reference harness)
+         ↘ future adapters (same port; Core unchanged)
+
+Hosted Web/API → SQLite observational data (ingest + trusted in_process_demo only)
+               ✗ customer project_path exec / filesystem
+
 integrations/* → api (preferred) or mutiny_core (offline replay)
 ```
 

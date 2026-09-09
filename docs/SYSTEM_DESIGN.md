@@ -351,7 +351,11 @@ Default write location for local runs: under the customer project (e.g. `.mutiny
 
 ## 10. Hosted request flow (secondary)
 
-Typical campaign start when using Hosted:
+**Customer projects:** Prefer Local CLI (`mutiny run` / `mutiny run --hosted`). Hosted persists **sanitized ingest** evidence; Web is observe-only and does not execute customer adapters or POST ingest itself.
+
+**Trusted demo harness** (`in_process_demo`) may still use the supervisor start path below.
+
+Typical campaign start when using Hosted **demo harness**:
 
 1. `POST /api/campaigns` — validate config, store row `status=created`  
 2. `POST /api/campaigns/{id}/start` — attestation, health, spawn task  

@@ -37,13 +37,19 @@ Single-tenant shared Bearer token for the Hosted **control plane** (not multi-us
 | Non-loopback bind (`0.0.0.0`, `::`, LAN/public) + token unset/empty/whitespace | **Rejected at startup** — `python -m mutiny_api` fails closed before listen. |
 | `MUTINY_API_TOKEN` **set** (non-empty) | Protected `/api/*` routes require `Authorization: Bearer <token>`. Missing/invalid → `401 unauthorized`. Required for any non-loopback Hosted bind. |
 
+**Supported startup:** use `python -m mutiny_api` (or repo scripts / compose / Railway that invoke that module). Bind-host token checks run in that entrypoint before listen. Invoking the ASGI app via a raw `uvicorn mutiny_api.main:app …` (or equivalent) **bypasses** that startup validation — operators who do so are outside the supported Hosted bind contract.
+
 **Public (intentionally):** `GET /api/health`, `GET /api/meta` (meta reports `safety.auth_required` / `auth_env` — never the token value).
 
 **Protected:** campaigns, SSE/events, projects, policies, candidates, minimize, regressions, tests, ingest.
 
 CLI: default `mutiny run` stays local and needs no token. Explicit `mutiny run --hosted` / `--hosted-url` sends `MUTINY_API_TOKEN` when set; if the API requires auth and the token is missing/invalid, the CLI fails closed (no silent local fallback).
 
-**Auth ≠ sandbox:** A valid token does **not** enable customer `project_path` adapter execution. ADR-021 auth and ADR-019 observe-only isolation are orthogonal; M-PR8E enforces ADR-019.
+**Auth ≠ sandbox:** A valid token does **not** enable customer `project_path` adapter execution or filesystem access. ADR-021 auth and ADR-019 observe-only isolation are orthogonal; M-PR8E / P0-3 enforce the latter.
+
+## Hosted filesystem boundary (P0-3)
+
+On Hosted, customer `project_path` (and ingest `local_project_key` / path labels) are **opaque metadata only**. The API does **not** resolve, read, write, mkdir, or glob customer project trees or policy files. Policy list/content routes and customer project FS access return `410 hosted_filesystem_access_removed`. Local CLI filesystem access is unchanged.
 
 ## Hosted rate limits (P1-2)
 

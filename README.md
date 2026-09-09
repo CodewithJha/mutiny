@@ -210,6 +210,8 @@ not remote adapter execution).
 
 **Hosted auth (M-PR7 / P0-1 / P0-4):** Loopback (`127.0.0.1` / `localhost` / `::1`) may omit `MUTINY_API_TOKEN` for local demo. Non-loopback binds require a non-empty token or `python -m mutiny_api` refuses to start. When set, protected routes require `Authorization: Bearer` (same value on the web process for UI rewrites). Auth does not sandbox customer Python. See [SECURITY.md](./SECURITY.md).
 
+**Hosted FS / rate limits:** Customer `project_path` is opaque on Hosted (no server-side project tree access — P0-3). The API applies **in-process** rate limits when auth is configured (P1-2; not distributed).
+
 ---
 
 ## Quick start
@@ -452,7 +454,7 @@ No. Authorized testing only — local / in-process / localhost. Not an open-inte
 - **One shipped adapter** (OpenAI Agents SDK); multi-framework support is intentional future work, not missing polish of a single kernel.
 - **Published on PyPI** as `mutiny-ai` (`pip install mutiny-ai`) — see [docs/PUBLISHING.md](./docs/PUBLISHING.md).
 - **Policy expressiveness** is deliberately narrow (deterministic operators on tool calls) — not NL policies judged by an LLM.
-- **Hosted** is optional and secondary; single-tenant Bearer auth is available (`MUTINY_API_TOKEN`); multi-tenant cloud / SSO are not current scope.
+- **Hosted** is optional and secondary: observe-only for customer runs; non-loopback requires Bearer auth; in-process rate limits when auth is configured; multi-tenant cloud / SSO are not current scope.
 - Sample and reference demo agents use **mock tools**; they are not production payment or email systems.
 - See [CHANGELOG.md](./CHANGELOG.md) for Unreleased / initial release notes.
 

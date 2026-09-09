@@ -23,13 +23,16 @@
 - Safety binds (local/in-process/localhost, attestation)  
 - **M-PR2:** CLI `mutiny run` defaults to local Core; Hosted requires `--hosted` / `--hosted-url` (config URL alone never selects Hosted)  
 - **M-PR1:** Hosted customer `project_path` adapter execution kill-switch (historical; superseded by M-PR8E)  
-- **M-PR7:** Optional single-tenant Hosted Bearer auth (`MUTINY_API_TOKEN`); not multi-tenant / not a sandbox  
+- **M-PR7:** Single-tenant Hosted Bearer auth (`MUTINY_API_TOKEN`); loopback may omit for demo; non-loopback requires token (P0-1/P0-4); not multi-tenant / not a sandbox  
 - **ADR-019 (accepted; M-PR8A–E done):** Hosted observe/lineage for customer projects; customer adapter exec on Local CLI; production Hosted customer `exec_module` removed  
 - **M-PR8A (docs):** CLI → Hosted ingestion contract defined in [HOSTED_INGESTION.md](./HOSTED_INGESTION.md)
 - **M-PR8B (server):** Hosted `/api/ingest/v1/*` observe-only ingest shipped  
 - **M-PR8C (CLI):** `mutiny run --hosted` = local Core + end-of-run ingest sync  
 - **M-PR8D (Web):** Hosted UI “run locally, observe here” copy / execution badges  
 - **M-PR8E (security):** Hosted customer `project_path` `exec_module` permanently removed (`410 hosted_customer_execution_removed`; `MUTINY_ALLOW_PROJECT_EXEC` ignored)  
+- **P0-3:** Hosted customer `project_path` filesystem-inert / opaque (`410 hosted_filesystem_access_removed`)  
+- **P0-1 / P0-4:** Non-loopback Hosted binds require `MUTINY_API_TOKEN`; supported entrypoint `python -m mutiny_api` fails closed without it  
+- **P1-2:** In-process Hosted API rate limits (not distributed); path/URL allowlisting remainder still open  
 - Reliability smoke (≥2/3 on harness)  
 - Docs matching engine-first + customer-project primary  
 
@@ -77,14 +80,15 @@ New adapters on the **same** `TargetAdapter` interface (Core unchanged):
 
 ## 4. v1
 
-- Authenticated single-tenant Hosted deploy  
-- Ownership attestation for remote targets  
-- Hosted observe/lineage ingest per ADR-019 (after M-PR8)  
+- Multi-user / org Hosted identity beyond single-tenant Bearer (ADR-021 covers token only)  
+- Ownership attestation strengthened toward real AuthZ  
 - Stable public Core/API/CLI contracts  
 - Policy packs library  
 - CI token + GitHub Action for regression replay  
 - **AutoGen** adapter + additional adapters as demand warrants (still one Core)  
 - Postgres optional when SQLite concurrency hurts  
+- Distributed / multi-replica Hosted abuse controls (beyond in-process P1-2)  
+- SQLite backup/export tooling and durable deploy story  
 
 ---
 
