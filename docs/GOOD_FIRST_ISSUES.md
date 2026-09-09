@@ -12,7 +12,7 @@ Maintainer catalog of **small, realistic** tasks for new contributors. Open GitH
 
 ## Open on GitHub (labeled)
 
-**Shipped:** [#6](https://github.com/CodewithJha/mutiny/issues/6) init `--no-hosted` hint (PR [#13](https://github.com/CodewithJha/mutiny/pull/13) by [@kkkhs](https://github.com/kkkhs)) · [#2](https://github.com/CodewithJha/mutiny/issues/2) CLI flag docs (`docs/CLI.md`) · [#3](https://github.com/CodewithJha/mutiny/issues/3) real screenshots / demo GIF.
+**Shipped:** [#6](https://github.com/CodewithJha/mutiny/issues/6) init `--no-hosted` hint (PR [#13](https://github.com/CodewithJha/mutiny/pull/13) by [@kkkhs](https://github.com/kkkhs)) · [#5](https://github.com/CodewithJha/mutiny/issues/5) policy evaluator edge cases (PR [#15](https://github.com/CodewithJha/mutiny/pull/15) by [@Mr-Neutr0n](https://github.com/Mr-Neutr0n)) · [#2](https://github.com/CodewithJha/mutiny/issues/2) CLI flag docs (`docs/CLI.md`) · [#3](https://github.com/CodewithJha/mutiny/issues/3) real screenshots / demo GIF.
 
 **Next picks (claim in the issue comments first):**
 
@@ -20,13 +20,12 @@ Maintainer catalog of **small, realistic** tasks for new contributors. Open GitH
 |---|---|---|---|---|
 | [#9](https://github.com/CodewithJha/mutiny/issues/9) | #24 | Verify / harden `dev.sh` node_modules hint | XS | Same shape as #6 — confirm existing tip, tighten only if missable |
 | [#7](https://github.com/CodewithJha/mutiny/issues/7) | #28 | Richer per-rule comment headers in sample policy | XS | Comments-only in one YAML file; no behavior change |
-| [#5](https://github.com/CodewithJha/mutiny/issues/5) | #15 | Policy evaluator edge cases | S | Tests only; mirror existing classes in `test_policy_evaluator.py` |
+| [#1](https://github.com/CodewithJha/mutiny/issues/1) | #1 | Policy operator cheatsheet | S | Docs from existing tests + sample policy; #5 edge cases help |
 
 | GH | Catalog | Title | Difficulty | Primary files |
 |---|---|---|---|---|
 | [#1](https://github.com/CodewithJha/mutiny/issues/1) | #1 | Policy operator cheatsheet | S | `docs/POLICY_CHEATSHEET.md`, `docs/README.md`, `tests/unit/test_policy_*` |
 | [#4](https://github.com/CodewithJha/mutiny/issues/4) | #9 | Skip-to-content / focus order | S | `apps/web` landing routes / layout |
-| [#5](https://github.com/CodewithJha/mutiny/issues/5) | #15 | Policy evaluator edge cases | S | `tests/unit/test_policy_evaluator.py` |
 | [#7](https://github.com/CodewithJha/mutiny/issues/7) | #28 | Richer per-rule comment headers in sample policy | XS | `examples/openai_support_agent/policy.yaml` |
 | [#8](https://github.com/CodewithJha/mutiny/issues/8) | #37 | Document `/api/health` fields | S | `docs/` or `apps/api` README; `HealthResponse` in schemas |
 | [#9](https://github.com/CodewithJha/mutiny/issues/9) | #24 | Verify / harden `dev.sh` node_modules hint | XS | `scripts/dev.sh` (tip exists — verify + harden) |
@@ -62,7 +61,7 @@ Maintainer catalog of **small, realistic** tasks for new contributors. Open GitH
 
 | # | Title | Difficulty | Acceptance | Affected files | Labels |
 |---|---|---|---|---|---|
-| 15 | Policy operator edge cases | S | Cases for empty args / nested paths; `uv run pytest tests/unit/test_policy_evaluator.py -q` green | `tests/unit/test_policy_evaluator.py` | `tests` `good first issue` |
+| 15 | Policy operator edge cases | S | **Done** — PR [#15](https://github.com/CodewithJha/mutiny/pull/15) / GH [#5](https://github.com/CodewithJha/mutiny/issues/5) (empty args + nested paths) | `tests/unit/test_policy_evaluator.py` | `tests` |
 | 16 | SKIPPED regression path | S | Assert SKIPPED when fixture/agent missing | `tests/unit` / CLI tests | `tests` `cli` |
 | 17 | Golden minimized conversation | S | One JSON under `examples/regressions/` + README blurb | `examples/regressions/` | `tests` `examples` |
 | 18 | CLI init key asserts | S | Assert generated yaml keys in init test | `tests/unit/test_mutiny_cli_init.py` | `tests` `cli` |
