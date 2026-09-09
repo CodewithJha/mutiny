@@ -181,6 +181,8 @@ Placement may be `integrations/cli` or a published `mutiny` package entrypoint; 
 
 **M-PR7 / P0-1 / P0-4 (current):** Single-tenant Bearer auth via `MUTINY_API_TOKEN` (ADR-021). Loopback binds may omit the token for local demo. Non-loopback binds (`0.0.0.0`, `::`, LAN/public) require a non-empty token or `python -m mutiny_api` fails closed before listen. When set, protected `/api/*` routes require `Authorization: Bearer <token>`. Public: `/api/health`, `/api/meta`. Auth does not enable customer Hosted execution and is not multi-tenant identity.
 
+**P1-2:** In-process Hosted API rate limits (token bucket; health / normal / expensive / ingest categories). Enabled by default when `MUTINY_API_TOKEN` is set. Per-process only — **not** a distributed limiter. `429 rate_limit_exceeded` + `Retry-After`. See [SECURITY.md](../SECURITY.md#hosted-rate-limits-p1-2). Local CLI is unaffected. Target allowlisting remains the target enum, not a filesystem/URL sandbox.
+
 **ADR-019 (implemented via M-PR8A–E):** Hosted role for customer projects is **observe/lineage** — persist campaigns, SSE, artifacts; customer Python runs on Local CLI. Production Hosted must not execute arbitrary customer `.mutiny/adapter.py` in the shared API process. Trusted `in_process_demo` harness may remain. See DECISION_LOG ADR-019.
 
 **M-PR8A–E:** CLI → Hosted ingest contract + Hosted `/api/ingest/v1/*` + CLI `--hosted` local-exec sync + Web observe-only copy + **production customer exec removed** — [HOSTED_INGESTION.md](./HOSTED_INGESTION.md).

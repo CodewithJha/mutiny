@@ -19,7 +19,7 @@
 
 Mutiny **v0.1.0** is a credible **alpha OSS behavioral fuzz engine**: Core oracle, Adapter #1 (OpenAI Agents SDK), CLI (`init` / `run` / `test`), sample project, and a local Hosted lineage UI/API. Unit tests are green (`126` passed in this audit). PyPI packages are published.
 
-It is **not** production-ready as a **public or multi-tenant Hosted** service. With **M-PR8E**, customer `project_path` adapter `exec_module` is **permanently removed** from Hosted (`410 hosted_customer_execution_removed`; `MUTINY_ALLOW_PROJECT_EXEC` ignored). With **P0-3**, customer `project_path` is also **filesystem-inert** on Hosted (`410 hosted_filesystem_access_removed` — no resolve/read/write of customer trees or policy files). With M-PR7 + **P0-1/P0-4**, Bearer auth is required for non-loopback Hosted binds (`python -m mutiny_api` fails closed without a non-empty `MUTINY_API_TOKEN`); loopback may omit the token for local demo. Residual Hosted risks: attestation is not authorization, and rate limits are missing. Public multi-tenant Hosted remains out of scope.
+It is **not** production-ready as a **public or multi-tenant Hosted** service. With **M-PR8E**, customer `project_path` adapter `exec_module` is **permanently removed** from Hosted (`410 hosted_customer_execution_removed`; `MUTINY_ALLOW_PROJECT_EXEC` ignored). With **P0-3**, customer `project_path` is also **filesystem-inert** on Hosted (`410 hosted_filesystem_access_removed` — no resolve/read/write of customer trees or policy files). With M-PR7 + **P0-1/P0-4**, Bearer auth is required for non-loopback Hosted binds (`python -m mutiny_api` fails closed without a non-empty `MUTINY_API_TOKEN`); loopback may omit the token for local demo. With **P1-2**, Hosted applies **in-process** (per-process, not distributed) rate limits when auth is configured. Residual Hosted risks: attestation is not authorization, and multi-tenant / durable ops remain open. Public multi-tenant Hosted remains out of scope.
 
 **Target A — Production Local CLI** is approachable with a focused hardening sequence (default local `mutiny run`, secret hygiene, policy-general seeds/mutators, CI completeness).
 
@@ -49,7 +49,7 @@ It is **not** production-ready as a **public or multi-tenant Hosted** service. W
 | Claim | Reality |
 |---|---|
 | [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) marks M2–M5 largely **Planned/Partial** (2026-08-07) | Adapter #1 + CLI init/run/test + sample path are **shipped in 0.1.0** |
-| ARCHITECTURE: API owns “rate limits” + “target allowlisting” | **No rate limiter** implemented; “allowlist” is a **target enum** (`in_process_demo` \| `openai_agents`), not a filesystem/URL sandbox |
+| ARCHITECTURE: API owns “rate limits” + “target allowlisting” | **P1-2:** in-process Hosted rate limits implemented (not distributed). “Allowlist” remains a **target enum** (`in_process_demo` \| `openai_agents`), not a filesystem/URL sandbox |
 | SYSTEM_DESIGN §20: arbitrary remote hosts blocked; treat customer adapter as untrusted vs control plane | **ADR-019** observe-only Target B **implemented (M-PR8A–E)** — Hosted never `exec_module`s customer trees; CLI executes + ingest |
 | PRD / plan: “Redact secrets in traces” | **M-PR3:** deterministic redaction on persist/display (`mutiny_core.redact`) |
 | `docker-compose.yml` sets `MUTINY_DB_PATH` | **M-PR4:** `resolve_db_path()` honors env (compose `/app/data/mutiny.sqlite`); default remains `data/mutiny.sqlite` |
@@ -159,7 +159,7 @@ MVP limitations are labeled as such, not “bugs.”
 | ID | Finding | Evidence | Targets |
 |---|---|---|---|
 | P1-1 | Attestation is **not authorization** (boolean only) | `CampaignStartRequest.attestation`; supervisor `PermissionError` if false | Hosted (and weak Local messaging) |
-| P1-2 | Docs/architecture claim **rate limits** and **path/URL allowlisting**; missing or reduced to target enum | ARCHITECTURE §4 API owns; no limiter in API; no FS root allowlist | Hosted |
+| P1-2 | Docs/architecture claim **rate limits** and **path/URL allowlisting**; missing or reduced to target enum | **Partial (P1-2):** in-process Hosted rate limits shipped; path/URL allowlisting still only the target enum | Hosted |
 | P1-3 | **Secret redaction** required by PRD — **implemented (M-PR3)** | `mutiny_core.redact`; persist/display wiring | Both (resolved for common patterns) |
 | P1-4 | CLI **Hosted-first** when `api_url` reachable — surprises operators; pushes `project_path` to API | `run_cmd.py` | Local (ops safety); Hosted blast radius |
 | P1-5 | `MUTINY_DB_PATH` in compose **ignored**; DB path hardcoded — **resolved (M-PR4)** | `mutiny_api.db.resolve_db_path` | Hosted / Data |

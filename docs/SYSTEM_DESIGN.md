@@ -363,6 +363,8 @@ Typical campaign start when using Hosted:
 
 API uses single-tenant Bearer auth (`MUTINY_API_TOKEN`, ADR-021 / M-PR7) on protected control/data routes when configured; loopback may omit the token for local demo, while non-loopback Hosted binds require it or fail closed before listen (P0-1 / P0-4). Not multi-tenant identity. Attestation remains a product safety acknowledgement, not authentication.
 
+Hosted API applies **in-process** rate limits (P1-2) when auth is configured (or `MUTINY_RATE_LIMIT_ENABLED=1`): separate buckets for health/meta, normal API, expensive compute routes, and ingest. Limits are **per API process**, not cluster-wide. Exhaustion returns `429` / `rate_limit_exceeded` with `Retry-After`. Local CLI execution is not rate limited.
+
 **Execution (ADR-019):** Customer project campaigns belong on Local CLI; Hosted’s production role is lineage/ops. **M-PR8A–E** observe-only ingest + CLI local-exec sync + Web observe copy + **production customer `exec_module` removed**. Trusted `in_process_demo` may still run in-process. Contract: [HOSTED_INGESTION.md](./HOSTED_INGESTION.md).
 
 **Note:** Hosted may still wire the bundled demo adapter alongside the OpenAI Agents SDK + CLI path. Product narrative prefers sample-as-example, not demo-as-product.

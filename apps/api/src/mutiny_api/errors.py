@@ -78,7 +78,7 @@ def _code_for_status(status: int) -> str:
         409: "conflict",
         410: "gone",
         422: "validation_error",
-        429: "rate_limited",
+        429: "rate_limit_exceeded",
         500: "internal_error",
         503: "unavailable",
     }.get(status, "error")

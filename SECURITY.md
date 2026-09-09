@@ -39,11 +39,32 @@ Single-tenant shared Bearer token for the Hosted **control plane** (not multi-us
 
 **Public (intentionally):** `GET /api/health`, `GET /api/meta` (meta reports `safety.auth_required` / `auth_env` — never the token value).
 
-**Protected:** campaigns, SSE/events, projects, policies, candidates, minimize, regressions, tests.
+**Protected:** campaigns, SSE/events, projects, policies, candidates, minimize, regressions, tests, ingest.
 
 CLI: default `mutiny run` stays local and needs no token. Explicit `mutiny run --hosted` / `--hosted-url` sends `MUTINY_API_TOKEN` when set; if the API requires auth and the token is missing/invalid, the CLI fails closed (no silent local fallback).
 
 **Auth ≠ sandbox:** A valid token does **not** enable customer `project_path` adapter execution. ADR-021 auth and ADR-019 observe-only isolation are orthogonal; M-PR8E enforces ADR-019.
+
+## Hosted rate limits (P1-2)
+
+In-process token-bucket limits on the Hosted API request boundary only. **Not distributed** — each API process has its own buckets. Local CLI / `mutiny_core` campaign execution is not rate limited.
+
+| Category | Routes (examples) | Default RPM | Default burst |
+|---|---|---|---|
+| Health | `GET /api/health`, `GET /api/meta` | 1200 | 120 |
+| Normal | most other `/api/*` | 600 | 120 |
+| Expensive | `POST /api/campaigns`, `…/start`, minimize, regression save, `POST /api/tests/run` | 60 | 15 |
+| Ingest | `POST /api/ingest/v1/*` | 300 | 60 |
+
+**Default enablement:** on when `MUTINY_API_TOKEN` is set; off for tokenless loopback demo. Override with `MUTINY_RATE_LIMIT_ENABLED=0|1`.
+
+**Other env knobs:** `MUTINY_RATE_LIMIT_{HEALTH,NORMAL,EXPENSIVE,INGEST}_{RPM,BURST}`, `MUTINY_RATE_LIMIT_MAX_KEYS` (default 4096), `MUTINY_RATE_LIMIT_IDLE_SECONDS` (stale bucket cleanup). Values `≤ 0` or non-integers **fail closed** at app start (do not mean “unlimited”).
+
+**Identity:** valid Bearer → single-tenant key `tenant` (token never logged). Otherwise → `request.client.host` only; `X-Forwarded-For` is **not** trusted.
+
+**Order:** request id middleware → rate limit → auth dependency → handler. Under limit + bad token → `401`. Over limit → `429` with `error.code=rate_limit_exceeded` and `Retry-After` (even for invalid credentials).
+
+**Ingest:** request-rate limits stack with existing payload caps (`MUTINY_INGEST_MAX_*`); schema unchanged.
 
 ## Secret redaction (M-PR3)
 

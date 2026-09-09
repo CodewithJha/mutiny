@@ -40,6 +40,13 @@ from mutiny_api.ingest_schemas import (
     IngestTestRunRequest,
 )
 from mutiny_api.logging_setup import configure_logging
+from mutiny_api.rate_limit import (
+    RateLimiter,
+    classify_endpoint,
+    load_rate_limit_config,
+    rate_limit_identity,
+    retry_after_header_seconds,
+)
 from mutiny_api.repository import Repository
 from mutiny_api.schemas import (
     CampaignCreateRequest,
@@ -108,13 +115,19 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
             "Ingest never executes customer adapters. "
             "When MUTINY_API_TOKEN is set, protected /api routes require "
             "Authorization: Bearer <token> (M-PR7). Non-loopback binds require "
-            "a non-empty token at process start (P0-1/P0-4). Auth is not a sandbox."
+            "a non-empty token at process start (P0-1/P0-4). Auth is not a sandbox. "
+            "In-process rate limits apply per API process (P1-2; not distributed)."
         ),
         lifespan=lifespan,
         # App-wide dependency: public /api/health|/api/meta skip inside the helper;
         # when MUTINY_API_TOKEN is unset, enforcement is a no-op (local demo).
         dependencies=[Depends(require_hosted_auth)],
     )
+    # Fail closed on invalid MUTINY_RATE_LIMIT_* at app construction.
+    rate_limit_config = load_rate_limit_config()
+    rate_limiter = RateLimiter(rate_limit_config)
+    app.state.rate_limiter = rate_limiter
+
     app.add_exception_handler(HTTPException, http_exception_handler)
     app.add_exception_handler(Exception, unhandled_exception_handler)
 
@@ -167,6 +180,44 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
             headers={"X-Request-Id": request_id} if request_id else None,
         )
 
+    # Middleware order (Starlette: last registered runs first on the way in):
+    # 1) request_context (outer) — assign request_id, then
+    # 2) rate_limit (inner) — category buckets before auth Depends / handlers,
+    # 3) require_hosted_auth (route dependency) — 401 when under limit + bad token.
+    # Exhausted limits return 429 even for missing/invalid credentials.
+    @app.middleware("http")
+    async def rate_limit_middleware(request: Request, call_next):  # type: ignore[no-untyped-def]
+        limiter: RateLimiter = request.app.state.rate_limiter
+        cfg = limiter.config
+        if not cfg.enabled:
+            return await call_next(request)
+        path = request.url.path
+        if not path.startswith("/api/"):
+            return await call_next(request)
+        category = classify_endpoint(request.method, path)
+        identity = rate_limit_identity(request)
+        decision = limiter.allow(identity, category)
+        if decision.allowed:
+            return await call_next(request)
+        request_id = getattr(request.state, "request_id", None)
+        retry_after = retry_after_header_seconds(decision.retry_after)
+        headers: dict[str, str] = {"Retry-After": str(retry_after)}
+        if request_id:
+            headers["X-Request-Id"] = request_id
+        return JSONResponse(
+            status_code=429,
+            content=error_body(
+                code="rate_limit_exceeded",
+                message=(
+                    f"rate limit exceeded for {decision.category.value} "
+                    "operations; retry after the indicated delay"
+                ),
+                status=429,
+                request_id=request_id,
+            ),
+            headers=headers,
+        )
+
     @app.middleware("http")
     async def request_context(request: Request, call_next):  # type: ignore[no-untyped-def]
         request_id = request.headers.get("x-request-id") or str(uuid.uuid4())
@@ -190,6 +241,7 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
 
     @app.get("/api/meta", response_model=MetaResponse, tags=["ops"])
     def meta() -> MetaResponse:
+        rl: RateLimiter = app.state.rate_limiter
         return MetaResponse(
             version=__version__,
             safety={
@@ -203,6 +255,10 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
                 "hosted_customer_adapter_exec_env_effect": "ignored",
                 "auth_required": auth_required(),
                 "auth_env": "MUTINY_API_TOKEN",
+                "rate_limits": (
+                    "in_process" if rl.config.enabled else "disabled"
+                ),
+                "rate_limits_distributed": False,
                 "mock_tools": True,
                 "open_proxy": False,
             },
