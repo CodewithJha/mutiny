@@ -133,4 +133,9 @@ __all__ = [
     "validate_policy_data",
 ]
 
-__version__ = "0.1.0"
+try:
+    from importlib.metadata import PackageNotFoundError, version as _pkg_version
+
+    __version__ = _pkg_version("mutiny-core")
+except PackageNotFoundError:  # pragma: no cover - source tree without install
+    __version__ = "0.0.0+local"

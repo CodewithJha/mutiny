@@ -119,7 +119,7 @@ PR CI (see `.github/workflows/ci.yml`) gates on Python **3.11** and **3.12**:
 | Reliability | `uv run pytest tests/reliability -q` |
 | CLI smoke (local, no Hosted) | `cd examples/openai_support_agent && uv run mutiny init && uv run mutiny run` |
 | Web typecheck + build | `cd apps/web && npm ci && npx tsc --noEmit && npm run build` |
-| Package build | `uv build --out-dir dist/core packages/mutiny_core` (and openai/cli packages) |
+| Package build + isolated artifact gate | `uv run pytest tests/unit/test_package_release.py -q` then `./scripts/verify_release_artifacts.sh` |
 
 ```bash
 uv sync --extra dev

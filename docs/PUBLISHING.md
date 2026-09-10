@@ -16,6 +16,29 @@ End users: `pip install mutiny-ai` then `mutiny init`.
 
 ---
 
+## Release contract (required before upload)
+
+PyPI **`0.1.0` may lag the git tree** until a later version bump: `publish.yml` skips versions already on PyPI. Editable/`uv sync` success does **not** prove release integrity — checkout imports hide broken wheels.
+
+Before every publish:
+
+1. **Align versions** in all three `packages/*/pyproject.toml` (CI fails on mismatch). Runtime `__version__` comes from package metadata, not a hardcoded string.
+2. **Build from the commit you intend to ship** (never an older checkout tagged with the same version).
+3. **Verify artifacts offline** (sibling wheels together; no `PYTHONPATH`, no editable):
+
+```bash
+./scripts/verify_release_artifacts.sh
+```
+
+That script: builds wheels/sdists → installs into a fresh venv → `mutiny --help` / `mutiny db --help` / `mutiny init` → offline sample `mutiny run --no-hosted` → `mutiny test` FAIL then PASS after the documented sample fix.
+
+4. **Install order for local wheels**: `mutiny-core` → `mutiny-openai-agents` → `mutiny-ai` (or pass all three paths to one `pip install` so pip cannot resolve `mutiny-*` from a stale PyPI index).
+5. **Never re-upload the same version** expecting code changes — bump all three versions together, then publish.
+
+PR CI job `package-build` runs the same artifact gate.
+
+---
+
 ## Credentials for subsequent releases
 
 Use one of the two paths below for version bumps after `0.1.0`.
@@ -26,7 +49,7 @@ Use one of the two paths below for version bumps after `0.1.0`.
 2. Create token: https://pypi.org/manage/account/token/
    - **Scope:** Entire account (needed for first upload of new project names)
    - Copy the value (starts with `pypi-`)
-3. Publish:
+3. Publish **only after** `./scripts/verify_release_artifacts.sh` passes:
 
 ```bash
 cd /path/to/mutiny
@@ -91,6 +114,8 @@ pip install mutiny-ai
 mutiny --help
 pip index versions mutiny-ai
 ```
+
+Prefer comparing `pip show mutiny-ai` / installed module contents against the commit you published — not against an unrelated local editable checkout.
 
 User-facing docs already lead with `pip install mutiny-ai` (keep git install as an optional footnote).
 

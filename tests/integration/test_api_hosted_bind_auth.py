@@ -16,6 +16,7 @@ from mutiny_api.bind_security import BindSecurityError, require_token_for_non_lo
 from mutiny_api.ingest_schemas import INGEST_SCHEMA_VERSION
 from mutiny_api.serve import run_server
 from mutiny_cli import run_cmd
+from mutiny_core import __version__ as MUTINY_CORE_VERSION
 
 FAKE_TOKEN = "test-mutiny-bind-auth-p0-not-real"
 WRONG_TOKEN = "wrong-mutiny-bind-auth-p0"
@@ -142,7 +143,7 @@ def test_16_allow_project_exec_ignored_with_valid_token(
 def test_17_ingest_works_with_valid_auth(client: TestClient) -> None:
     body = {
         "schema_version": INGEST_SCHEMA_VERSION,
-        "mutiny_version": "0.1.0",
+        "mutiny_version": MUTINY_CORE_VERSION,
         "execution_mode": "local_cli",
         "redaction": {"applied": True, "marker": "[REDACTED]"},
         "campaign_id": "camp-bind-auth-17",

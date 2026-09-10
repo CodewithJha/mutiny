@@ -44,6 +44,16 @@ jobs:
       - name: Set up Python
         run: uv python install 3.12
 
+      - name: Verify release artifacts (isolated install)
+        env:
+          MUTINY_SAMPLE_OFFLINE: "1"
+          OPENAI_API_KEY: ""
+          FEATHERLESS_API_KEY: ""
+        run: |
+          set -euo pipefail
+          chmod +x scripts/verify_release_artifacts.sh
+          ./scripts/verify_release_artifacts.sh "${RUNNER_TEMP}/mutiny-prepublish-artifacts"
+
       - name: Publish packages
         env:
           # May be empty when the secret is unset — never leave an empty token
@@ -62,7 +72,7 @@ jobs:
             echo "==> ${pypi_name}==${version}"
 
             if curl -fsSL "https://pypi.org/pypi/${pypi_name}/${version}/json" >/dev/null 2>&1; then
-              echo "Already on PyPI — skip upload"
+              echo "Already on PyPI — skip upload (same version cannot ship new code; bump version)"
               return 0
             fi
 

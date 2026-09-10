@@ -107,6 +107,8 @@ jobs:
   package-build:
     name: package-build
     runs-on: ubuntu-latest
+    # Release integrity gate: source packaging tests → build → isolated install →
+    # CLI smoke. Catches the stale-PyPI class of failure (checkout ≠ wheel).
     steps:
       - uses: actions/checkout@v4
 
@@ -121,31 +123,15 @@ jobs:
       - name: Sync workspace
         run: uv sync --extra dev
 
-      - name: Build publishable packages
-        run: |
-          set -euo pipefail
-          uv build --out-dir dist/ci-core packages/mutiny_core
-          uv build --out-dir dist/ci-openai packages/mutiny_openai_agents
-          uv build --out-dir dist/ci-cli packages/mutiny_cli
-          test -n "$(ls dist/ci-core)"
-          test -n "$(ls dist/ci-openai)"
-          test -n "$(ls dist/ci-cli)"
+      - name: Packaging unit tests
+        run: uv run pytest tests/unit/test_package_release.py -q --tb=short
 
-      - name: Verify package versions and CLI entrypoint
+      - name: Release artifact gate (build + isolated install + offline CLI)
+        env:
+          MUTINY_SAMPLE_OFFLINE: "1"
+          OPENAI_API_KEY: ""
+          FEATHERLESS_API_KEY: ""
         run: |
           set -euo pipefail
-          version_of() {
-            grep -E '^version[[:space:]]*=' "$1/pyproject.toml" | head -1 | sed -E 's/.*"([^"]+)".*/\1/'
-          }
-          core_v="$(version_of packages/mutiny_core)"
-          openai_v="$(version_of packages/mutiny_openai_agents)"
-          cli_v="$(version_of packages/mutiny_cli)"
-          echo "mutiny-core=${core_v}"
-          echo "mutiny-openai-agents=${openai_v}"
-          echo "mutiny-ai=${cli_v}"
-          test -n "${core_v}"
-          test -n "${openai_v}"
-          test -n "${cli_v}"
-          test "${core_v}" = "${openai_v}"
-          test "${core_v}" = "${cli_v}"
-          uv run mutiny --help >/dev/null
+          chmod +x scripts/verify_release_artifacts.sh
+          ./scripts/verify_release_artifacts.sh "${RUNNER_TEMP}/mutiny-release-artifacts"

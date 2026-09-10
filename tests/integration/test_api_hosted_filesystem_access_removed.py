@@ -9,6 +9,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from mutiny_api.app import create_app
+from mutiny_core import __version__ as MUTINY_CORE_VERSION
 
 
 MARKER_NAME = "MUTINY_P03_MARKER"
@@ -371,7 +372,7 @@ def test_14_ingest_does_not_open_local_project_key(
             "/api/ingest/v1/campaigns",
             json={
                 "schema_version": 1,
-                "mutiny_version": "0.1.0",
+                "mutiny_version": MUTINY_CORE_VERSION,
                 "execution_mode": "local_cli",
                 "redaction": {"applied": True, "marker": "[REDACTED]"},
                 "campaign_id": "camp-p03-14",

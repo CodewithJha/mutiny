@@ -17,6 +17,7 @@ from mutiny_api.db import SCHEMA_VERSION, connect
 from mutiny_api.ingest import IngestService, max_batch_bytes
 from mutiny_api.ingest_schemas import INGEST_SCHEMA_VERSION
 from mutiny_api.repository import INGEST_LOCAL_KEY_PREFIX, Repository
+from mutiny_core import __version__ as MUTINY_CORE_VERSION
 
 
 FAKE_TOKEN = "test-mutiny-ingest-token-mpr8b-not-real"
@@ -64,7 +65,7 @@ def _redaction() -> dict[str, Any]:
 def _envelope(**extra: Any) -> dict[str, Any]:
     body: dict[str, Any] = {
         "schema_version": INGEST_SCHEMA_VERSION,
-        "mutiny_version": "0.1.0",
+        "mutiny_version": MUTINY_CORE_VERSION,
         "execution_mode": "local_cli",
         "redaction": _redaction(),
     }

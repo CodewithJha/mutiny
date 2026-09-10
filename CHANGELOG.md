@@ -7,6 +7,10 @@ Published on PyPI as **`mutiny-ai`** (+ [`mutiny-core`](https://pypi.org/project
 
 ## [Unreleased]
 
+### Fixed
+
+- **Release artifact integrity** — PR CI `package-build` builds wheels from current source, installs them into an isolated venv (sibling wheels together), and smoke-tests offline Local CLI (`mutiny init` / `run --no-hosted` / `test` / `db --help`). Documents why editable checkouts cannot prove PyPI readiness and why same-version re-uploads are skipped. Runtime `mutiny_core.__version__` reads package metadata.
+
 ### Changed
 
 - **M-PR8E Hosted customer execution removed** — Hosted permanently refuses customer `openai_agents` + `project_path` adapter execution (`410 hosted_customer_execution_removed`). `MUTINY_ALLOW_PROJECT_EXEC` ignored. Trusted `in_process_demo` preserved. Prefer `mutiny run` / `mutiny run --hosted`.

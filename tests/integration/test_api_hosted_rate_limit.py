@@ -16,6 +16,7 @@ from fastapi.testclient import TestClient
 from mutiny_api.app import create_app
 from mutiny_api.auth import API_TOKEN_ENV
 from mutiny_api.ingest_schemas import INGEST_SCHEMA_VERSION
+from mutiny_core import __version__ as MUTINY_CORE_VERSION
 from mutiny_api.rate_limit import (
     ENABLED_ENV,
     EXPENSIVE_BURST_ENV,
@@ -68,7 +69,7 @@ def _auth(token: str = FAKE_TOKEN) -> dict[str, str]:
 def _ingest_open(external_suffix: str) -> dict[str, Any]:
     return {
         "schema_version": INGEST_SCHEMA_VERSION,
-        "mutiny_version": "0.1.0",
+        "mutiny_version": MUTINY_CORE_VERSION,
         "execution_mode": "local_cli",
         "redaction": {"applied": True, "marker": "[REDACTED]"},
         "campaign_id": str(uuid.uuid4()),
