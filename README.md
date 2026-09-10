@@ -401,6 +401,13 @@ Thanks to everyone who has contributed. New faces welcome — pick up a [`good f
                 </a>
             </td>
             <td align="center">
+                <a href="https://github.com/Nomee-123">
+                    <img src="https://github.com/Nomee-123.png?size=100" width="100" height="100" alt="Nomee-123"/>
+                    <br />
+                    <sub><b>Nomee-123</b></sub>
+                </a>
+            </td>
+            <td align="center">
                 <a href="https://github.com/Mr-Neutr0n">
                     <img src="https://github.com/Mr-Neutr0n.png?size=100" width="100" height="100" alt="Mr-Neutr0n"/>
                     <br />
