@@ -1,6 +1,6 @@
 [project]
 name = "mutiny-ai"
-version = "0.1.0"
+version = "0.2.0"
 description = "Mutiny — behavioral fuzz-testing for AI agents (CLI: mutiny init / run / test)"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -17,7 +17,7 @@ keywords = [
     "security",
 ]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Environment :: Console",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
@@ -28,8 +28,8 @@ classifiers = [
     "Topic :: Software Development :: Testing",
 ]
 dependencies = [
-    "mutiny-core>=0.1.0",
-    "mutiny-openai-agents>=0.1.0",
+    "mutiny-core>=0.2.0",
+    "mutiny-openai-agents>=0.2.0",
     "pyyaml>=6.0",
     "httpx>=0.27",
 ]

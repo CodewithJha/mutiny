@@ -14,8 +14,8 @@
 # Then: Actions → Publish to PyPI → Run workflow
 #   or: create a GitHub Release
 #
-# Already-published versions are skipped (idempotent), so re-running a release
-# that was uploaded manually still reports success.
+# Already-published versions FAIL the job (no silent skip). Bump all three
+# package versions together before re-running.
 
 name: Publish to PyPI
 
@@ -43,6 +43,25 @@ jobs:
 
       - name: Set up Python
         run: uv python install 3.12
+
+      - name: Assert publishable versions aligned
+        run: |
+          set -euo pipefail
+          version_of() {
+            grep -E '^version[[:space:]]*=' "$1/pyproject.toml" | head -1 | sed -E 's/.*"([^"]+)".*/\1/'
+          }
+          core_v="$(version_of packages/mutiny_core)"
+          openai_v="$(version_of packages/mutiny_openai_agents)"
+          cli_v="$(version_of packages/mutiny_cli)"
+          echo "versions: core=${core_v} openai=${openai_v} cli=${cli_v}"
+          test -n "$core_v"
+          test "$core_v" = "$openai_v"
+          test "$core_v" = "$cli_v"
+          # Refuse publishing the historical alpha line as a "new" 0.2+ ship without a bump.
+          if [ "$core_v" = "0.1.0" ]; then
+            echo "error: refusing to publish 0.1.0 — bump packages to the intended release (e.g. 0.2.0)" >&2
+            exit 1
+          fi
 
       - name: Verify release artifacts (isolated install)
         env:
@@ -72,8 +91,8 @@ jobs:
             echo "==> ${pypi_name}==${version}"
 
             if curl -fsSL "https://pypi.org/pypi/${pypi_name}/${version}/json" >/dev/null 2>&1; then
-              echo "Already on PyPI — skip upload (same version cannot ship new code; bump version)"
-              return 0
+              echo "error: ${pypi_name}==${version} already on PyPI — bump version to ship new code (no silent skip)" >&2
+              exit 1
             fi
 
             rm -rf "$out"

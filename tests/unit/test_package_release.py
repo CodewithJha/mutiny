@@ -32,6 +32,26 @@ def test_publishable_package_versions_aligned() -> None:
     assert next(iter(unique)), "empty version"
 
 
+def test_sibling_dependency_floors_match_release_line() -> None:
+    """CLI/adapter must not accept stale 0.1.x cores when this line is ≥0.2."""
+    release = _pyproject_version(PACKAGES["mutiny-core"])
+    major_minor = ".".join(release.split(".")[:2])
+    floor = f"{major_minor}.0" if major_minor.count(".") == 1 else release
+    cli_text = (PACKAGES["mutiny-ai"] / "pyproject.toml").read_text(encoding="utf-8")
+    openai_text = (PACKAGES["mutiny-openai-agents"] / "pyproject.toml").read_text(
+        encoding="utf-8"
+    )
+    assert f"mutiny-core>={floor}" in cli_text or f"mutiny-core>={release}" in cli_text
+    assert (
+        f"mutiny-openai-agents>={floor}" in cli_text
+        or f"mutiny-openai-agents>={release}" in cli_text
+    )
+    assert (
+        f"mutiny-core>={floor}" in openai_text
+        or f"mutiny-core>={release}" in openai_text
+    )
+
+
 def test_runtime_version_matches_mutiny_core_metadata() -> None:
     from mutiny_core import __version__
 

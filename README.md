@@ -334,8 +334,8 @@ Building an adapter? Start from `packages/mutiny_core`’s `TargetAdapter` port 
 | `mutiny init [--path] [--force]` | Scaffold `.mutiny/adapter.py` + `policy.yaml` + `mutiny.yaml` |
 | `mutiny run [--path] [--hosted] [--hosted-url] [--no-hosted] [--attestation]` | Local campaign by default; Hosted only with `--hosted` / `--hosted-url` |
 | `mutiny test [id] [--path] [--failed] [--json] [--no-report]` | Replay `.mutiny/tests/` (PASS / FAIL / SKIPPED); optional single id |
-| `mutiny db backup --out … [--db] [--overwrite]` | Consistent Hosted SQLite backup (operator; WAL-aware) |
-| `mutiny db restore --from … [--db] [--force]` | Destructive restore into an explicit DB path (requires `--force` if dest exists) |
+| `mutiny db backup --out … [--db] [--overwrite]` | Consistent Hosted SQLite backup (operator; WAL-aware; needs Hosted `mutiny-api` / workspace — not required for Local CLI) |
+| `mutiny db restore --from … [--db] [--force]` | Destructive restore into an explicit DB path (requires `--force` if dest exists; same Hosted/`mutiny-api` note) |
 
 Full flag reference: [`docs/CLI.md`](./docs/CLI.md) (from `mutiny --help`). Quick check: `mutiny <cmd> --help`.
 
@@ -426,7 +426,7 @@ Full graph: [github.com/CodewithJha/mutiny/graphs/contributors](https://github.c
 ## FAQ
 
 **Is Mutiny on PyPI?**  
-Yes — install with `pip install mutiny-ai` ([PyPI](https://pypi.org/project/mutiny-ai/)). CLI command is **`mutiny`**. Do not use bare `pip install mutiny` or `mutiny-sdk` — those are other projects.
+Yes — install with `pip install mutiny-ai` ([PyPI](https://pypi.org/project/mutiny-ai/)). CLI command is **`mutiny`**. Do not use bare `pip install mutiny` or `mutiny-sdk` — those are other projects. Until `0.2.0` is uploaded, the index may still serve `0.1.0`; Local CLI does not require Hosted or a monorepo checkout.
 
 **How do I run on Windows?**  
 Create a venv, then activate with PowerShell `.\.venv\Scripts\Activate.ps1` (or cmd `activate.bat`). Prefer WSL for contributor/`uv` workflows. Short FAQ: [SUPPORT.md § Windows](./SUPPORT.md#windows).
@@ -458,7 +458,7 @@ No. Authorized testing only — local / in-process / localhost. Not an open-inte
 - **Policy expressiveness** is deliberately narrow (deterministic operators on tool calls) — not NL policies judged by an LLM.
 - **Hosted** is optional and secondary: observe-only for customer runs; non-loopback requires Bearer auth; in-process rate limits when auth is configured; multi-tenant cloud / SSO are not current scope.
 - Sample and reference demo agents use **mock tools**; they are not production payment or email systems.
-- See [CHANGELOG.md](./CHANGELOG.md) for Unreleased / initial release notes.
+- See [CHANGELOG.md](./CHANGELOG.md) for `0.2.0` Local CLI RC notes and what is explicitly out of scope.
 
 Honest scope detail: [`docs/ROADMAP.md`](./docs/ROADMAP.md) § Current scope.
 

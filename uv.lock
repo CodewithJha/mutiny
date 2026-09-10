@@ -650,7 +650,7 @@ provides-extras = ["dev", "llm", "openai-agents"]
 
 [[package]]
 name = "mutiny-ai"
-version = "0.1.0"
+version = "0.2.0"
 source = { editable = "packages/mutiny_cli" }
 dependencies = [
     { name = "httpx" },
@@ -692,7 +692,7 @@ requires-dist = [
 
 [[package]]
 name = "mutiny-core"
-version = "0.1.0"
+version = "0.2.0"
 source = { editable = "packages/mutiny_core" }
 dependencies = [
     { name = "pydantic" },
@@ -718,7 +718,7 @@ provides-extras = ["dev", "llm"]
 
 [[package]]
 name = "mutiny-openai-agents"
-version = "0.1.0"
+version = "0.2.0"
 source = { editable = "packages/mutiny_openai_agents" }
 dependencies = [
     { name = "mutiny-core" },
