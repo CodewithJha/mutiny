@@ -29,5 +29,5 @@ services:
       - api
     environment:
       - WATCHPACK_POLLING=true
-      # - MUTINY_API_TOKEN=${MUTINY_API_TOKEN}
-      # - MUTINY_API_URL=http://api:8000
+      - MUTINY_API_TOKEN=${MUTINY_API_TOKEN:?set MUTINY_API_TOKEN for non-loopback Hosted}
+      - MUTINY_API_URL=http://api:8000
