@@ -69,6 +69,16 @@ def _as_number(value: Any) -> int | float | None:
         return None
     if isinstance(value, (int, float)):
         return value
+    if isinstance(value, str):
+        s = value.strip()
+        if not s or s.lower() in ("nan", "inf", "-inf", "+inf", "infinity", "-infinity", "+infinity"):
+            return None
+        try:
+            if "." in s or "e" in s.lower():
+                return float(s)
+            return int(s)
+        except (ValueError, TypeError):
+            return None
     return None
 
 

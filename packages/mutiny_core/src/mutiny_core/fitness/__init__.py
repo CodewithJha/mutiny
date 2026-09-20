@@ -6,6 +6,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from mutiny_core.policy.constraints import _as_number
 from mutiny_core.policy.models import PolicyHit, PolicySet, RuleKind
 from mutiny_core.trace.models import ExecutionTrace
 
@@ -116,17 +117,18 @@ def _arg_proximity(policy_set: PolicySet, calls: list) -> float:
                 if field not in call.arguments:
                     continue
                 actual = call.arguments[field]
-                if not isinstance(actual, (int, float)) or isinstance(actual, bool):
+                actual_num = _as_number(actual)
+                if actual_num is None:
                     continue
                 boundary = _numeric_boundary(constraint)
                 if boundary is None:
                     continue
                 # Closer to boundary from below → higher proximity
-                dist = abs(float(actual) - float(boundary))
+                dist = abs(float(actual_num) - float(boundary))
                 # Scale: within 50 units of boundary is interesting
                 prox = max(0.0, 1.0 - dist / 50.0)
                 # Bonus if on the violating side of a gt boundary without approval
-                if constraint.gt is not None and float(actual) > constraint.gt:
+                if constraint.gt is not None and float(actual_num) > constraint.gt:
                     prox = max(prox, 0.85)
                 best = max(best, prox)
     return best
@@ -135,8 +137,9 @@ def _arg_proximity(policy_set: PolicySet, calls: list) -> float:
 def _numeric_boundary(constraint: Any) -> float | None:
     for attr in ("gt", "gte", "lt", "lte", "eq"):
         val = getattr(constraint, attr, None)
-        if isinstance(val, (int, float)) and not isinstance(val, bool):
-            return float(val)
+        num = _as_number(val)
+        if num is not None:
+            return float(num)
     return None
 
 

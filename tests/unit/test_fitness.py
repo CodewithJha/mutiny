@@ -115,3 +115,26 @@ def test_arg_proximity_near_boundary_scores_higher():
     near_r = score_fitness(policy, near, PolicyEvaluator().evaluate(policy, near, {}))
     assert near_r.fitness >= far_r.fitness
     assert near_r.fitness < 1.0
+
+
+def test_arg_proximity_with_numeric_string():
+    policy = _policy()
+    far = _trace(
+        ToolCall(
+            id="1",
+            name="issue_refund",
+            arguments={"order_id": "o", "amount": "10", "approved": False},
+        )
+    )
+    near = _trace(
+        ToolCall(
+            id="1",
+            name="issue_refund",
+            arguments={"order_id": "o", "amount": "199", "approved": False},
+        )
+    )
+    far_r = score_fitness(policy, far, PolicyEvaluator().evaluate(policy, far, {}))
+    near_r = score_fitness(policy, near, PolicyEvaluator().evaluate(policy, near, {}))
+    assert near_r.fitness >= far_r.fitness
+    assert near_r.fitness < 1.0
+
