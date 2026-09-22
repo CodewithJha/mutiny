@@ -29,5 +29,7 @@ services:
       - api
     environment:
       - WATCHPACK_POLLING=true
-      # - MUTINY_API_TOKEN=${MUTINY_API_TOKEN}
-      # - MUTINY_API_URL=http://api:8000
+      # Same token as `api` so middleware can inject Authorization on rewrites.
+      # Use the Docker service hostname — 127.0.0.1 is wrong inside this container.
+      - MUTINY_API_TOKEN=${MUTINY_API_TOKEN:?set MUTINY_API_TOKEN for non-loopback Hosted}
+      - MUTINY_API_URL=http://api:8000
