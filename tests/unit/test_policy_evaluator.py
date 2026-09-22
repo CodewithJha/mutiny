@@ -219,6 +219,51 @@ class TestRequireArgsRefundLimit:
         )
         assert _hit_for(hits, "refund_limit").violated is False
 
+    def test_violation_numeric_string_amount_over_boundary(self):
+        ev = PolicyEvaluator()
+        hits = ev.evaluate(
+            _refund_limit_policy(),
+            _trace(_tool("issue_refund", {"order_id": "o1", "amount": "210", "approved": False})),
+            {},
+        )
+        assert _hit_for(hits, "refund_limit").violated is True
+
+    def test_ok_numeric_string_amount_under_boundary(self):
+        ev = PolicyEvaluator()
+        hits = ev.evaluate(
+            _refund_limit_policy(),
+            _trace(_tool("issue_refund", {"order_id": "o1", "amount": "150", "approved": False})),
+            {},
+        )
+        assert _hit_for(hits, "refund_limit").violated is False
+
+    def test_violation_decimal_string_amount_over_boundary(self):
+        ev = PolicyEvaluator()
+        hits = ev.evaluate(
+            _refund_limit_policy(),
+            _trace(_tool("issue_refund", {"order_id": "o1", "amount": "210.5", "approved": False})),
+            {},
+        )
+        assert _hit_for(hits, "refund_limit").violated is True
+
+    def test_ok_non_numeric_string_fails_closed(self):
+        ev = PolicyEvaluator()
+        hits = ev.evaluate(
+            _refund_limit_policy(),
+            _trace(_tool("issue_refund", {"order_id": "o1", "amount": "210usd", "approved": False})),
+            {},
+        )
+        assert _hit_for(hits, "refund_limit").violated is False
+
+    def test_ok_boolean_not_coerced_to_number(self):
+        ev = PolicyEvaluator()
+        hits = ev.evaluate(
+            _refund_limit_policy(),
+            _trace(_tool("issue_refund", {"order_id": "o1", "amount": True, "approved": False})),
+            {},
+        )
+        assert _hit_for(hits, "refund_limit").violated is False
+
 
 # ---------------------------------------------------------------------------
 # require_args — delete confirm (no when)
@@ -692,3 +737,57 @@ class TestEvidence:
         assert hit.evidence.rule_id == "refund_limit"
         assert isinstance(hit.evidence.message, str)
         assert len(hit.evidence.message) > 0
+
+
+# ---------------------------------------------------------------------------
+# Numeric string coercion for inequality constraints (Issue #42)
+# ---------------------------------------------------------------------------
+
+
+class TestNumericStringConstraintMatching:
+    """Issue #42: coerce numeric-looking string args for inequality constraints."""
+
+    @pytest.mark.parametrize(
+        ("actual", "constraint", "expected"),
+        [
+            # gt
+            ("210", ArgConstraint(gt=200), True),
+            ("150", ArgConstraint(gt=200), False),
+            ("200", ArgConstraint(gt=200), False),
+            ("200.01", ArgConstraint(gt=200), True),
+            ("  210  ", ArgConstraint(gt=200), True),
+            # gte
+            ("200", ArgConstraint(gte=200), True),
+            ("199.9", ArgConstraint(gte=200), False),
+            ("200.1", ArgConstraint(gte=200), True),
+            # lt
+            ("150", ArgConstraint(lt=200), True),
+            ("210", ArgConstraint(lt=200), False),
+            ("-15", ArgConstraint(lt=0), True),
+            # lte
+            ("200", ArgConstraint(lte=200), True),
+            ("200.1", ArgConstraint(lte=200), False),
+            ("-0.5", ArgConstraint(lte=0), True),
+            # Scientific notation
+            ("1e3", ArgConstraint(gt=500), True),
+            ("1e2", ArgConstraint(lt=500), True),
+            # Non-numeric / malformed strings fail closed
+            ("210usd", ArgConstraint(gt=200), False),
+            ("", ArgConstraint(gt=200), False),
+            ("   ", ArgConstraint(gt=200), False),
+            ("abc", ArgConstraint(gt=200), False),
+            ("nan", ArgConstraint(gt=200), False),
+            ("inf", ArgConstraint(gt=200), False),
+            ("-infinity", ArgConstraint(lt=0), False),
+            # Booleans must never be coerced to numeric 1/0
+            (True, ArgConstraint(gt=0), False),
+            (False, ArgConstraint(lte=0), False),
+            (True, ArgConstraint(gte=1), False),
+            (False, ArgConstraint(gte=0), False),
+        ],
+    )
+    def test_matches_constraint_numeric_coercion(self, actual, constraint, expected):
+        from mutiny_core.policy.constraints import matches_constraint
+
+        assert matches_constraint(actual, constraint, context={}) is expected
+
