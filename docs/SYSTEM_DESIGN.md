@@ -277,6 +277,15 @@ Evaluation is **pure**: `(PolicySet, ExecutionTrace, context) → list[PolicyHit
 
 Context supplies deterministic facts (e.g. `customer.email`). No LLM calls.
 
+### Constraint operators
+
+`ArgConstraint` supports deterministic matching over tool arguments:
+- **Equality / inequality:** `eq`, `ne`
+- **Numeric comparisons:** `gt`, `gte`, `lt`, `lte` (supports numeric string coercion per Issue #42)
+- **String patterns:** `contains`, `startswith`, `endswith` (Issue #23)
+
+Multiple operators on the same constraint are combined with logical AND: all present operators must evaluate to True. Values may reference context via `$context.path.to.value`. If an argument or expected pattern is not a string (or missing), string operator evaluation fails closed (`False`).
+
 **Secret redaction (M-PR3):** Policy evaluation runs on raw in-memory traces. Durable/user-visible copies (campaign event dumps, Hosted SQLite traces/hits/events/test evidence, CLI test evidence) pass through `mutiny_core.redact.redact_secrets` before persist/display. This is a small deterministic filter for common credential keys and `Authorization: Bearer` strings — not a universal secret detector.
 
 ### Policy generation (product surface)

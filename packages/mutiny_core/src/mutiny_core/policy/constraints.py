@@ -1,10 +1,16 @@
 """Deterministic argument constraint matching.
 
-Supports operators: eq, ne, gt, gte, lt, lte.
+Supports operators:
+- Equality / inequality: ``eq``, ``ne``
+- Numeric inequalities: ``gt``, ``gte``, ``lt``, ``lte``
+- String patterns: ``contains``, ``startswith``, ``endswith``
 
 Context references use the form ``$context.path.to.value`` (e.g.
 ``$context.customer.email``). Context is supplied by the adapter; evaluation
 never calls an LLM.
+
+Multiple operators on the same ``ArgConstraint`` are combined with logical AND:
+all present operators must evaluate to True for the constraint to match.
 """
 
 from __future__ import annotations
@@ -16,6 +22,18 @@ from pydantic import BaseModel, model_validator
 
 CONTEXT_PREFIX = "$context."
 
+CONSTRAINT_OPERATORS = (
+    "eq",
+    "ne",
+    "gt",
+    "gte",
+    "lt",
+    "lte",
+    "contains",
+    "startswith",
+    "endswith",
+)
+
 
 class ArgConstraint(BaseModel):
     """Constraint over a single tool argument (or context-resolved value)."""
@@ -26,24 +44,19 @@ class ArgConstraint(BaseModel):
     gte: int | float | None = None
     lt: int | float | None = None
     lte: int | float | None = None
+    contains: str | None = None
+    startswith: str | None = None
+    endswith: str | None = None
 
     @model_validator(mode="after")
     def _at_least_one_operator(self) -> ArgConstraint:
-        if all(
-            getattr(self, op) is None
-            for op in ("eq", "ne", "gt", "gte", "lt", "lte")
-        ):
-            raise ValueError(
-                "ArgConstraint requires at least one of: eq, ne, gt, gte, lt, lte"
-            )
+        if all(getattr(self, op) is None for op in CONSTRAINT_OPERATORS):
+            ops = ", ".join(CONSTRAINT_OPERATORS)
+            raise ValueError(f"ArgConstraint requires at least one of: {ops}")
         return self
 
     def operators_present(self) -> list[str]:
-        return [
-            op
-            for op in ("eq", "ne", "gt", "gte", "lt", "lte")
-            if getattr(self, op) is not None
-        ]
+        return [op for op in CONSTRAINT_OPERATORS if getattr(self, op) is not None]
 
 
 def resolve_context_value(ref: Any, context: dict[str, Any]) -> Any:
@@ -90,12 +103,12 @@ def matches_constraint(
 ) -> bool:
     """Return True iff *actual* satisfies all operators on *constraint* (AND).
 
-    Missing actual (None) fails numeric and equality checks unless comparing
+    Missing actual (None) fails numeric, string, and equality checks unless comparing
     eq/ne against an explicitly resolved None (rare).
     """
     for op in constraint.operators_present():
         expected = getattr(constraint, op)
-        if op in ("eq", "ne"):
+        if op in ("eq", "ne", "contains", "startswith", "endswith"):
             expected = resolve_context_value(expected, context)
 
         if op == "eq":
@@ -103,6 +116,15 @@ def matches_constraint(
                 return False
         elif op == "ne":
             if _values_equal(actual, expected):
+                return False
+        elif op in ("contains", "startswith", "endswith"):
+            if not isinstance(actual, str) or not isinstance(expected, str):
+                return False
+            if op == "contains" and expected not in actual:
+                return False
+            if op == "startswith" and not actual.startswith(expected):
+                return False
+            if op == "endswith" and not actual.endswith(expected):
                 return False
         else:
             left = _as_number(actual)

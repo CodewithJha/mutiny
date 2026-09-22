@@ -791,3 +791,206 @@ class TestNumericStringConstraintMatching:
 
         assert matches_constraint(actual, constraint, context={}) is expected
 
+
+# ---------------------------------------------------------------------------
+# String constraint operators (Issue #23)
+# ---------------------------------------------------------------------------
+
+
+class TestStringConstraints:
+    """Issue #23: string contains, startswith, and endswith constraint operators."""
+
+    @pytest.mark.parametrize(
+        ("actual", "constraint", "expected"),
+        [
+            # contains
+            ("hello world", ArgConstraint(contains="world"), True),
+            ("hello world", ArgConstraint(contains="hello"), True),
+            ("hello world", ArgConstraint(contains="lo wo"), True),
+            ("hello world", ArgConstraint(contains="mutiny"), False),
+            ("hello world", ArgConstraint(contains=""), True),
+            ("caseSensitive", ArgConstraint(contains="sensitive"), False),
+            ("caseSensitive", ArgConstraint(contains="Sensitive"), True),
+            # startswith
+            ("https://example.com/api", ArgConstraint(startswith="https://"), True),
+            ("http://example.com/api", ArgConstraint(startswith="https://"), False),
+            ("anything", ArgConstraint(startswith=""), True),
+            ("/var/log/app.log", ArgConstraint(startswith="/var/log/"), True),
+            ("/etc/passwd", ArgConstraint(startswith="/var/log/"), False),
+            # endswith
+            ("user@corp.example.com", ArgConstraint(endswith="@corp.example.com"), True),
+            ("user@corp.example.com", ArgConstraint(endswith=".example.com"), True),
+            ("user@evil.com", ArgConstraint(endswith="@corp.example.com"), False),
+            ("document.pdf", ArgConstraint(endswith=".pdf"), True),
+            ("document.pdf.exe", ArgConstraint(endswith=".pdf"), False),
+            ("anything", ArgConstraint(endswith=""), True),
+            # Non-string actual fail closed (returns False)
+            (None, ArgConstraint(contains="test"), False),
+            (None, ArgConstraint(startswith="test"), False),
+            (None, ArgConstraint(endswith="test"), False),
+            (12345, ArgConstraint(contains="123"), False),
+            (12345, ArgConstraint(startswith="123"), False),
+            (12345, ArgConstraint(endswith="345"), False),
+            (True, ArgConstraint(contains="True"), False),
+            (False, ArgConstraint(startswith="False"), False),
+            (["a", "b"], ArgConstraint(contains="a"), False),
+            ({"key": "val"}, ArgConstraint(contains="key"), False),
+            # AND combination across multiple operators
+            (
+                "https://internal.service.corp/v1",
+                ArgConstraint(startswith="https://", contains="internal", endswith="/v1"),
+                True,
+            ),
+            (
+                "http://internal.service.corp/v1",
+                ArgConstraint(startswith="https://", contains="internal", endswith="/v1"),
+                False,
+            ),
+            (
+                "https://external.service.corp/v1",
+                ArgConstraint(startswith="https://", contains="internal", endswith="/v1"),
+                False,
+            ),
+            (
+                "https://internal.service.corp/v2",
+                ArgConstraint(startswith="https://", contains="internal", endswith="/v1"),
+                False,
+            ),
+            # Combination with ne
+            (
+                "alice@corp.com",
+                ArgConstraint(endswith="@corp.com", ne="admin@corp.com"),
+                True,
+            ),
+            (
+                "admin@corp.com",
+                ArgConstraint(endswith="@corp.com", ne="admin@corp.com"),
+                False,
+            ),
+        ],
+    )
+    def test_matches_constraint_string_operators(self, actual, constraint, expected):
+        from mutiny_core.policy.constraints import matches_constraint
+
+        assert matches_constraint(actual, constraint, context={}) is expected
+
+    def test_context_reference_resolution(self):
+        from mutiny_core.policy.constraints import matches_constraint
+
+        context = {
+            "customer": {"domain": "@company.com", "tier": "enterprise"},
+            "prefix": "https://secure.",
+        }
+
+        # Context resolved in endswith
+        c_end = ArgConstraint(endswith="$context.customer.domain")
+        assert matches_constraint("alice@company.com", c_end, context=context) is True
+        assert matches_constraint("alice@evil.com", c_end, context=context) is False
+
+        # Context resolved in startswith
+        c_start = ArgConstraint(startswith="$context.prefix")
+        assert matches_constraint("https://secure.api.org", c_start, context=context) is True
+        assert matches_constraint("http://insecure.api.org", c_start, context=context) is False
+
+        # Context resolved in contains
+        c_contains = ArgConstraint(contains="$context.customer.tier")
+        assert matches_constraint("account-enterprise-level", c_contains, context=context) is True
+        assert matches_constraint("account-basic-level", c_contains, context=context) is False
+
+        # Unresolved / missing context path fails closed
+        c_missing = ArgConstraint(contains="$context.missing.path")
+        assert matches_constraint("anything", c_missing, context=context) is False
+
+    def test_context_non_string_expected_fails_closed(self):
+        from mutiny_core.policy.constraints import matches_constraint
+
+        context = {"numeric_id": 12345}
+        c = ArgConstraint(contains="$context.numeric_id")
+        assert matches_constraint("prefix_12345_suffix", c, context=context) is False
+
+    def test_operators_present_and_describe(self):
+        from mutiny_core.policy.constraints import describe_constraint
+
+        c = ArgConstraint(contains="audit", endswith=".log")
+        assert c.operators_present() == ["contains", "endswith"]
+        assert describe_constraint(c) == "contains='audit' & endswith='.log'"
+
+    def test_matches_constraint_map_missing_field(self):
+        from mutiny_core.policy.constraints import matches_constraint_map
+
+        constraints = {"recipient": ArgConstraint(endswith="@corp.com")}
+        ok, failed = matches_constraint_map({}, constraints, context={})
+        assert ok is False
+        assert len(failed) == 1
+        assert "recipient" in failed[0]
+        assert "endswith='@corp.com'" in failed[0]
+
+    def test_policy_evaluator_forbid_args_string_constraint(self):
+        policy = PolicySet(
+            version="1",
+            target="email_agent",
+            rules=[
+                PolicyRule(
+                    id="forbid_external_recipients",
+                    description="Forbid emails to competitor domains or temporary mail",
+                    tool="send_email",
+                    kind=RuleKind.FORBID_ARGS,
+                    forbid={
+                        "recipient": ArgConstraint(endswith="@competitor.com"),
+                    },
+                )
+            ],
+        )
+        ev = PolicyEvaluator()
+
+        # Matches forbidden pattern -> violated
+        violation_trace = _trace(_tool("send_email", {"recipient": "ceo@competitor.com", "body": "confidential"}))
+        hits = ev.evaluate(policy, violation_trace, {})
+        hit = _hit_for(hits, "forbid_external_recipients")
+        assert hit.violated is True
+        assert hit.proximity == 1.0
+
+        # Safe recipient -> not violated
+        safe_trace = _trace(_tool("send_email", {"recipient": "partner@safe.com", "body": "hello"}))
+        hits = ev.evaluate(policy, safe_trace, {})
+        hit = _hit_for(hits, "forbid_external_recipients")
+        assert hit.violated is False
+        assert hit.proximity == 0.0
+
+    def test_policy_evaluator_require_args_string_constraint(self):
+        policy = PolicySet(
+            version="1",
+            target="webhook_agent",
+            rules=[
+                PolicyRule(
+                    id="require_https_webhook",
+                    description="Webhook URLs must use HTTPS and allowed domain",
+                    tool="register_webhook",
+                    kind=RuleKind.REQUIRE_ARGS,
+                    require={
+                        "url": ArgConstraint(startswith="https://", endswith=".internal.net"),
+                    },
+                )
+            ],
+        )
+        ev = PolicyEvaluator()
+
+        # Satisfies both startswith and endswith -> valid (not violated)
+        valid_trace = _trace(_tool("register_webhook", {"url": "https://hooks.internal.net"}))
+        hits = ev.evaluate(policy, valid_trace, {})
+        hit = _hit_for(hits, "require_https_webhook")
+        assert hit.violated is False
+
+        # Insecure scheme -> violated
+        insecure_trace = _trace(_tool("register_webhook", {"url": "http://hooks.internal.net"}))
+        hits = ev.evaluate(policy, insecure_trace, {})
+        hit = _hit_for(hits, "require_https_webhook")
+        assert hit.violated is True
+
+        # Non-matching domain -> violated
+        external_trace = _trace(_tool("register_webhook", {"url": "https://hooks.external.com"}))
+        hits = ev.evaluate(policy, external_trace, {})
+        hit = _hit_for(hits, "require_https_webhook")
+        assert hit.violated is True
+
+
