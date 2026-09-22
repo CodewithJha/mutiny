@@ -84,6 +84,14 @@ mutiny test --failed
 mutiny test some_regression_id --json
 ```
 
+Example human output:
+
+```text
+Summary: 1 passed, 0 failed, 0 skipped
+Report:  .mutiny/test-report.json
+```
+
+
 ---
 
 ## `mutiny db` (Hosted SQLite — P2-6)
