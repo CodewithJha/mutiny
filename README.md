@@ -401,17 +401,17 @@ Thanks to everyone who has contributed. New faces welcome — pick up a [`good f
                 </a>
             </td>
             <td align="center">
-                <a href="https://github.com/slsgzs-cloud">
-                    <img src="https://github.com/slsgzs-cloud.png?size=100" width="100" height="100" alt="slsgzs-cloud"/>
-                    <br />
-                    <sub><b>slsgzs-cloud</b></sub>
-                </a>
-            </td>
-            <td align="center">
                 <a href="https://github.com/DYNOSuprovo">
                     <img src="https://github.com/DYNOSuprovo.png?size=100" width="100" height="100" alt="DYNOSuprovo"/>
                     <br />
                     <sub><b>DYNOSuprovo</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/slsgzs-cloud">
+                    <img src="https://github.com/slsgzs-cloud.png?size=100" width="100" height="100" alt="slsgzs-cloud"/>
+                    <br />
+                    <sub><b>slsgzs-cloud</b></sub>
                 </a>
             </td>
             <td align="center">
