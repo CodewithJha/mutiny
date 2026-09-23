@@ -7,6 +7,16 @@ import sys
 from pathlib import Path
 
 
+def get_version() -> str:
+    """Return installed mutiny-ai version, or a fallback if not installed."""
+    try:
+        from importlib.metadata import PackageNotFoundError, version
+
+        return version("mutiny-ai")
+    except (PackageNotFoundError, ImportError):
+        return "0.2.0 (source)"
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="mutiny",
@@ -14,6 +24,13 @@ def main(argv: list[str] | None = None) -> int:
             "Mutiny — behavioral fuzz-testing engine for AI agents. "
             "Commands: init, run, test, db."
         ),
+    )
+    parser.add_argument(
+        "--version",
+        "-V",
+        action="version",
+        version=f"%(prog)s {get_version()}",
+        help="Show program's version number and exit.",
     )
     sub = parser.add_subparsers(dest="command", required=True)
 

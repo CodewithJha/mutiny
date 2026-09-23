@@ -4,17 +4,33 @@ Console script from the **`mutiny-ai`** PyPI package (`pip install mutiny-ai`).
 Source of truth for flags: `mutiny --help` and `mutiny <cmd> --help`.
 
 ```text
-usage: mutiny [-h] {init,run,test} ...
+usage: mutiny [-h] [--version] {db,init,run,test} ...
 
 Mutiny — behavioral fuzz-testing engine for AI agents. Commands: init, run,
-test.
+test, db.
+
+options:
+  -h, --help     show this help message and exit
+  --version, -V  show program's version number and exit
 
 positional arguments:
-  {init,run,test}
-    init           Scaffold .mutiny/adapter.py, policy.yaml, mutiny.yaml
-    run            Load adapter + policy and start a campaign
-    test           Replay project regressions under .mutiny/tests/
-                   (PASS/FAIL/SKIPPED report)
+  {db,init,run,test}
+    db           Operator tools for Hosted SQLite lineage data (backup / restore)
+    init         Scaffold .mutiny/adapter.py, policy.yaml, mutiny.yaml
+    run          Load adapter + policy and start a campaign
+    test         Replay project regressions under .mutiny/tests/
+                 (PASS/FAIL/SKIPPED report)
+```
+
+---
+
+## `mutiny --version`
+
+Print the version string from installed package metadata (`mutiny-ai`):
+
+```bash
+mutiny --version
+mutiny -V
 ```
 
 ---
