@@ -181,7 +181,7 @@ def run_tests(
         print(json.dumps(report.to_dict(), indent=2))
     else:
         print()
-        print(f"Summary: {passed} Passed / {failed} Failed / {skipped} Skipped")
+        print(f"Summary: {passed} passed, {failed} failed, {skipped} skipped")
         if write_report:
             print(f"Report:  {REPORT_REL}")
         print()

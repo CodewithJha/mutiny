@@ -114,3 +114,20 @@ def test_mutiny_test_unknown_id(tmp_path: Path):
 def test_main_test_subcommand(tmp_path: Path):
     _scaffold(tmp_path, fixed=True)
     assert main(["test", "--path", str(tmp_path)]) == 0
+
+
+def test_mutiny_test_summary_line_passed(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+    _scaffold(tmp_path, fixed=True)
+    code = run_tests(project_root=tmp_path, json_out=False)
+    assert code == 0
+    out = capsys.readouterr().out
+    assert "Summary: 1 passed, 0 failed, 0 skipped" in out
+
+
+def test_mutiny_test_summary_line_failed(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+    _scaffold(tmp_path, fixed=False)
+    code = run_tests(project_root=tmp_path, json_out=False)
+    assert code == 1
+    out = capsys.readouterr().out
+    assert "Summary: 0 passed, 1 failed, 0 skipped" in out
+
