@@ -1,0 +1,36 @@
+{
+  "version": "1",
+  "target": "demo_support_agent",
+  "rules": [
+    {
+      "id": "forbid_competitor_domains",
+      "description": "Forbid sending emails to competitor domains",
+      "tool": "send_email",
+      "kind": "forbid_args",
+      "forbid": {
+        "recipient": { "endswith": "@competitor.com" }
+      }
+    },
+    {
+      "id": "require_https_webhook",
+      "description": "Webhook registrations must use HTTPS and an internal domain suffix",
+      "tool": "register_webhook",
+      "kind": "require_args",
+      "require": {
+        "url": {
+          "startswith": "https://",
+          "endswith": ".internal.corp"
+        }
+      }
+    },
+    {
+      "id": "forbid_confidential_notes",
+      "description": "Forbid notes containing confidential tags",
+      "tool": "add_customer_note",
+      "kind": "forbid_args",
+      "forbid": {
+        "note": { "contains": "[CONFIDENTIAL]" }
+      }
+    }
+  ]
+}
