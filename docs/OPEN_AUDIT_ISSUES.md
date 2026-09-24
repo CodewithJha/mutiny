@@ -2,7 +2,7 @@
 
 Lightweight index of GitHub issues filed from the Mutiny deep audit (findings MUT-001–MUT-068). This is **not** another audit.
 
-Verified against repo `main` (`d904db9`, after contributor PRs #83–#87 and #89).
+Verified against repo `main` (`f552b23`, after contributor PRs #83–#86, #88, #89; #87 reverted in #90).
 
 **How to pick work**
 
@@ -14,7 +14,7 @@ Verified against repo `main` (`d904db9`, after contributor PRs #83–#87 and #89
 
 Existing issues that already covered a finding were **not** duplicated: redaction **[#16](https://github.com/CodewithJha/mutiny/issues/16)**, Dependabot/CODEOWNERS **[#20](https://github.com/CodewithJha/mutiny/issues/20)**, `mutiny --version` **[#26](https://github.com/CodewithJha/mutiny/issues/26)** (shipped).
 
-**Shipped from later contributor PRs:** [#66](https://github.com/CodewithJha/mutiny/issues/66) / MUT-017 ([#83](https://github.com/CodewithJha/mutiny/pull/83)), [#79](https://github.com/CodewithJha/mutiny/issues/79) / MUT-037 ([#84](https://github.com/CodewithJha/mutiny/pull/84)), [#72](https://github.com/CodewithJha/mutiny/issues/72) / MUT-024 ([#85](https://github.com/CodewithJha/mutiny/pull/85)), [#73](https://github.com/CodewithJha/mutiny/issues/73) / MUT-025 ([#86](https://github.com/CodewithJha/mutiny/pull/86)), [#71](https://github.com/CodewithJha/mutiny/issues/71) / MUT-023 ([#87](https://github.com/CodewithJha/mutiny/pull/87)), [#68](https://github.com/CodewithJha/mutiny/issues/68) / MUT-020 ([#89](https://github.com/CodewithJha/mutiny/pull/89)). #88 was a duplicate of #87.
+**Shipped from later contributor PRs:** [#66](https://github.com/CodewithJha/mutiny/issues/66) / MUT-017 ([#83](https://github.com/CodewithJha/mutiny/pull/83)), [#79](https://github.com/CodewithJha/mutiny/issues/79) / MUT-037 ([#84](https://github.com/CodewithJha/mutiny/pull/84)), [#72](https://github.com/CodewithJha/mutiny/issues/72) / MUT-024 ([#85](https://github.com/CodewithJha/mutiny/pull/85)), [#73](https://github.com/CodewithJha/mutiny/issues/73) / MUT-025 ([#86](https://github.com/CodewithJha/mutiny/pull/86)), [#71](https://github.com/CodewithJha/mutiny/issues/71) / MUT-023 ([#88](https://github.com/CodewithJha/mutiny/pull/88); [#87](https://github.com/CodewithJha/mutiny/pull/87) was reverted in [#90](https://github.com/CodewithJha/mutiny/pull/90)), [#68](https://github.com/CodewithJha/mutiny/issues/68) / MUT-020 ([#89](https://github.com/CodewithJha/mutiny/pull/89)).
 
 ---
 

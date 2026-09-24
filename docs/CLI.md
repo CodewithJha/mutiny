@@ -96,6 +96,10 @@ mutiny run --no-hosted   # same as default local
 
 Replay regressions under `.mutiny/tests/` and print a PASS / FAIL / SKIPPED report.
 
+Any failed or unexpected skipped case exits `1`, even if other cases pass
+(corrupt JSON, invalid schema, replay errors). Use `--allow-skip` to exit `0`
+when at least one case passed and the rest were skipped. Skip-only still exits `1`.
+
 | Arg / flag | Default | Meaning |
 |---|---|---|
 | `regression_id` | (all) | Optional id or name to run one case |
@@ -103,6 +107,7 @@ Replay regressions under `.mutiny/tests/` and print a PASS / FAIL / SKIPPED repo
 | `--failed` | off | Re-run only cases that failed in the last `.mutiny/test-report.json` |
 | `--json` | off | Print structured JSON report to stdout |
 | `--no-report` | off | Do not write `.mutiny/test-report.json` |
+| `--allow-skip` | off | Exit `0` when some cases passed even if others were skipped |
 
 ```bash
 mutiny test
