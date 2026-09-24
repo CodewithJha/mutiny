@@ -89,6 +89,43 @@ def _scaffold(tmp: Path, *, api_url: str = "http://127.0.0.1:8000") -> Path:
     return tmp
 
 
+@pytest.mark.parametrize("existing", [False, True])
+def test_successive_findings_preserve_files_and_replay_both(tmp_path, monkeypatch, existing):
+    from mutiny_cli.test_cmd import discover_regressions, run_tests
+    from mutiny_core import load_project_policy
+
+    _scaffold(tmp_path)
+    monkeypatch.setattr(run_cmd, "try_featherless_from_env", lambda: None)
+    policy, _ = load_project_policy(tmp_path)
+    config = yaml.safe_load((tmp_path / "mutiny.yaml").read_text())
+    old_path = tmp_path / ".mutiny/tests/cli_discovered_violation.json"
+    if existing:
+        old_path.parent.mkdir()
+        old_path.write_bytes(b"existing user artifact\n")
+    first = run_cmd._run_local(tmp_path, config, policy)
+    first_path = tmp_path / first.regression_path
+    first_bytes = first_path.read_bytes()
+    second = run_cmd._run_local(tmp_path, config, policy)
+    assert first.regression_id != second.regression_id
+    assert first_path.read_bytes() == first_bytes
+    if existing:
+        assert old_path.read_bytes() == b"existing user artifact\n"
+    cases = discover_regressions(tmp_path)
+    valid = [case for case in cases if case["artifact"] is not None]
+    assert {case["id"] for case in valid} == {first.regression_id, second.regression_id}
+    for outcome in (first, second):
+        assert outcome.regression_artifact["name"] == outcome.regression_id
+        event = next(e for e in outcome.events if e.type == EventType.REGRESSION_CREATED)
+        assert event.payload["regression_id"] == outcome.regression_id
+        assert event.payload["path"] == outcome.regression_path
+    # Replay every saved case through the CLI's normal discovery path.
+    assert run_tests(project_root=tmp_path) == 1  # demo remains vulnerable
+    report = json.loads((tmp_path / ".mutiny/test-report.json").read_text())
+    assert {r["id"] for r in report["results"] if r["status"] == "FAIL"} == {
+        first.regression_id, second.regression_id,
+    }
+
+
 def _scored(
     cid: str = "cand-1",
     *,
