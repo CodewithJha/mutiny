@@ -131,3 +131,58 @@ def test_mutiny_test_summary_line_failed(tmp_path: Path, capsys: pytest.CaptureF
     out = capsys.readouterr().out
     assert "Summary: 0 passed, 1 failed, 0 skipped" in out
 
+
+def test_mutiny_test_pass_and_corrupt_json_fails_without_allow_skip(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    _scaffold(tmp_path, fixed=True)
+    # Add an invalid JSON regression fixture
+    (tmp_path / ".mutiny" / "tests" / "corrupt.json").write_text(
+        "{invalid json", encoding="utf-8"
+    )
+
+    code = run_tests(project_root=tmp_path, json_out=False)
+    assert code == 1
+    out = capsys.readouterr().out
+    assert "Summary: 1 passed, 0 failed, 1 skipped" in out
+
+    report = json.loads((tmp_path / ".mutiny" / "test-report.json").read_text())
+    assert report["passed"] == 1
+    assert report["failed"] == 0
+    assert report["skipped"] == 1
+    assert any(
+        r["status"] == "SKIPPED" and "invalid regression JSON: corrupt.json" in str(r.get("error"))
+        for r in report["results"]
+    )
+
+
+def test_mutiny_test_pass_and_corrupt_json_with_allow_skip(tmp_path: Path):
+    _scaffold(tmp_path, fixed=True)
+    (tmp_path / ".mutiny" / "tests" / "corrupt.json").write_text(
+        "{invalid json", encoding="utf-8"
+    )
+
+    # Function call with allow_skip=True
+    code = run_tests(project_root=tmp_path, allow_skip=True)
+    assert code == 0
+
+    # CLI call without --allow-skip
+    assert main(["test", "--path", str(tmp_path)]) == 1
+
+    # CLI call with --allow-skip
+    assert main(["test", "--path", str(tmp_path), "--allow-skip"]) == 0
+
+
+def test_mutiny_test_skip_only_fails_even_with_allow_skip(tmp_path: Path):
+    (tmp_path / ".mutiny" / "tests").mkdir(parents=True)
+    shutil.copy(DEMO_POLICY, tmp_path / "policy.json")
+    (tmp_path / ".mutiny" / "adapter.py").write_text(ADAPTER_SRC, encoding="utf-8")
+    (tmp_path / ".mutiny" / "tests" / "corrupt.json").write_text(
+        "{invalid json", encoding="utf-8"
+    )
+
+    # Skip-only must still return non-zero even if allow_skip=True
+    assert run_tests(project_root=tmp_path, allow_skip=False) == 1
+    assert run_tests(project_root=tmp_path, allow_skip=True) == 1
+
+

@@ -130,6 +130,11 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Do not write .mutiny/test-report.json",
     )
+    test_p.add_argument(
+        "--allow-skip",
+        action="store_true",
+        help="Exit 0 when tests pass even if some regression files are skipped",
+    )
 
     args = parser.parse_args(argv)
     if args.command == "init":
@@ -155,6 +160,7 @@ def main(argv: list[str] | None = None) -> int:
             failed_only=args.failed,
             json_out=args.json_out,
             write_report=not args.no_report,
+            allow_skip=args.allow_skip,
         )
     if args.command == "db":
         from mutiny_cli.db_cmd import run_db_command
