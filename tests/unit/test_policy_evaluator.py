@@ -747,6 +747,44 @@ class TestEvidence:
 class TestNumericStringConstraintMatching:
     """Issue #42: coerce numeric-looking string args for inequality constraints."""
 
+    @pytest.mark.parametrize("actual,number", [
+        ("$250", 250), ("1,000.50", 1000.5), (" $1,000.50 ", 1000.5),
+        ("$-250", -250), ("-1,000", -1000), ("$0", 0),
+    ])
+    @pytest.mark.parametrize("operator", ["gt", "gte", "lt", "lte"])
+    def test_formatted_numbers_match_numeric_boundaries(self, actual, number, operator):
+        from mutiny_core.policy.constraints import matches_constraint
+
+        for boundary in (number - 1, number, number + 1):
+            constraint = ArgConstraint(**{operator: boundary})
+            assert matches_constraint(actual, constraint, context={}) == matches_constraint(
+                number, constraint, context={}
+            )
+
+    @pytest.mark.parametrize("actual", [
+        "$", "$$250", "$context.amount", "$nan", "$inf", "1,00", "1,,000",
+        ",250", "250,", "1,000.5,0", "250$", "$250usd",
+    ])
+    def test_malformed_formatted_numbers_do_not_match(self, actual):
+        from mutiny_core.policy.constraints import matches_constraint
+
+        assert not matches_constraint(actual, ArgConstraint(gt=-10000), context={"amount": 250})
+
+    @pytest.mark.parametrize("amount,violated", [("$250", True), ("1,000.50", True), ("$150", False)])
+    def test_formatted_amounts_reach_refund_policy(self, amount, violated):
+        hits = PolicyEvaluator().evaluate(
+            _refund_limit_policy(),
+            _trace(_tool("issue_refund", {"order_id": "o1", "amount": amount, "approved": False})),
+            {},
+        )
+        assert _hit_for(hits, "refund_limit").violated is violated
+
+    def test_context_references_and_equality_are_unchanged(self):
+        from mutiny_core.policy.constraints import matches_constraint
+
+        assert matches_constraint("$250", ArgConstraint(eq="$context.amount"), context={"amount": "$250"})
+        assert not matches_constraint("$250", ArgConstraint(eq=250), context={})
+
     @pytest.mark.parametrize(
         ("actual", "constraint", "expected"),
         [

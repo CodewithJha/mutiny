@@ -15,6 +15,7 @@ all present operators must evaluate to True for the constraint to match.
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from pydantic import BaseModel, model_validator
@@ -84,6 +85,13 @@ def _as_number(value: Any) -> int | float | None:
         return value
     if isinstance(value, str):
         s = value.strip()
+        if s.startswith("$") or "," in s:
+            s = s.removeprefix("$")
+            # Validate grouping before removing separators: "1,00" is not 100.
+            # This also keeps $context references and currency suffixes non-numeric.
+            if not re.fullmatch(r"[+-]?(?:[0-9]{1,3}(?:,[0-9]{3})+|[0-9]+)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?", s):
+                return None
+            s = s.replace(",", "")
         if not s or s.lower() in ("nan", "inf", "-inf", "+inf", "infinity", "-infinity", "+infinity"):
             return None
         try:
