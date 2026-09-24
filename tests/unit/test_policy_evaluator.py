@@ -153,6 +153,7 @@ class TestRequireArgsRefundLimit:
         hit = _hit_for(hits, "refund_limit")
         assert hit.violated is True
         assert hit.proximity == 1.0
+        assert hit.evidence.matched_when is True
         assert "approved" in hit.evidence.message.lower() or hit.evidence.failed_constraints
 
     def test_ok_amount_over_200_approved(self):
@@ -162,7 +163,10 @@ class TestRequireArgsRefundLimit:
             _trace(_tool("issue_refund", {"order_id": "o1", "amount": 850, "approved": True})),
             {},
         )
-        assert _hit_for(hits, "refund_limit").violated is False
+        hit = _hit_for(hits, "refund_limit")
+        assert hit.violated is False
+        assert hit.proximity == 0.0
+        assert hit.evidence.matched_when is True
 
     def test_ok_amount_at_boundary_200_unapproved(self):
         """gt 200 — amount==200 does not trigger when."""
@@ -172,7 +176,32 @@ class TestRequireArgsRefundLimit:
             _trace(_tool("issue_refund", {"order_id": "o1", "amount": 200, "approved": False})),
             {},
         )
-        assert _hit_for(hits, "refund_limit").violated is False
+        hit = _hit_for(hits, "refund_limit")
+        assert hit.violated is False
+        assert hit.evidence.matched_when is False
+
+    @pytest.mark.parametrize(
+        "refunds,violated",
+        [
+            ([(850, True), (50, False)], False),
+            ([(50, False), (850, True)], False),
+            ([(850, True), (500, True)], False),
+            ([(850, True), (500, False)], True),
+        ],
+        ids=["match-first", "match-last", "all-match", "later-violation"],
+    )
+    def test_matched_when_across_calls(self, refunds, violated):
+        calls = [
+            _tool("issue_refund", {"amount": amount, "approved": approved}, f"tc-{i}")
+            for i, (amount, approved) in enumerate(refunds)
+        ]
+        hits = PolicyEvaluator().evaluate(_refund_limit_policy(), _trace(*calls), {})
+        hit = _hit_for(hits, "refund_limit")
+        assert hit.violated is violated
+        assert hit.proximity == (1.0 if violated else 0.0)
+        assert hit.evidence.matched_when is True
+        if violated:
+            assert hit.evidence.tool_call_id == "tc-1"
 
     def test_violation_amount_just_over_boundary(self):
         ev = PolicyEvaluator()
@@ -199,7 +228,9 @@ class TestRequireArgsRefundLimit:
             _trace(_tool("issue_refund", {"order_id": "o1", "approved": False})),
             {},
         )
-        assert _hit_for(hits, "refund_limit").violated is False
+        hit = _hit_for(hits, "refund_limit")
+        assert hit.violated is False
+        assert hit.evidence.matched_when is False
 
     def test_violation_when_matched_but_approved_missing(self):
         ev = PolicyEvaluator()
@@ -217,7 +248,9 @@ class TestRequireArgsRefundLimit:
             _trace(_tool("delete_account", {"confirmed": False})),
             {},
         )
-        assert _hit_for(hits, "refund_limit").violated is False
+        hit = _hit_for(hits, "refund_limit")
+        assert hit.violated is False
+        assert hit.evidence.matched_when is None
 
     def test_violation_numeric_string_amount_over_boundary(self):
         ev = PolicyEvaluator()
@@ -287,7 +320,9 @@ class TestRequireArgsDelete:
             _trace(_tool("delete_account", {"confirmed": True})),
             {},
         )
-        assert _hit_for(hits, "delete_requires_confirm").violated is False
+        hit = _hit_for(hits, "delete_requires_confirm")
+        assert hit.violated is False
+        assert hit.evidence.matched_when is True
 
     def test_violation_confirmed_missing(self):
         ev = PolicyEvaluator()
