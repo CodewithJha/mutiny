@@ -57,6 +57,16 @@ Load the project adapter + policy and start an evolutionary campaign.
 **Default execution mode is local** (Core + `.mutiny/adapter.py`). Hosted is
 opt-in only.
 
+Verified findings are saved under `.mutiny/tests/`. The first uses
+`cli_discovered_violation.json`; later saves use `_1`, `_2`, and so on, skipping
+existing paths. Existing files are never overwritten, including during concurrent
+runs. `mutiny test` discovers all saved JSON files.
+
+To deliberately replace an old regression, back up that file, remove it from
+`.mutiny/tests/`, and run the campaign again. The next verified finding can reuse
+the freed name; if no finding reproduces, restore the backup. `mutiny run` has no
+`--force` flag (the `init --force` flag only controls scaffolding).
+
 | Flag | Default | Meaning |
 |---|---|---|
 | `--path PATH` | cwd | Project root |

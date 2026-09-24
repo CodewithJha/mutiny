@@ -389,9 +389,19 @@ def _maybe_minimize_and_save(
         return None
     out_dir = root / ".mutiny" / "tests"
     out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = out_dir / f"{artifact.name}.json"
-    artifact_dict = artifact.model_dump(mode="json")
-    out_path.write_text(json.dumps(artifact_dict, indent=2), encoding="utf-8")
+    base_name = artifact.name
+    suffix = 0
+    while True:
+        name = base_name if suffix == 0 else f"{base_name}_{suffix}"
+        out_path = out_dir / f"{name}.json"
+        artifact_dict = artifact.model_copy(update={"name": name}).model_dump(mode="json")
+        try:
+            # Exclusive creation also protects concurrent CLI runs from overwrites.
+            with out_path.open("x", encoding="utf-8") as stream:
+                json.dump(artifact_dict, stream, indent=2)
+            break
+        except FileExistsError:
+            suffix += 1
     print(f"  ✓ regression → {out_path.relative_to(root)}")
     print("  Next: fix the agent, then `mutiny test`")
     # Stable regression id for Hosted ingest (= local file stem).
