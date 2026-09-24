@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Literal
 
-from mutiny_core import PolicyValidationError, load_project_policy
+from mutiny_core import PolicyFileNotFoundError, PolicyValidationError, load_project_policy
 from mutiny_core.redact import redact_secrets
 from mutiny_core.regress import RegressionTest, ReplayResult, replay_regression
 from mutiny_openai_agents.loader import ensure_project_on_path, load_adapter_factory
@@ -73,15 +73,15 @@ def run_tests(
 
     try:
         policy, policy_path = load_project_policy(root)
-    except PolicyValidationError as exc:
-        print(f"error: invalid project policy — {exc}", file=sys.stderr)
-        return 2
-    except FileNotFoundError as exc:
+    except PolicyFileNotFoundError as exc:
         print(
             f"error: {exc}\n"
-            "  hint: run `mutiny init` or add policy.yaml / .mutiny/policy.yaml",
+            "  hint: run `mutiny init` first or add policy.yaml to your project",
             file=sys.stderr,
         )
+        return 2
+    except PolicyValidationError as exc:
+        print(f"error: invalid project policy — {exc}", file=sys.stderr)
         return 2
 
     cases = discover_regressions(root)
@@ -131,10 +131,12 @@ def run_tests(
     try:
         factory = load_adapter_factory(root)
         adapter = factory()
+        if hasattr(adapter, "_get_agent"):
+            adapter._get_agent()
     except Exception as exc:  # noqa: BLE001
         print(
-            f"error: could not load .mutiny/adapter.py — {exc}\n"
-            "  hint: ensure create_adapter() imports cleanly",
+            f"error: could not load adapter from .mutiny/adapter.py — {exc}\n"
+            "  hint: run `mutiny init` or ensure create_adapter() imports cleanly",
             file=sys.stderr,
         )
         return 2

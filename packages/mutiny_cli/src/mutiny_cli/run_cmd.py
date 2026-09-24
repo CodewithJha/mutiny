@@ -12,12 +12,15 @@ from typing import Any
 
 import yaml
 
+from pydantic import ValidationError
+
 from mutiny_core import (
     CampaignConfig,
     CampaignEngine,
     EventType,
     MutationEngine,
     MutinyEvent,
+    PolicyFileNotFoundError,
     PolicySet,
     PolicyValidationError,
     default_policy_seeds,
@@ -84,11 +87,34 @@ def run_campaign(
     # Config api_url alone is never enough.
     want_hosted = bool(hosted or hosted_url) and not no_hosted
 
-    config = _load_mutiny_yaml(root / "mutiny.yaml")
     try:
         policy, policy_path = load_project_policy(root)
+    except PolicyFileNotFoundError as exc:
+        print(
+            f"error: {exc}\n"
+            "  hint: run `mutiny init` first or add policy.yaml to your project",
+            file=sys.stderr,
+        )
+        return 2
     except PolicyValidationError as exc:
         print(f"error: invalid project policy — {exc}", file=sys.stderr)
+        return 2
+
+    config = _load_mutiny_yaml(root / "mutiny.yaml")
+    if config is None:
+        return 2
+
+    try:
+        core_cfg = CampaignConfig(
+            population_size=int(config.get("population_size", 8)),
+            max_generations=int(config.get("max_generations", 6)),
+            elite_count=int(config.get("elite_count", 2)),
+            max_turns=int(config.get("max_turns", 4)),
+            stop_on_first_violation=bool(config.get("stop_on_first_violation", True)),
+            wall_clock_seconds=config.get("wall_clock_seconds"),
+        )
+    except (ValidationError, ValueError, TypeError) as exc:
+        print(f"error: invalid mutiny.yaml — {exc}", file=sys.stderr)
         return 2
 
     if not attestation:
@@ -113,8 +139,8 @@ def run_campaign(
         f"{policy.target} · {len(policy.rules)} rule(s)"
     )
     print(
-        f"  search:  N={config.get('population_size', 8)} "
-        f"Gmax={config.get('max_generations', 6)} "
+        f"  search:  N={core_cfg.population_size} "
+        f"Gmax={core_cfg.max_generations} "
         f"seed={config.get('rng_seed', 0)}"
     )
     print("  safety:  attestation ✓ · authorized testing only")
@@ -142,9 +168,10 @@ def run_campaign(
             policy=policy,
             api_url=api_url,
             ui_url=ui_url,
+            core_cfg=core_cfg,
         )
 
-    outcome = _run_local(root, config, policy)
+    outcome = _run_local(root, config, policy, core_cfg=core_cfg)
     return outcome.exit_code
 
 
@@ -155,6 +182,8 @@ def _run_local_with_hosted_sync(
     policy: PolicySet,
     api_url: str,
     ui_url: str,
+    core_cfg: CampaignConfig | None = None,
+    adapter: Any | None = None,
 ) -> int:
     """Local Core campaign, then end-of-run Hosted ingest sync.
 
@@ -167,7 +196,14 @@ def _run_local_with_hosted_sync(
     print(f"  Hosted sync target: {api_url} (end-of-run ingest)")
     print()
 
-    outcome = _run_local(root, config, policy, campaign_id=campaign_id)
+    outcome = _run_local(
+        root,
+        config,
+        policy,
+        campaign_id=campaign_id,
+        core_cfg=core_cfg,
+        adapter=adapter,
+    )
 
     if outcome.result is None:
         # Catastrophic local failure before a CampaignResult — still attempt
@@ -225,6 +261,8 @@ def _run_local(
     policy: PolicySet,
     *,
     campaign_id: str | None = None,
+    core_cfg: CampaignConfig | None = None,
+    adapter: Any | None = None,
 ) -> LocalRunOutcome:
     cid = campaign_id or str(uuid.uuid4())
     started_at = (
@@ -233,19 +271,36 @@ def _run_local(
         .isoformat()
         .replace("+00:00", "Z")
     )
-    factory = load_adapter_factory(root)
-    adapter = factory()
+    if adapter is None:
+        try:
+            factory = load_adapter_factory(root)
+            adapter = factory()
+            if hasattr(adapter, "_get_agent"):
+                adapter._get_agent()
+        except Exception as exc:  # noqa: BLE001
+            print(
+                f"error: could not load adapter from .mutiny/adapter.py — {exc}\n"
+                "  hint: run `mutiny init` or ensure create_adapter() imports cleanly",
+                file=sys.stderr,
+            )
+            return LocalRunOutcome(exit_code=2, campaign_id=cid)
+
+    if core_cfg is None:
+        try:
+            core_cfg = CampaignConfig(
+                population_size=int(config.get("population_size", 8)),
+                max_generations=int(config.get("max_generations", 6)),
+                elite_count=int(config.get("elite_count", 2)),
+                max_turns=int(config.get("max_turns", 4)),
+                stop_on_first_violation=bool(config.get("stop_on_first_violation", True)),
+                wall_clock_seconds=config.get("wall_clock_seconds"),
+            )
+        except (ValidationError, ValueError, TypeError) as exc:
+            print(f"error: invalid mutiny.yaml — {exc}", file=sys.stderr)
+            return LocalRunOutcome(exit_code=2, campaign_id=cid)
 
     if campaign_id is None:
         print("→ Local campaign (Core + .mutiny/adapter.py)")
-    core_cfg = CampaignConfig(
-        population_size=int(config.get("population_size", 8)),
-        max_generations=int(config.get("max_generations", 6)),
-        elite_count=int(config.get("elite_count", 2)),
-        max_turns=int(config.get("max_turns", 4)),
-        stop_on_first_violation=bool(config.get("stop_on_first_violation", True)),
-        wall_clock_seconds=config.get("wall_clock_seconds"),
-    )
     seeds = None
     if config.get("use_boundary_seeds", True):
         seeds = default_policy_seeds(policy)
@@ -425,13 +480,22 @@ def _maybe_minimize_and_save(
     )
 
 
-def _load_mutiny_yaml(path: Path) -> dict[str, Any]:
+def _load_mutiny_yaml(path: Path) -> dict[str, Any] | None:
     if not path.exists():
-        print(f"error: missing {path}; run `mutiny init` first", file=sys.stderr)
-        raise SystemExit(2)
-    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        print(
+            f"error: missing {path.name} in project\n"
+            "  hint: run `mutiny init` first",
+            file=sys.stderr,
+        )
+        return None
+    try:
+        data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    except yaml.YAMLError as exc:
+        print(f"error: invalid {path.name} — {exc}", file=sys.stderr)
+        return None
     if not isinstance(data, dict):
-        raise SystemExit(f"error: {path} must be a mapping")
+        print(f"error: {path.name} must be a mapping", file=sys.stderr)
+        return None
     return data
 
 

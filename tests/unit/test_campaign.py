@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from mutiny_core.adapter import TargetAdapter, execute_conversation
+from mutiny_core.adapter import TargetAdapter, ToolsNotObservableError, execute_conversation
 from mutiny_core.campaign import CampaignConfig, CampaignEngine, CampaignResult
 from mutiny_core.events import EventType
 from mutiny_core.genome import AttackGenome, AttackMessage
@@ -236,3 +236,66 @@ def test_demo_adapter_campaign_headless_smoke():
     assert all(0.0 <= c.fitness <= 1.0 for c in result.candidates)
     # Report-friendly: may or may not find violation depending on search
     assert result.status in {"completed", "violation"}
+
+
+class FlakyToolsAdapter(FakeRefundAdapter):
+    """Succeeds for a set number of steps, then raises ToolsNotObservableError."""
+
+    def __init__(self, succeed_turns: int = 1) -> None:
+        super().__init__()
+        self.succeed_turns = succeed_turns
+
+    def step(self, session_id: str, user_message: str) -> AdapterTurnResult:
+        if self.calls >= self.succeed_turns:
+            raise ToolsNotObservableError("test tools dropped mid-campaign")
+        return super().step(session_id, user_message)
+
+
+class CrashingAdapter(FakeRefundAdapter):
+    """Raises RuntimeError during execution."""
+
+    def step(self, session_id: str, user_message: str) -> AdapterTurnResult:
+        raise RuntimeError("adapter connection crashed")
+
+
+def test_tools_not_observable_preserves_scored_candidate_metrics():
+    config = CampaignConfig(
+        population_size=4,
+        max_generations=2,
+        elite_count=1,
+        stop_on_first_violation=False,
+        max_turns=1,
+    )
+    # Allows 2 candidate turns to succeed, then fails on the 3rd
+    adapter = FlakyToolsAdapter(succeed_turns=2)
+    engine = CampaignEngine(
+        adapter=adapter,
+        policy_set=_policy(),
+        config=config,
+        rng_seed=42,
+    )
+    result = engine.run()
+    assert result.status == "error"
+    assert result.reason == "tools_not_observable"
+    assert result.generations_completed > 0
+    assert result.best is not None
+    assert len(result.candidates) >= 1
+    assert result.best in result.candidates
+
+
+def test_adapter_runtime_error_becomes_campaign_status_error():
+    config = CampaignConfig(
+        population_size=2,
+        max_generations=1,
+        max_turns=1,
+    )
+    adapter = CrashingAdapter()
+    engine = CampaignEngine(
+        adapter=adapter,
+        policy_set=_policy(),
+        config=config,
+    )
+    result = engine.run()
+    assert result.status == "error"
+    assert "adapter connection crashed" in result.reason
+

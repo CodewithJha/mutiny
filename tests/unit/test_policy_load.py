@@ -8,6 +8,7 @@ import pytest
 import yaml
 
 from mutiny_core import (
+    PolicyFileNotFoundError,
     PolicySet,
     PolicyValidationError,
     explain_rule,
@@ -112,3 +113,11 @@ def test_regression_provenance_includes_policy_version():
         policy_set=policy,
     )
     assert art.provenance.policy_version == policy.version
+ 
+ 
+def test_resolve_missing_policy_raises_policy_file_not_found(tmp_path: Path):
+    with pytest.raises(PolicyFileNotFoundError) as exc_info:
+        resolve_policy_path(tmp_path)
+    assert issubclass(PolicyFileNotFoundError, PolicyValidationError)
+    assert isinstance(exc_info.value, PolicyValidationError)
+    assert "no policy file found" in str(exc_info.value).lower()

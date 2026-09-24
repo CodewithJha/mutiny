@@ -33,6 +33,10 @@ class PolicyValidationError(ValueError):
         super().__init__(" — ".join(parts))
 
 
+class PolicyFileNotFoundError(PolicyValidationError):
+    """Raised when no policy file exists in the project root."""
+
+
 def resolve_policy_path(project_root: Path) -> Path:
     """Locate the project's policy file (``policy.yaml`` preferred — matches ``mutiny init``)."""
     root = project_root.resolve()
@@ -41,7 +45,7 @@ def resolve_policy_path(project_root: Path) -> Path:
         if candidate.is_file():
             return candidate
     expected = ", ".join(POLICY_FILENAMES)
-    raise PolicyValidationError(
+    raise PolicyFileNotFoundError(
         f"no policy file found in project (expected one of: {expected})",
         path=root,
     )
