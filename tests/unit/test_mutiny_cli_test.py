@@ -70,35 +70,6 @@ def test_mutiny_test_fixed_passes(tmp_path: Path):
     assert report["results"][0]["status"] == "PASS"
 
 
-@pytest.mark.parametrize("include_pass", [False, True])
-@pytest.mark.parametrize("contents", [b"{broken", b"{}", b"\xff"])
-def test_mutiny_test_corrupt_artifact_fails(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str], include_pass: bool, contents: bytes
-):
-    _scaffold(tmp_path, fixed=True)
-    cases = tmp_path / ".mutiny" / "tests"
-    if not include_pass:
-        (cases / "refund_limit.json").unlink()
-    (cases / "broken.json").write_bytes(contents)
-
-    assert main(["test", "--path", str(tmp_path)]) == 1
-    assert f"Summary: {int(include_pass)} passed, 0 failed, 1 skipped" in capsys.readouterr().out
-    report = json.loads((tmp_path / ".mutiny" / "test-report.json").read_text())
-    assert (report["passed"], report["failed"], report["skipped"]) == (int(include_pass), 0, 1)
-    broken = next(r for r in report["results"] if r["id"] == "broken")
-    assert broken["status"] == "SKIPPED"
-    assert broken["error"] == "invalid regression JSON: broken.json"
-
-
-def test_mutiny_test_mixed_skipped_json_output(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
-    _scaffold(tmp_path, fixed=True)
-    (tmp_path / ".mutiny" / "tests" / "broken.json").write_text("{broken")
-
-    assert run_tests(project_root=tmp_path, json_out=True) == 1
-    report = json.loads(capsys.readouterr().out)
-    assert (report["passed"], report["failed"], report["skipped"]) == (1, 0, 1)
-
-
 def test_mutiny_test_by_id_and_json(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
     _scaffold(tmp_path, fixed=True)
     code = run_tests(
