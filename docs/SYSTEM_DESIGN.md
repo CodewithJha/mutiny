@@ -282,6 +282,7 @@ Context supplies deterministic facts (e.g. `customer.email`). No LLM calls.
 `ArgConstraint` supports deterministic matching over tool arguments:
 - **Equality / inequality:** `eq`, `ne`
 - **Numeric comparisons:** `gt`, `gte`, `lt`, `lte` (supports numeric string coercion per Issue #42)
+  also accept a leading `$` and comma-separated three-digit thousands groups, e.g. `$250` or `1,000.50`; malformed grouping and currency suffixes remain non-numeric. Equality and `$context.` references are unchanged.
 - **String patterns:** `contains`, `startswith`, `endswith` (Issue #23)
 
 Multiple operators on the same constraint are combined with logical AND: all present operators must evaluate to True. Values may reference context via `$context.path.to.value`. If an argument or expected pattern is not a string (or missing), string operator evaluation fails closed (`False`).
