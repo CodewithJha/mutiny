@@ -24,7 +24,9 @@ node_modules/
 .worktrees/
 .mutiny/
 !examples/openai_support_agent/.mutiny/
-!examples/openai_support_agent/.mutiny/**
+examples/openai_support_agent/.mutiny/*
+!examples/openai_support_agent/.mutiny/__init__.py
+!examples/openai_support_agent/.mutiny/adapter.py
 
 
 .vscode/
