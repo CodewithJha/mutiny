@@ -18,7 +18,6 @@ from demo_agent import InProcessDemoAdapter
 
 ROOT = Path(__file__).resolve().parents[2]
 DEMO_POLICY = ROOT / "examples" / "policies" / "demo_support.json"
-TRACE_OUT = ROOT / "examples" / "traces" / "m4_refund_limit_violation.json"
 
 
 def _policy() -> PolicySet:
@@ -121,8 +120,8 @@ def test_mutation_path_finds_violation_from_sub_boundary_seeds():
     assert refunds[-1].arguments["approved"] is not True
 
 
-def test_persist_violation_trace_artifact():
-    """Write a real violating trace for inspection (M4 DoD)."""
+def test_persist_violation_trace_artifact(tmp_path: Path):
+    """Round-trip a violating trace without rewriting the committed example."""
     engine = CampaignEngine(
         adapter=InProcessDemoAdapter(),
         policy_set=_policy(),
@@ -148,8 +147,10 @@ def test_persist_violation_trace_artifact():
         "tool_calls": [tc.model_dump() for tc in winner.trace.all_tool_calls],
         "policy_hits": [h.model_dump() for h in winner.hits],
     }
-    TRACE_OUT.parent.mkdir(parents=True, exist_ok=True)
-    TRACE_OUT.write_text(json.dumps(artifact, indent=2))
-    assert TRACE_OUT.exists()
-    loaded = json.loads(TRACE_OUT.read_text())
+    trace_out = tmp_path / "m4_refund_limit_violation.json"
+    trace_out.write_text(json.dumps(artifact, indent=2))
+    assert trace_out.is_file()
+    loaded = json.loads(trace_out.read_text())
+    assert loaded == artifact
     assert any(tc["name"] == "issue_refund" for tc in loaded["tool_calls"])
+    assert any(h["rule_id"] == "refund_limit" and h["violated"] for h in loaded["policy_hits"])
