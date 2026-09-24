@@ -98,6 +98,7 @@ class PolicyEvaluator:
                 ),
             )
 
+        matched_when = False
         for call in relevant:
             when_ok = True
             if rule.when:
@@ -106,6 +107,7 @@ class PolicyEvaluator:
                 )
             if not when_ok:
                 continue
+            matched_when = True
 
             require_ok, failed = matches_constraint_map(
                 call.arguments, rule.require, context=context
@@ -141,7 +143,7 @@ class PolicyEvaluator:
                     f"'{rule.tool}'"
                 ),
                 tool_name=rule.tool,
-                matched_when=False,
+                matched_when=matched_when,
             ),
         )
 
