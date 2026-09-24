@@ -66,7 +66,7 @@ def run_tests(
     json_out: bool = False,
     write_report: bool = True,
 ) -> int:
-    """Discover and replay project regressions. Exit 0 all pass, 1 failures, 2 error."""
+    """Replay regressions. Exit 0 all pass, 1 failed/skipped cases, 2 setup error."""
     root = project_root.resolve()
     ensure_project_on_path(root)
 
@@ -199,7 +199,7 @@ def run_tests(
 
     if failed:
         return 1
-    if skipped and not passed:
+    if skipped:
         return 1
     return 0
 

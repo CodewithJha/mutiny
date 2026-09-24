@@ -86,6 +86,10 @@ mutiny run --no-hosted   # same as default local
 
 Replay regressions under `.mutiny/tests/` and print a PASS / FAIL / SKIPPED report.
 
+Any failed or skipped case makes the command exit with code `1`, even if other
+cases pass. This includes corrupt regression files and replay errors; an
+incomplete run must not appear successful in CI.
+
 | Arg / flag | Default | Meaning |
 |---|---|---|
 | `regression_id` | (all) | Optional id or name to run one case |
