@@ -408,6 +408,13 @@ Thanks to everyone who has contributed. New faces welcome — pick up a [`good f
                 </a>
             </td>
             <td align="center">
+                <a href="https://github.com/fatihcvs">
+                    <img src="https://github.com/fatihcvs.png?size=100" width="100" height="100" alt="fatihcvs"/>
+                    <br />
+                    <sub><b>fatihcvs</b></sub>
+                </a>
+            </td>
+            <td align="center">
                 <a href="https://github.com/slsgzs-cloud">
                     <img src="https://github.com/slsgzs-cloud.png?size=100" width="100" height="100" alt="slsgzs-cloud"/>
                     <br />
@@ -428,6 +435,8 @@ Thanks to everyone who has contributed. New faces welcome — pick up a [`good f
                     <sub><b>Mr-Neutr0n</b></sub>
                 </a>
             </td>
+        </tr>
+        <tr>
             <td align="center">
                 <a href="https://github.com/kkkhs">
                     <img src="https://github.com/kkkhs.png?size=100" width="100" height="100" alt="kkkhs"/>
