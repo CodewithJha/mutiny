@@ -7,6 +7,7 @@ from mutiny_core.policy.constraints import (
 )
 from mutiny_core.policy.evaluator import PolicyEvaluator
 from mutiny_core.policy.load import (
+    PolicyFileNotFoundError,
     PolicyValidationError,
     explain_rule,
     load_policy_file,
@@ -29,6 +30,7 @@ __all__ = [
     "ArgConstraint",
     "PolicyEvaluator",
     "PolicyEvidence",
+    "PolicyFileNotFoundError",
     "PolicyHit",
     "PolicyRule",
     "PolicySet",

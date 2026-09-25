@@ -78,18 +78,17 @@ class CampaignEngine:
         cfg = self.config
         started = time.monotonic()
         all_scored: list[ScoredCandidate] = []
-        self._emit(
-            EventType.CAMPAIGN_STARTED,
-            {
-                "population_size": cfg.population_size,
-                "max_generations": cfg.max_generations,
-                "elite_count": cfg.elite_count,
-            },
-        )
-
+        generations_done = 0
         try:
+            self._emit(
+                EventType.CAMPAIGN_STARTED,
+                {
+                    "population_size": cfg.population_size,
+                    "max_generations": cfg.max_generations,
+                    "elite_count": cfg.elite_count,
+                },
+            )
             population = self._initial_population()
-            generations_done = 0
 
             for gen in range(cfg.max_generations):
                 if self._budget_exceeded(started):
@@ -174,14 +173,37 @@ class CampaignEngine:
             )
 
         except ToolsNotObservableError as exc:
-            self._emit(EventType.CAMPAIGN_ERROR, {"error": str(exc)})
+            try:
+                self._emit(EventType.CAMPAIGN_ERROR, {"error": str(exc)})
+            except Exception:  # noqa: BLE001, S110
+                pass
+            best = max(all_scored, key=lambda c: c.fitness) if all_scored else None
+            violated = any(c.violated for c in all_scored)
+            gens = generations_done if generations_done > 0 else (1 if all_scored else 0)
             return CampaignResult(
                 status="error",
                 reason="tools_not_observable",
-                generations_completed=0,
+                generations_completed=gens,
                 candidates=all_scored,
-                best=None,
-                violated=False,
+                best=best,
+                violated=violated,
+                events_emitted=self._events_emitted,
+            )
+        except Exception as exc:  # noqa: BLE001
+            try:
+                self._emit(EventType.CAMPAIGN_ERROR, {"error": str(exc)})
+            except Exception:  # noqa: BLE001, S110
+                pass
+            best = max(all_scored, key=lambda c: c.fitness) if all_scored else None
+            violated = any(c.violated for c in all_scored)
+            gens = generations_done if generations_done > 0 else (1 if all_scored else 0)
+            return CampaignResult(
+                status="error",
+                reason=str(exc) or type(exc).__name__,
+                generations_completed=gens,
+                candidates=all_scored,
+                best=best,
+                violated=violated,
                 events_emitted=self._events_emitted,
             )
 
