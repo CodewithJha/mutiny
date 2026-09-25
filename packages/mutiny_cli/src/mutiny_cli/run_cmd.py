@@ -356,13 +356,16 @@ def _run_local(
     regression_artifact: dict[str, Any] | None = None
     minimize_body: dict[str, Any] | None = None
 
-    if result.violated and result.best is not None:
-        saved = _maybe_minimize_and_save(
-            root, adapter, policy, result, campaign_id=cid, events=collected
-        )
-        if saved is not None:
-            regression_id, regression_path, regression_artifact, minimize_body = saved
-    else:
+    if result.status != "error" and result.violated and result.best is not None:
+        try:
+            saved = _maybe_minimize_and_save(
+                root, adapter, policy, result, campaign_id=cid, events=collected
+            )
+            if saved is not None:
+                regression_id, regression_path, regression_artifact, minimize_body = saved
+        except Exception as exc:  # noqa: BLE001
+            print(f"warning: minimization failed — {exc}", file=sys.stderr)
+    elif result.status != "error":
         print("  No violation this run — try different rng_seed or more generations.")
 
     print()

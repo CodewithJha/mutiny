@@ -6,7 +6,7 @@ from pathlib import Path
 
 from mutiny_core.adapter import TargetAdapter, ToolsNotObservableError, execute_conversation
 from mutiny_core.campaign import CampaignConfig, CampaignEngine, CampaignResult
-from mutiny_core.events import EventType
+from mutiny_core.events import EventType, MutinyEvent
 from mutiny_core.genome import AttackGenome, AttackMessage
 from mutiny_core.policy import PolicySet
 from mutiny_core.trace import AdapterTurnResult, ToolCall
@@ -299,3 +299,25 @@ def test_adapter_runtime_error_becomes_campaign_status_error():
     assert result.status == "error"
     assert "adapter connection crashed" in result.reason
 
+
+def test_event_handler_raise_during_seed_emit_handled_as_status_error():
+    config = CampaignConfig(
+        population_size=2,
+        max_generations=1,
+        max_turns=1,
+    )
+
+    def broken_handler(ev: MutinyEvent) -> None:
+        if ev.type == EventType.CANDIDATE_CREATED:
+            raise RuntimeError("event sink disconnected during seed emit")
+
+    engine = CampaignEngine(
+        adapter=FakeRefundAdapter(),
+        policy_set=_policy(),
+        config=config,
+        on_event=broken_handler,
+    )
+    result = engine.run()
+    assert result.status == "error"
+    assert "event sink disconnected during seed emit" in result.reason
+    assert result.generations_completed == 0

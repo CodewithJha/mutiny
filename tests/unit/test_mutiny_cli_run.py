@@ -32,6 +32,24 @@ def create_adapter():
     return CrashingAdapter()
 '''
 
+ADAPTER_CRASH_AFTER_HIT = '''\
+from demo_agent import DemoSupportAgent, InProcessDemoAdapter
+
+class HitThenCrashAdapter(InProcessDemoAdapter):
+    def __init__(self):
+        super().__init__(agent=DemoSupportAgent(enforce_refund_policy=False))
+        self._seen_sessions = set()
+
+    def step(self, session_id, user_message):
+        self._seen_sessions.add(session_id)
+        if len(self._seen_sessions) > 1:
+            raise RuntimeError("sdk exploded after first candidate")
+        return super().step(session_id, user_message)
+
+def create_adapter():
+    return HitThenCrashAdapter()
+'''
+
 
 def _scaffold(tmp: Path) -> Path:
     (tmp / ".mutiny").mkdir(parents=True, exist_ok=True)
@@ -157,4 +175,30 @@ def test_adapter_runtime_error_during_run_exits_1_without_traceback(
     captured = capsys.readouterr()
     assert "status=error" in captured.out
     assert "simulated OpenAI SDK outage" in captured.out
+    assert "Traceback" not in captured.err
+
+
+def test_stop_on_first_violation_false_and_crash_after_hit_skips_minimize_and_exits_1(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _scaffold(tmp_path)
+    (tmp_path / "mutiny.yaml").write_text(
+        yaml.dump(
+            {
+                "population_size": 4,
+                "max_generations": 2,
+                "elite_count": 1,
+                "stop_on_first_violation": False,
+            }
+        ),
+        encoding="utf-8",
+    )
+    (tmp_path / ".mutiny" / "adapter.py").write_text(ADAPTER_CRASH_AFTER_HIT, encoding="utf-8")
+
+    code = main(["run", "--path", str(tmp_path)])
+    assert code == 1
+    captured = capsys.readouterr()
+    assert "status=error" in captured.out
+    assert "sdk exploded after first candidate" in captured.out
+    assert "minimizing exploit" not in captured.out
     assert "Traceback" not in captured.err
