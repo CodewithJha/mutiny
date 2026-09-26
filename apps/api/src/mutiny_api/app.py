@@ -14,7 +14,6 @@ from typing import Any, AsyncIterator
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, StreamingResponse
-
 from mutiny_core import (
     DEFAULT_MUTATION_MODEL,
     PolicyValidationError,
@@ -69,6 +68,55 @@ from mutiny_api.supervisor import (
 )
 
 log = logging.getLogger("mutiny_api")
+
+
+async def campaign_event_stream(
+    repo: Repository,
+    hub: EventHub,
+    campaign_id: str,
+    request: Request,
+    after_id: int,
+) -> AsyncIterator[str]:
+    """Replay persisted events, then stream live events without a handoff gap."""
+    queue = await hub.subscribe(campaign_id)
+    try:
+        last_event_id = after_id
+        for event in repo.list_events(campaign_id, after_id=after_id):
+            event_id = event.get("id")
+            if isinstance(event_id, int):
+                last_event_id = max(last_event_id, event_id)
+            yield f"data: {json.dumps(event)}\n\n"
+        yield (
+            "data: "
+            + json.dumps({"type": "ready", "campaign_id": campaign_id})
+            + "\n\n"
+        )
+        while True:
+            if await request.is_disconnected():
+                break
+            try:
+                event = await asyncio.wait_for(queue.get(), timeout=1.0)
+                event_id = event.get("id")
+                if isinstance(event_id, int) and event_id <= last_event_id:
+                    continue
+                if isinstance(event_id, int):
+                    last_event_id = event_id
+                yield f"data: {json.dumps(event)}\n\n"
+            except TimeoutError:
+                yield ": ping\n\n"
+                campaign = repo.get_campaign(campaign_id)
+                if campaign and campaign["status"] not in {"created", "running"}:
+                    while not queue.empty():
+                        event = queue.get_nowait()
+                        event_id = event.get("id")
+                        if isinstance(event_id, int) and event_id <= last_event_id:
+                            continue
+                        if isinstance(event_id, int):
+                            last_event_id = event_id
+                        yield f"data: {json.dumps(event)}\n\n"
+                    break
+    finally:
+        await hub.unsubscribe(campaign_id, queue)
 
 
 def create_app(db_path: str | Path | None = None) -> FastAPI:
@@ -499,35 +547,8 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
         if not repo.get_campaign(campaign_id):
             raise_api(404, "campaign_not_found", "campaign not found")
 
-        async def gen() -> AsyncIterator[str]:
-            for ev in repo.list_events(campaign_id, after_id=after_id):
-                yield f"data: {json.dumps(ev)}\n\n"
-            q = await hub_ref.subscribe(campaign_id)
-            try:
-                yield (
-                    "data: "
-                    + json.dumps({"type": "ready", "campaign_id": campaign_id})
-                    + "\n\n"
-                )
-                while True:
-                    if await request.is_disconnected():
-                        break
-                    try:
-                        event = await asyncio.wait_for(q.get(), timeout=1.0)
-                        yield f"data: {json.dumps(event)}\n\n"
-                    except TimeoutError:
-                        yield ": ping\n\n"
-                        camp = repo.get_campaign(campaign_id)
-                        if camp and camp["status"] not in {"created", "running"}:
-                            while not q.empty():
-                                event = q.get_nowait()
-                                yield f"data: {json.dumps(event)}\n\n"
-                            break
-            finally:
-                await hub_ref.unsubscribe(campaign_id, q)
-
         return StreamingResponse(
-            gen(),
+            campaign_event_stream(repo, hub_ref, campaign_id, request, after_id),
             media_type="text/event-stream",
             headers={
                 "Cache-Control": "no-cache",

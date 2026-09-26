@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
-import json
 import sqlite3
+import threading
 import time
 from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
-
-from mutiny_api.app import create_app
+from mutiny_api.app import campaign_event_stream, create_app
+from mutiny_api.supervisor import EventHub
 
 
 @pytest.fixture
@@ -48,6 +48,62 @@ def test_health(client: TestClient):
     assert "in_process_demo" in body["target_allowlist"]
     assert body["adapter_loading"] == "trusted_demo_only"
     assert "openai_support_agent" not in body["target_allowlist"]
+
+
+def test_repository_calls_are_serialized_across_threads(client: TestClient):
+    """The campaign worker and HTTP handlers must not share SQLite concurrently."""
+    repo = client.app.state.repo
+    started = threading.Event()
+    completed = threading.Event()
+
+    def read_projects() -> None:
+        started.set()
+        repo.list_projects()
+        completed.set()
+
+    repo._lock.acquire()
+    worker = threading.Thread(target=read_projects)
+    try:
+        worker.start()
+        assert started.wait(timeout=1)
+        assert not completed.wait(timeout=0.1)
+    finally:
+        repo._lock.release()
+
+    worker.join(timeout=1)
+    assert completed.is_set()
+
+
+@pytest.mark.asyncio
+async def test_sse_subscribe_snapshot_overlap_is_not_lost_or_duplicated(
+    client: TestClient,
+):
+    repo = client.app.state.repo
+    campaign = repo.create_campaign("race-campaign", {}, status="completed")
+
+    class PublishDuringSubscribeHub(EventHub):
+        async def subscribe(self, campaign_id: str):
+            queue = await super().subscribe(campaign_id)
+            event = repo.append_event(campaign_id, "candidate.scored", {"score": 1})
+            await self.publish(campaign_id, event)
+            return queue
+
+    class ConnectedRequest:
+        async def is_disconnected(self) -> bool:
+            return False
+
+    stream = campaign_event_stream(
+        repo,
+        PublishDuringSubscribeHub(),
+        campaign["id"],
+        ConnectedRequest(),
+        0,
+    )
+    frames = [frame async for frame in stream]
+
+    scored_frames = [frame for frame in frames if "candidate.scored" in frame]
+    assert len(scored_frames) == 1
+    assert any(frame == ": ping\n\n" for frame in frames)
 
 
 def test_meta_project_path_model(client: TestClient):
