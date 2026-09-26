@@ -7,13 +7,34 @@ import json
 import sqlite3
 import uuid
 from datetime import datetime, timezone
+from functools import wraps
 from pathlib import Path
-from typing import Any
+from threading import RLock
+from typing import Any, Callable, TypeVar, cast
 
 from mutiny_core.redact import redact_secrets
 
 # Opaque project.path prefix for observe-only ingest (never a filesystem mount).
 INGEST_LOCAL_KEY_PREFIX = "local_key:"
+
+RepositoryMethod = TypeVar("RepositoryMethod", bound=Callable[..., Any])
+
+
+def _with_repository_lock(method: RepositoryMethod) -> RepositoryMethod:
+    @wraps(method)
+    def synchronized(self: Repository, *args: Any, **kwargs: Any) -> Any:
+        with self._lock:
+            return method(self, *args, **kwargs)
+
+    return cast(RepositoryMethod, synchronized)
+
+
+def _serialize_public_methods(cls: type[Repository]) -> type[Repository]:
+    """Serialize every repository transaction on its shared SQLite connection."""
+    for name, method in tuple(vars(cls).items()):
+        if name != "__init__" and not name.startswith("_") and callable(method):
+            setattr(cls, name, _with_repository_lock(method))
+    return cls
 
 
 def _now() -> str:
@@ -31,9 +52,11 @@ def local_key_path(local_project_key: str) -> str:
     return f"{INGEST_LOCAL_KEY_PREFIX}{local_project_key}"
 
 
+@_serialize_public_methods
 class Repository:
     def __init__(self, conn: sqlite3.Connection) -> None:
         self.conn = conn
+        self._lock = RLock()
 
     def commit(self) -> None:
         self.conn.commit()
