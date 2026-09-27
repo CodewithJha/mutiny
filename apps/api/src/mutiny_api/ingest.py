@@ -359,6 +359,17 @@ class IngestService:
                 "payload_too_large",
                 f"artifact {art.kind} exceeds {limit} bytes",
             )
+        if art.sha256:
+            body = redact_secrets(art.body or {})
+            computed = stable_json_hash(body)
+            # Preserve the redaction exception: Hosted may have changed bytes.
+            # Validate before any batch writes or SSE publication.
+            if art.sha256.lower() != computed and REDACTED not in json.dumps(body):
+                raise_api(
+                    409,
+                    "artifact_hash_mismatch",
+                    "artifact sha256 does not match its redacted body",
+                )
 
     def _persist_event(
         self, campaign_id: str, ev: IngestEventItem, *, commit: bool
@@ -386,14 +397,6 @@ class IngestService:
         self, campaign_id: str, art: IngestArtifactItem, *, commit: bool
     ) -> dict[str, Any]:
         body = redact_secrets(art.body or {})
-        if art.sha256:
-            computed = stable_json_hash(body)
-            # Optional integrity hint — mismatch is conflict, not silent overwrite.
-            # Clients may hash raw pre-redact bytes; only enforce when marker absent.
-            if art.sha256.lower() != computed and REDACTED not in json.dumps(body):
-                # Soft: store anyway when Hosted re-redaction changed bytes;
-                # only hard-fail if client hash doesn't match and body has no redaction.
-                pass
 
         if art.kind == "candidate":
             genome = body.get("genome") if isinstance(body.get("genome"), dict) else body

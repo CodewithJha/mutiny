@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import uuid
 from pathlib import Path
@@ -97,6 +98,106 @@ def _open_campaign(
         headers=_auth(),
         json=payload,
     ), cid, payload
+
+
+@pytest.mark.parametrize("kind", ["candidate", "trace", "regression"])
+def test_artifact_hash_mismatch_rejects_batch_before_writes(
+    client: TestClient, api_db: Path, kind: str
+) -> None:
+    response, cid, _ = _open_campaign(client)
+    assert response.status_code == 201
+    batch = _envelope(
+        campaign_id=cid,
+        seq=7,
+        events=[
+            {"event_id": "hash-event", "type": "campaign.started", "payload": {}}
+        ],
+        artifacts=[
+            {"kind": "candidate", "id": "valid-first", "body": {"genome": {}}},
+            {
+                "kind": kind,
+                "id": "valid-first",
+                "body": {"note": "private artifact contents"},
+                "sha256": "0" * 64,
+            },
+        ],
+    )
+    with patch.object(IngestService, "_publish") as publish:
+        response = client.post(
+            f"/api/ingest/v1/campaigns/{cid}/batch", headers=_auth(), json=batch
+        )
+        assert response.status_code == 409, response.text
+        assert response.json()["error"]["code"] == "artifact_hash_mismatch"
+        assert "private artifact contents" not in response.text
+        publish.assert_not_called()
+
+    conn = connect(api_db)
+    try:
+        repo = Repository(conn)
+        assert repo.list_events(cid) == []
+        assert repo.list_candidates(cid) == []
+        assert conn.execute("SELECT COUNT(*) FROM traces").fetchone()[0] == 0
+        assert repo.get_regression("valid-first") is None
+        assert "ingest_seq" not in (repo.get_campaign(cid)["metrics"] or {})
+    finally:
+        conn.close()
+
+
+@pytest.mark.parametrize("hash_mode", ["matching", "uppercase", "omitted"])
+def test_artifact_hash_accepts_valid_or_omitted_hash(
+    client: TestClient, api_db: Path, hash_mode: str
+) -> None:
+    response, cid, _ = _open_campaign(client)
+    assert response.status_code == 201
+    body = {"note": "café", "genome": {"messages": []}, "generation": 0}
+    artifact = {"kind": "candidate", "id": "valid-hash", "body": body}
+    if hash_mode != "omitted":
+        canonical = json.dumps(body, sort_keys=True, separators=(",", ":"))
+        digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+        artifact["sha256"] = digest.upper() if hash_mode == "uppercase" else digest
+    batch = _envelope(campaign_id=cid, artifacts=[artifact])
+    for _ in range(2):
+        response = client.post(
+            f"/api/ingest/v1/campaigns/{cid}/batch", headers=_auth(), json=batch
+        )
+        assert response.status_code == 200, response.text
+        assert response.json()["artifacts_accepted"] == 1
+    conn = connect(api_db)
+    try:
+        assert Repository(conn).get_candidate("valid-hash")["genome"] == body["genome"]
+    finally:
+        conn.close()
+
+
+@pytest.mark.parametrize("secret", ["test-secret-before-redaction", "[REDACTED]"])
+def test_artifact_hash_preserves_redaction_exception(
+    client: TestClient, api_db: Path, secret: str
+) -> None:
+    response, cid, _ = _open_campaign(client)
+    assert response.status_code == 201
+    response = client.post(
+        f"/api/ingest/v1/campaigns/{cid}/batch",
+        headers=_auth(),
+        json=_envelope(
+            campaign_id=cid,
+            artifacts=[
+                {
+                    "kind": "candidate",
+                    "id": "redacted-hash",
+                    "body": {"genome": {"api_key": secret}},
+                    "sha256": "0" * 64,
+                }
+            ],
+        ),
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["artifacts_accepted"] == 1
+    conn = connect(api_db)
+    try:
+        candidate = Repository(conn).get_candidate("redacted-hash")
+        assert candidate["genome"] == {"api_key": "[REDACTED]"}
+    finally:
+        conn.close()
 
 
 # —— Authentication ——

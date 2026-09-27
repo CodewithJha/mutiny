@@ -155,6 +155,14 @@ Upload the **smallest useful observable set** — a subset of Core `EventType` (
 | `regression` | Core `RegressionTest` JSON (`version: "1"`) | `regression_id` |
 | `test_run` | PASS/FAIL, duration, rule ids, redacted evidence summary | `test_run_id` |
 
+Batch artifacts may include an optional `sha256`: the hex digest of the UTF-8
+encoding of `json.dumps(redacted_body, sort_keys=True, separators=(",", ":"))`
+(Python's default ASCII escaping). Hashes are compared case-insensitively. A
+mismatch returns **`409 artifact_hash_mismatch`** before any events or artifacts
+in that batch are persisted or published. Omitting the hash remains valid.
+For compatibility with Hosted re-redaction, a mismatch is accepted when the
+redacted body contains `[REDACTED]`; hashes do not verify integrity in that case.
+
 **Not uploaded by default:** raw adapter `TraceTurn.raw` blobs if still present after redaction helpers; CLI should strip or redact `raw` before upload. Genome message text may contain attack content (expected) but must pass through `redact_secrets`.
 
 ---
@@ -406,7 +414,7 @@ CLI ingest batch
 4. **Secrets:** redact-before-upload + Hosted re-redact; auth token never logged.
 5. **Single-tenant:** token gates the whole DB; not a substitute for future multi-tenant isolation.
 6. **Attestation:** ingest campaigns still carry attestation=true semantics for authorized-testing product rule.
-7. **Integrity (v1):** Bearer auth + idempotent IDs + optional content hash on artifacts (`sha256` of redacted bytes) for conflict detection — **no** cryptographic request signing required unless a later ADR says otherwise.
+7. **Integrity (v1):** Bearer auth + idempotent IDs + optional `sha256` on batch artifacts for conflict detection (`409 artifact_hash_mismatch`, with the redaction exception in §6) — **no** cryptographic request signing required unless a later ADR says otherwise.
 
 ---
 
