@@ -319,7 +319,7 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
         latency_ms: float | None = None
         try:
             t0 = time.perf_counter()
-            repo.conn.execute("SELECT 1").fetchone()
+            repo.ping()
             latency_ms = round((time.perf_counter() - t0) * 1000, 3)
         except Exception:  # noqa: BLE001
             db_ok = False

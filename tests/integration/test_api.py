@@ -56,13 +56,13 @@ def test_repository_calls_are_serialized_across_threads(client: TestClient):
     started = threading.Event()
     completed = threading.Event()
 
-    def read_projects() -> None:
+    def ping_database() -> None:
         started.set()
-        repo.list_projects()
+        repo.ping()
         completed.set()
 
     repo._lock.acquire()
-    worker = threading.Thread(target=read_projects)
+    worker = threading.Thread(target=ping_database)
     try:
         worker.start()
         assert started.wait(timeout=1)
@@ -104,6 +104,28 @@ async def test_sse_subscribe_snapshot_overlap_is_not_lost_or_duplicated(
     scored_frames = [frame for frame in frames if "candidate.scored" in frame]
     assert len(scored_frames) == 1
     assert any(frame == ": ping\n\n" for frame in frames)
+
+
+@pytest.mark.asyncio
+async def test_sse_disconnect_after_snapshot_unsubscribes(client: TestClient):
+    """A disconnected client must release its live subscription after replay."""
+    repo = client.app.state.repo
+    campaign = repo.create_campaign("disconnect-campaign", {}, status="completed")
+    hub = EventHub()
+
+    class DisconnectedRequest:
+        async def is_disconnected(self) -> bool:
+            return True
+
+    frames = [
+        frame
+        async for frame in campaign_event_stream(
+            repo, hub, campaign["id"], DisconnectedRequest(), 0
+        )
+    ]
+
+    assert any('"type": "ready"' in frame for frame in frames)
+    assert hub._subs[campaign["id"]] == []
 
 
 def test_meta_project_path_model(client: TestClient):

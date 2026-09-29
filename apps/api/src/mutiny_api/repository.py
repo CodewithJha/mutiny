@@ -64,6 +64,10 @@ class Repository:
     def rollback(self) -> None:
         self.conn.rollback()
 
+    def ping(self) -> None:
+        """Verify that the shared SQLite connection remains usable."""
+        self.conn.execute("SELECT 1").fetchone()
+
     # --- projects ---
     def create_project(
         self,
