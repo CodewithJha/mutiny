@@ -301,6 +301,160 @@ def _bundle(
     )
 
 
+@pytest.mark.parametrize("source", ["yaml", "flag"])
+def test_remote_hosted_requires_opt_in_before_execution(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str], source: str,
+) -> None:
+    remote = "https://hosted.example"
+    _scaffold(tmp_path, api_url=remote if source == "yaml" else "http://localhost:8000")
+    config_path = tmp_path / "mutiny.yaml"
+    config = yaml.safe_load(config_path.read_text())
+    config["hosted"]["allow_remote_hosted"] = True
+    config_path.write_text(yaml.safe_dump(config))
+    monkeypatch.setenv("MUTINY_API_TOKEN", FAKE_TOKEN)
+    local = MagicMock()
+    sync = MagicMock(return_value=0)
+    monkeypatch.setattr(run_cmd, "_run_local", local)
+    monkeypatch.setattr(run_cmd, "_run_local_with_hosted_sync", sync)
+    flags = ["--hosted"] if source == "yaml" else ["--hosted-url", remote]
+
+    assert main(["run", "--path", str(tmp_path), *flags]) == 2
+    local.assert_not_called()
+    sync.assert_not_called()
+    captured = capsys.readouterr()
+    assert "--allow-remote-hosted" in captured.err
+    assert FAKE_TOKEN not in captured.out + captured.err
+
+
+def test_remote_sync_refused_before_token_or_network(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    auth = MagicMock(return_value={"Authorization": f"Bearer {FAKE_TOKEN}"})
+    client = MagicMock()
+    monkeypatch.setattr(hosted_sync, "auth_headers_from_env", auth)
+    monkeypatch.setattr(hosted_sync, "HostedIngestClient", client)
+    result = sync_local_campaign(_bundle(tmp_path), api_url="https://hosted.example")
+    assert not result.ok
+    assert result.error_code == "remote_hosted_not_allowed"
+    auth.assert_not_called()
+    client.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "http://localhost:8000", "https://LOCALHOST", "http://127.0.0.1:8000",
+        "http://127.0.0.2", "http://[::1]:8000", "http://[0:0:0:0:0:0:0:1]",
+    ],
+)
+def test_hosted_client_allows_loopback(url: str) -> None:
+    assert HostedIngestClient(url).api_url == url
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://hosted.example", "http://192.0.2.1:8000", "http://0.0.0.0:8000",
+        "http://[::]:8000", "http://localhost.example", "http://127.1",
+    ],
+)
+def test_hosted_client_refuses_non_loopback(url: str) -> None:
+    with pytest.raises(HostedSyncError) as error:
+        HostedIngestClient(url)
+    assert error.value.error_code == "remote_hosted_not_allowed"
+
+
+@pytest.mark.parametrize("allow_remote", [False, True])
+@pytest.mark.parametrize(
+    "url",
+    [
+        "file:///tmp/hosted", "/api", "http://", "http://[::1]example",
+        "http://localhost:invalid", "http://localhost:65536",
+        "http://user:private-value@localhost", "http://localhost?token=private-value",
+        "http://localhost#private-value", "http://local\nhost", 123,
+    ],
+)
+def test_hosted_client_rejects_invalid_url_even_with_opt_in(
+    url: Any, allow_remote: bool
+) -> None:
+    with pytest.raises(HostedSyncError) as error:
+        HostedIngestClient(url, allow_remote_hosted=allow_remote)
+    assert error.value.error_code == "invalid_hosted_url"
+    assert "private-value" not in str(error.value)
+
+
+@pytest.mark.parametrize("source", ["yaml", "flag"])
+def test_remote_opt_in_reaches_http_client_after_warning(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str], source: str,
+) -> None:
+    import httpx
+
+    _scaffold(tmp_path, api_url="https://hosted.example")
+    bundle = _bundle(tmp_path)
+    monkeypatch.setenv("MUTINY_API_TOKEN", FAKE_TOKEN)
+    monkeypatch.setattr(
+        run_cmd, "_run_local", lambda *a, **k: run_cmd.LocalRunOutcome(
+            exit_code=0, campaign_id=bundle.campaign_id, result=bundle.result,
+        ),
+    )
+    requests = []
+    captured_before_upload = []
+
+    def respond(request):
+        if not requests:
+            captured_before_upload.append(capsys.readouterr())
+        requests.append(request)
+        return httpx.Response(200, json={})
+
+    real_client = httpx.Client
+    monkeypatch.setattr(
+        httpx, "Client", lambda **kwargs: real_client(
+            transport=httpx.MockTransport(respond), **kwargs
+        ),
+    )
+    flags = ["--hosted"] if source == "yaml" else ["--hosted-url", "https://other.example"]
+    assert main(["run", "--path", str(tmp_path), *flags, "--allow-remote-hosted"]) == 0
+    host = "hosted.example" if source == "yaml" else "other.example"
+    assert len(requests) == 3  # open, batch, complete; no real network requests
+    assert all(r.url.host == host for r in requests)
+    assert all(r.headers["Authorization"] == f"Bearer {FAKE_TOKEN}" for r in requests)
+    before = captured_before_upload[0]
+    assert f"Hosted destination host: {host}" in before.out
+    assert "warning:" in before.err and host in before.err
+    after = capsys.readouterr()
+    assert FAKE_TOKEN not in before.out + before.err + after.out + after.err
+
+
+@pytest.mark.parametrize("flags", [[], ["--no-hosted"]])
+def test_remote_permission_alone_does_not_select_hosted(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], flags: list[str]
+) -> None:
+    assert main(["run", "--path", str(tmp_path), "--allow-remote-hosted", *flags]) == 2
+    assert "requires --hosted" in capsys.readouterr().err
+
+
+def test_hosted_client_does_not_follow_redirects(monkeypatch: pytest.MonkeyPatch) -> None:
+    import httpx
+
+    requests = []
+
+    def respond(request):
+        requests.append(request)
+        return httpx.Response(307, headers={"Location": "https://other.example"}, json={})
+
+    real_client = httpx.Client
+    monkeypatch.setattr(
+        httpx, "Client", lambda **kwargs: real_client(
+            transport=httpx.MockTransport(respond), **kwargs
+        ),
+    )
+    HostedIngestClient("http://localhost:8000").open_campaign({})
+    assert len(requests) == 1
+    assert requests[0].url.host == "localhost"
+
+
 def test_01_plain_run_remains_local(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -365,16 +519,20 @@ def test_03_hosted_url_respected(
 
     monkeypatch.setattr(run_cmd, "_run_local_with_hosted_sync", capture)
     assert (
-        main(["run", "--path", str(tmp_path), "--hosted-url", "http://example:9"])
+        main([
+            "run", "--path", str(tmp_path), "--hosted-url", "http://example:9",
+            "--allow-remote-hosted",
+        ])
         == 0
     )
     assert seen["api_url"] == "http://example:9"
+    assert seen["allow_remote_hosted"] is True
 
 
 def test_04_hosted_config_alone_does_not_activate(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    _scaffold(tmp_path)
+    _scaffold(tmp_path, api_url="https://hosted.example")
     sync = MagicMock(return_value=0)
     monkeypatch.setattr(run_cmd, "_run_local_with_hosted_sync", sync)
     monkeypatch.setattr(

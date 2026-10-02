@@ -35,8 +35,10 @@ from mutiny_openai_agents.loader import ensure_project_on_path, load_adapter_fac
 
 from mutiny_cli.hosted_sync import (
     SYNC_FAILED_EXIT,
+    HostedSyncError,
     LocalRunBundle,
     sync_local_campaign,
+    validate_hosted_url,
 )
 
 
@@ -61,6 +63,7 @@ def run_campaign(
     project_root: Path,
     hosted_url: str | None = None,
     hosted: bool = False,
+    allow_remote_hosted: bool = False,
     no_hosted: bool = False,
     attestation: bool = True,
 ) -> int:
@@ -86,6 +89,12 @@ def run_campaign(
     # Explicit Hosted intent: --hosted and/or --hosted-url on the CLI.
     # Config api_url alone is never enough.
     want_hosted = bool(hosted or hosted_url) and not no_hosted
+    if allow_remote_hosted and not want_hosted:
+        print(
+            "error: --allow-remote-hosted requires --hosted / --hosted-url",
+            file=sys.stderr,
+        )
+        return 2
 
     try:
         policy, policy_path = load_project_policy(root)
@@ -128,7 +137,7 @@ def run_campaign(
     hosted_cfg = dict(config.get("hosted") or {})
     if hosted_url:
         hosted_cfg["api_url"] = hosted_url
-    api_url = (hosted_cfg.get("api_url") or "").rstrip("/")
+    api_url = hosted_cfg.get("api_url") or ""
     ui_url = (hosted_cfg.get("ui_url") or "http://127.0.0.1:3000").rstrip("/")
 
     print()
@@ -162,13 +171,27 @@ def run_campaign(
                 file=sys.stderr,
             )
             return 2
+        try:
+            host = validate_hosted_url(api_url, allow_remote_hosted=allow_remote_hosted)
+        except HostedSyncError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        print(f"  Hosted destination host: {host}", flush=True)
+        if allow_remote_hosted:
+            print(
+                f"warning: remote Hosted access enabled for {host}; this host "
+                "will receive run data and MUTINY_API_TOKEN when set. "
+                "Use HTTPS for remote uploads.",
+                file=sys.stderr,
+            )
         return _run_local_with_hosted_sync(
             root=root,
             config=config,
             policy=policy,
-            api_url=api_url,
+            api_url=api_url.rstrip("/"),
             ui_url=ui_url,
             core_cfg=core_cfg,
+            allow_remote_hosted=allow_remote_hosted,
         )
 
     outcome = _run_local(root, config, policy, core_cfg=core_cfg)
@@ -184,6 +207,7 @@ def _run_local_with_hosted_sync(
     ui_url: str,
     core_cfg: CampaignConfig | None = None,
     adapter: Any | None = None,
+    allow_remote_hosted: bool = False,
 ) -> int:
     """Local Core campaign, then end-of-run Hosted ingest sync.
 
@@ -228,7 +252,12 @@ def _run_local_with_hosted_sync(
 
     print()
     print("→ Hosted sync (observe-only ingest) …")
-    sync = sync_local_campaign(bundle, api_url=api_url, ui_url=ui_url)
+    sync = sync_local_campaign(
+        bundle,
+        api_url=api_url,
+        ui_url=ui_url,
+        allow_remote_hosted=allow_remote_hosted,
+    )
     if sync.ok:
         print(f"✓ {sync.message}")
         print()

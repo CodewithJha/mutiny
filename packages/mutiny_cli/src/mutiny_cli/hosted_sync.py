@@ -10,6 +10,7 @@ HTTP stays in the CLI package — never in ``mutiny_core``.
 from __future__ import annotations
 
 import hashlib
+import ipaddress
 import json
 import logging
 import os
@@ -130,6 +131,45 @@ class HostedSyncError(RuntimeError):
         super().__init__(message)
         self.error_code = error_code
         self.http_status = http_status
+
+
+def validate_hosted_url(api_url: str, *, allow_remote_hosted: bool = False) -> str:
+    """Validate the upload destination without DNS/network I/O; return its host."""
+    import httpx
+
+    try:
+        if not isinstance(api_url, str) or any(c.isspace() for c in api_url):
+            raise ValueError
+        url = httpx.URL(api_url)
+        if (
+            url.scheme not in {"http", "https"}
+            or not url.host
+            or url.userinfo
+            or url.query
+            or url.fragment
+            or (url.port is not None and not 1 <= url.port <= 65535)
+        ):
+            raise ValueError
+    except (ValueError, httpx.InvalidURL):
+        # Do not echo URLs that might contain embedded credentials.
+        raise HostedSyncError(
+            "Hosted API URL must be an absolute HTTP(S) URL with a valid port "
+            "and no credentials, whitespace, query, or fragment",
+            error_code="invalid_hosted_url",
+        ) from None
+
+    try:
+        loopback = ipaddress.ip_address(url.host).is_loopback
+    except ValueError:
+        loopback = url.host == "localhost"
+    if not loopback and not allow_remote_hosted:
+        raise HostedSyncError(
+            f"Hosted destination {url.host!r} is not loopback; "
+            "pass --allow-remote-hosted only if you trust this host to receive "
+            "run data and MUTINY_API_TOKEN",
+            error_code="remote_hosted_not_allowed",
+        )
+    return url.host
 
 
 def _utcnow() -> str:
@@ -459,7 +499,9 @@ class HostedIngestClient:
         *,
         timeout: float = DEFAULT_TIMEOUT_S,
         headers: dict[str, str] | None = None,
+        allow_remote_hosted: bool = False,
     ) -> None:
+        validate_hosted_url(api_url, allow_remote_hosted=allow_remote_hosted)
         self.api_url = api_url.rstrip("/")
         self.timeout = timeout
         self.headers = dict(headers or {})
@@ -474,6 +516,7 @@ class HostedIngestClient:
             base_url=self.api_url,
             timeout=self.timeout,
             headers=self.headers,
+            follow_redirects=False,
         )
 
     def _raise_for_response(self, response: Any, *, action: str) -> None:
@@ -551,10 +594,15 @@ def sync_local_campaign(
     *,
     api_url: str,
     ui_url: str | None = None,
+    allow_remote_hosted: bool = False,
     client: HostedIngestClient | None = None,
     write_pending_on_failure: bool = True,
 ) -> SyncOutcome:
     """Upload a finished local campaign via end-of-run ingest (open→batch→complete)."""
+    try:
+        validate_hosted_url(api_url, allow_remote_hosted=allow_remote_hosted)
+    except HostedSyncError as exc:
+        return SyncOutcome(ok=False, message=str(exc), error_code=exc.error_code)
     try:
         ensure_redaction_allowed_for_upload()
     except RedactionDisabledError as exc:
@@ -572,7 +620,9 @@ def sync_local_campaign(
     }
 
     ingest = client or HostedIngestClient(
-        api_url, headers=auth_headers_from_env()
+        api_url,
+        headers=auth_headers_from_env(),
+        allow_remote_hosted=allow_remote_hosted,
     )
     try:
         ingest.open_campaign(open_body)
