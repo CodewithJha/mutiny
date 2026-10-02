@@ -81,6 +81,14 @@ def main(argv: list[str] | None = None) -> int:
         ),
     )
     run_p.add_argument(
+        "--allow-remote-hosted",
+        action="store_true",
+        help=(
+            "Allow Hosted uploads to non-loopback hosts you trust with run data "
+            "and MUTINY_API_TOKEN (requires --hosted / --hosted-url)"
+        ),
+    )
+    run_p.add_argument(
         "--no-hosted",
         action="store_true",
         help=(
@@ -148,6 +156,7 @@ def main(argv: list[str] | None = None) -> int:
             project_root=args.path,
             hosted_url=args.hosted_url,
             hosted=args.hosted,
+            allow_remote_hosted=args.allow_remote_hosted,
             no_hosted=args.no_hosted,
             attestation=args.attestation,
         )

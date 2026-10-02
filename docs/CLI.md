@@ -72,10 +72,25 @@ the freed name; if no finding reproduces, restore the backup. `mutiny run` has n
 | `--path PATH` | cwd | Project root |
 | `--hosted` | off | Explicit opt-in: **local Core exec + redacted Hosted ingest sync** (ADR-019 / M-PR8C — does **not** execute the adapter on Hosted; see [HOSTED_INGESTION.md](./HOSTED_INGESTION.md)) |
 | `--hosted-url HOSTED_URL` | from `mutiny.yaml` | Hosted API base URL (implies `--hosted` sync; overrides `mutiny.yaml`) |
+| `--allow-remote-hosted` | off | Permit uploads to a non-loopback host you trust with run data and `MUTINY_API_TOKEN`; requires `--hosted` or `--hosted-url` |
 | `--no-hosted` | off | Force local (default behavior; kept for compatibility; conflicts with `--hosted` / `--hosted-url`) |
 | `--attestation` / `--no-attestation` | attestation on | Confirm authorized testing (`--no-attestation` fails closed) |
 
 **Hosted sync (M-PR8C):** After local campaign completion, CLI POSTs to `/api/ingest/v1/*` with `schema_version=1` and `redaction.applied=true`. Bearer from `MUTINY_API_TOKEN` when set. Local success + sync failure → exit **3** (local result remains authoritative). Missing `api_url` with `--hosted` → exit 2. Config URL alone never selects Hosted.
+
+**Destination policy:** By default, Hosted sync accepts only HTTP(S) URLs whose
+host is `localhost` or a literal loopback IP (`127.0.0.0/8` or `::1`). Other hosts
+require `--allow-remote-hosted` on the command line, even with `--hosted-url` or
+without a token. A project YAML setting cannot grant this permission. The CLI
+prints the destination host and warns when remote access is enabled, before
+local execution or upload. Use HTTPS for remote deployments: the flag permits
+HTTP too, which does not encrypt the token or uploaded data.
+
+Invalid URLs and unapproved remote destinations exit **2** before running the
+adapter or reading the upload token. URLs with embedded credentials, whitespace,
+query strings, or fragments are rejected even with the flag. Redirects are not
+followed. Hostname aliases are not resolved to establish loopback trust; use a
+literal loopback address instead.
 
 **Hosted Web (M-PR8D/E):** The Hosted UI observes synced campaigns (and the labeled demo harness). It does not upload to ingest and does not start customer project execution — retired Hosted customer start returns `410 hosted_customer_execution_removed`. Use the CLI above.
 
@@ -87,6 +102,7 @@ mutiny run
 mutiny run --hosted
 MUTINY_API_TOKEN=… mutiny run --hosted
 mutiny run --path . --hosted-url http://127.0.0.1:8000
+mutiny run --hosted-url https://your-trusted-host.example --allow-remote-hosted
 mutiny run --no-hosted   # same as default local
 ```
 

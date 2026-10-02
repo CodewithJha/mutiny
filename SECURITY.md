@@ -45,6 +45,18 @@ Single-tenant shared Bearer token for the Hosted **control plane** (not multi-us
 
 CLI: default `mutiny run` stays local and needs no token. Explicit `mutiny run --hosted` / `--hosted-url` sends `MUTINY_API_TOKEN` when set; if the API requires auth and the token is missing/invalid, the CLI fails closed (no silent local fallback).
 
+**CLI upload destinations:** `--hosted` and `--hosted-url` default to loopback
+only (`localhost`, literal `127.0.0.0/8`, or `::1`). Any other host requires the
+explicit **`--allow-remote-hosted`** flag; `mutiny.yaml` cannot grant permission.
+The CLI validates the destination before adapter execution or reading the upload
+token, displays the host, and warns when remote access is enabled. Only grant
+this permission to a host you trust with the token and redacted run data. Use
+HTTPS remotely; opting in to an HTTP URL does not protect transport confidentiality.
+Embedded URL credentials, whitespace, query strings, and fragments are rejected,
+and the HTTP client does not follow redirects. DNS aliases are not resolved to
+decide whether a host is loopback. This guard does not sandbox local adapter code
+or change the trust required to run a project's tests.
+
 **Auth ≠ sandbox:** A valid token does **not** enable customer `project_path` adapter execution or filesystem access. ADR-021 auth and ADR-019 observe-only isolation are orthogonal; M-PR8E / P0-3 enforce the latter.
 
 ## Hosted filesystem boundary (P0-3)
