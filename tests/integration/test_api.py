@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
-import json
 import sqlite3
+import threading
 import time
 from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
-
-from mutiny_api.app import create_app
+from mutiny_api.app import campaign_event_stream, create_app
+from mutiny_api.supervisor import EventHub
 
 
 @pytest.fixture
@@ -48,6 +48,137 @@ def test_health(client: TestClient):
     assert "in_process_demo" in body["target_allowlist"]
     assert body["adapter_loading"] == "trusted_demo_only"
     assert "openai_support_agent" not in body["target_allowlist"]
+
+
+def test_health_queries_sqlite_only_under_repository_lock(client: TestClient):
+    """The health endpoint must not bypass the repository mutex."""
+    repo = client.app.state.repo
+    real_conn = repo.conn
+
+    class LockCheckedConnection:
+        def execute(self, *args, **kwargs):
+            assert repo._lock._is_owned(), "SQLite used outside Repository lock"
+            return real_conn.execute(*args, **kwargs)
+
+        def __getattr__(self, name):
+            return getattr(real_conn, name)
+
+    repo.conn = LockCheckedConnection()
+    try:
+        body = client.get("/api/health").json()
+    finally:
+        repo.conn = real_conn
+
+    assert body["db"] is True
+
+
+def test_repository_calls_are_serialized_across_threads(client: TestClient):
+    """The campaign worker and HTTP handlers must not share SQLite concurrently."""
+    repo = client.app.state.repo
+    started = threading.Event()
+    completed = threading.Event()
+
+    def ping_database() -> None:
+        started.set()
+        repo.ping()
+        completed.set()
+
+    repo._lock.acquire()
+    worker = threading.Thread(target=ping_database)
+    try:
+        worker.start()
+        assert started.wait(timeout=1)
+        assert not completed.wait(timeout=0.1)
+    finally:
+        repo._lock.release()
+
+    worker.join(timeout=1)
+    assert completed.is_set()
+
+
+@pytest.mark.asyncio
+async def test_sse_subscribe_snapshot_overlap_is_not_lost_or_duplicated(
+    client: TestClient,
+):
+    repo = client.app.state.repo
+    campaign = repo.create_campaign("race-campaign", {}, status="completed")
+
+    class PublishDuringSubscribeHub(EventHub):
+        async def subscribe(self, campaign_id: str):
+            queue = await super().subscribe(campaign_id)
+            event = repo.append_event(campaign_id, "candidate.scored", {"score": 1})
+            await self.publish(campaign_id, event)
+            return queue
+
+    class ConnectedRequest:
+        async def is_disconnected(self) -> bool:
+            return False
+
+    stream = campaign_event_stream(
+        repo,
+        PublishDuringSubscribeHub(),
+        campaign["id"],
+        ConnectedRequest(),
+        0,
+    )
+    frames = [frame async for frame in stream]
+
+    scored_frames = [frame for frame in frames if "candidate.scored" in frame]
+    assert len(scored_frames) == 1
+    assert any(frame == ": ping\n\n" for frame in frames)
+
+
+@pytest.mark.asyncio
+async def test_sse_event_before_subscription_is_replayed_once(client: TestClient):
+    """An event published before queue registration must survive the handoff."""
+    repo = client.app.state.repo
+    campaign = repo.create_campaign("pre-subscribe-race", {}, status="completed")
+
+    class PublishBeforeSubscribeHub(EventHub):
+        async def subscribe(self, campaign_id: str):
+            event = repo.append_event(
+                campaign_id, "candidate.scored", {"score": 1}
+            )
+            await self.publish(campaign_id, event)
+            return await super().subscribe(campaign_id)
+
+    class ConnectedRequest:
+        async def is_disconnected(self) -> bool:
+            return False
+
+    stream = campaign_event_stream(
+        repo,
+        PublishBeforeSubscribeHub(),
+        campaign["id"],
+        ConnectedRequest(),
+        0,
+    )
+    frames = [frame async for frame in stream]
+
+    scored_frames = [frame for frame in frames if "candidate.scored" in frame]
+    assert len(scored_frames) == 1
+
+
+@pytest.mark.asyncio
+async def test_sse_disconnect_after_snapshot_unsubscribes(client: TestClient):
+    """A disconnected client must release its live subscription after replay."""
+    repo = client.app.state.repo
+    campaign = repo.create_campaign("disconnect-campaign", {}, status="completed")
+    hub = EventHub()
+
+    class DisconnectedRequest:
+        async def is_disconnected(self) -> bool:
+            return True
+
+    frames = [
+        frame
+        async for frame in campaign_event_stream(
+            repo, hub, campaign["id"], DisconnectedRequest(), 0
+        )
+    ]
+
+    assert any('"type": "ready"' in frame for frame in frames)
+    assert hub._subs[campaign["id"]] == []
 
 
 def test_meta_project_path_model(client: TestClient):
