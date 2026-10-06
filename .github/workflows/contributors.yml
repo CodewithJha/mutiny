@@ -14,14 +14,18 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   contributors:
     runs-on: ubuntu-latest
     name: Refresh README contributors
+    # This job commits the generated README gallery back to main.
+    permissions:
+      contents: write
     steps:
-      - uses: actions/checkout@v4
+      # Keep checkout credentials here for the final git push.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Rebuild contributors gallery
         env:
