@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import hashlib
 import uuid
+from typing import Self
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from mutiny_core.genome.models import AttackGenome, AttackMessage
 from mutiny_core.mutate.focus import AttackFocus, derive_attack_focus
@@ -22,6 +23,12 @@ class CampaignConfig(BaseModel):
     stop_on_first_violation: bool = True
     wall_clock_seconds: float | None = Field(default=None, gt=0)
     step_timeout_seconds: float = Field(default=60.0, gt=0)
+
+    @model_validator(mode="after")
+    def require_mutation_slot(self) -> Self:
+        if self.elite_count >= self.population_size:
+            raise ValueError("elite_count must be less than population_size")
+        return self
 
 
 def default_policy_seeds(

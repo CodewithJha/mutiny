@@ -18,7 +18,6 @@ from mutiny_core import (
     MutinyEvent,
     PolicySet,
     PolicyValidationError,
-    default_policy_seeds,
     load_policy_file,
     minimize_genome,
     replay_regression,
@@ -140,6 +139,8 @@ def validate_campaign_config(cfg: dict[str, Any]) -> dict[str, Any]:
         # M-PR8E: never resolve / import / exec customer project_path on Hosted.
         require_hosted_customer_execution_removed()
     else:
+        # Validate persisted configurations again before starting a worker.
+        CampaignConfig.model_validate(out)
         # Harness: validate fixture policy up front
         load_policy_for_config(out)
     return out
@@ -373,9 +374,6 @@ class CampaignSupervisor:
             stop_on_first_violation=cfg["stop_on_first_violation"],
             wall_clock_seconds=cfg.get("wall_clock_seconds"),
         )
-        seeds = None
-        if cfg.get("use_boundary_seeds", True):
-            seeds = default_policy_seeds(policy)
 
         from mutiny_core import try_featherless_from_env
 
@@ -410,7 +408,6 @@ class CampaignSupervisor:
             adapter=adapter,
             policy_set=policy,
             config=core_cfg,
-            seeds=seeds,
             on_event=on_event,
             rng_seed=int(cfg.get("rng_seed", 0)),
             mutator=MutationEngine(

@@ -66,7 +66,6 @@ export default function CampaignsPage() {
         stop_on_first_violation: true,
         max_turns: 4,
         rng_seed: 5,
-        use_boundary_seeds: true,
         // Trusted demo harness only — not customer project execution.
         target: "in_process_demo",
       });

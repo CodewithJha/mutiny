@@ -7,6 +7,19 @@ Published on PyPI as **`mutiny-ai`** (+ [`mutiny-core`](https://pypi.org/project
 
 ## [Unreleased]
 
+### Fixed
+
+- Reject `elite_count >= population_size` so every next generation has room
+  for mutations. Small populations must specify a smaller elite count.
+
+### Removed
+
+- Removed the ineffective `use_boundary_seeds` flag from CLI scaffolds, the
+  sample configuration, Hosted schemas and dashboard requests. Campaigns use
+  policy-derived seeds by default; Core callers can still pass explicit seed
+  packs. Legacy YAML/API keys are ignored for compatibility. The reliability
+  harness seed pin remains unchanged.
+
 ### Planned
 
 - Additional framework adapters (LangGraph, CrewAI, PydanticAI, …)

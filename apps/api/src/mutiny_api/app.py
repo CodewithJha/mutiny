@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any, AsyncIterator
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, StreamingResponse
 from mutiny_core import (
@@ -20,6 +21,7 @@ from mutiny_core import (
     load_llm_config_from_env,
 )
 from mutiny_core.regress import RegressionNotReproducibleError
+from pydantic import ValidationError
 
 from mutiny_api import __version__
 from mutiny_api.auth import auth_required, require_hosted_auth
@@ -223,7 +225,7 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
                 message="request validation failed",
                 status=422,
                 request_id=request_id,
-                details={"errors": exc.errors()},
+                details={"errors": jsonable_encoder(exc.errors())},
             ),
             headers={"X-Request-Id": request_id} if request_id else None,
         )
@@ -484,6 +486,8 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
             return supervisor.create_campaign(body.model_dump())
         except HostedCustomerExecutionRemoved as exc:
             raise_api(410, "hosted_customer_execution_removed", str(exc))
+        except ValidationError as exc:
+            raise_api(422, "invalid_campaign_config", str(exc))
         except (
             ValueError,
             PolicyValidationError,
@@ -514,6 +518,8 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
             )
         except HostedCustomerExecutionRemoved as exc:
             raise_api(410, "hosted_customer_execution_removed", str(exc))
+        except ValidationError as exc:
+            raise_api(422, "invalid_campaign_config", str(exc))
         except PermissionError as exc:
             raise_api(403, "attestation_required", str(exc))
         except KeyError:

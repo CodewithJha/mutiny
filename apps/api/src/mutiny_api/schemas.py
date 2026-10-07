@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Any, Literal, Self
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class ProjectCreateRequest(BaseModel):
@@ -31,8 +31,13 @@ class CampaignCreateRequest(BaseModel):
     project_id: str | None = None
     # Harness-only fixture id.
     policy_set_id: str | None = None
-    use_boundary_seeds: bool = True
     wall_clock_seconds: float | None = None
+
+    @model_validator(mode="after")
+    def require_mutation_slot(self) -> Self:
+        if self.elite_count >= self.population_size:
+            raise ValueError("elite_count must be less than population_size")
+        return self
 
 
 class PolicyContentSaveRequest(BaseModel):

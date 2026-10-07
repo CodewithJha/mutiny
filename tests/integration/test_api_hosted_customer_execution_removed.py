@@ -96,6 +96,7 @@ def test_02_project_path_cannot_trigger_execution(
                 "/api/campaigns",
                 json={
                     "population_size": 2,
+                    "elite_count": 1,
                     "max_generations": 1,
                     "target": "openai_agents",
                     "project_path": str(project),
@@ -140,6 +141,7 @@ def test_04_load_adapter_factory_not_called_on_customer_path(
             "/api/campaigns",
             json={
                 "population_size": 2,
+                "elite_count": 1,
                 "max_generations": 1,
                 "target": "openai_agents",
                 "project_path": str(project),
@@ -163,6 +165,7 @@ def test_05_exec_module_not_reached(
             "/api/campaigns",
             json={
                 "population_size": 2,
+                "elite_count": 1,
                 "max_generations": 1,
                 "target": "openai_agents",
                 "project_path": str(project),
@@ -207,6 +210,7 @@ def test_07_absolute_path_rejected_without_execution(
         "/api/campaigns",
         json={
             "population_size": 2,
+            "elite_count": 1,
             "max_generations": 1,
             "target": "openai_agents",
             "project_path": str(project.resolve()),
@@ -225,6 +229,7 @@ def test_08_traversal_path_cannot_access_fs_via_exec(
         "/api/campaigns",
         json={
             "population_size": 2,
+            "elite_count": 1,
             "max_generations": 1,
             "target": "openai_agents",
             "project_path": traversal,
@@ -241,6 +246,7 @@ def test_09_relative_module_style_path_rejected(
         "/api/campaigns",
         json={
             "population_size": 2,
+            "elite_count": 1,
             "max_generations": 1,
             "target": "openai_agents",
             "project_path": "examples/openai_support_agent",
@@ -258,6 +264,7 @@ def test_10_path_like_payload_without_adapter_still_gone(
         "/api/campaigns",
         json={
             "population_size": 2,
+            "elite_count": 1,
             "max_generations": 1,
             "target": "openai_agents",
             "project_path": str(empty),
@@ -344,6 +351,7 @@ def test_15_ingest_open_still_works_without_exec(
                 "local_project_key": "lk-mpr8e-15",
                 "config": {
                     "population_size": 2,
+                    "elite_count": 1,
                     "max_generations": 1,
                     "target": "openai_agents",
                 },
@@ -364,6 +372,7 @@ def test_16_auth_still_gates_campaigns(
             "/api/campaigns",
             json={
                 "population_size": 2,
+                "elite_count": 1,
                 "max_generations": 1,
                 "target": "in_process_demo",
             },
@@ -374,6 +383,7 @@ def test_16_auth_still_gates_campaigns(
             headers={"Authorization": "Bearer secret-mpr8e"},
             json={
                 "population_size": 2,
+                "elite_count": 1,
                 "max_generations": 1,
                 "target": "in_process_demo",
             },
@@ -387,6 +397,7 @@ def test_16_auth_still_gates_campaigns(
             headers={"Authorization": "Bearer secret-mpr8e"},
             json={
                 "population_size": 2,
+                "elite_count": 1,
                 "max_generations": 1,
                 "target": "openai_agents",
                 "project_path": str(project),

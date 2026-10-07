@@ -23,7 +23,6 @@ from mutiny_core import (
     PolicyFileNotFoundError,
     PolicySet,
     PolicyValidationError,
-    default_policy_seeds,
     load_project_policy,
     minimize_genome,
     save_regression,
@@ -330,9 +329,6 @@ def _run_local(
 
     if campaign_id is None:
         print("→ Local campaign (Core + .mutiny/adapter.py)")
-    seeds = None
-    if config.get("use_boundary_seeds", True):
-        seeds = default_policy_seeds(policy)
 
     llm = try_featherless_from_env()
     mutator = "featherless" if llm else "template"
@@ -357,7 +353,6 @@ def _run_local(
         adapter=adapter,
         policy_set=policy,
         config=core_cfg,
-        seeds=seeds,
         on_event=on_event,
         rng_seed=int(config.get("rng_seed", 0)),
         mutator=MutationEngine(

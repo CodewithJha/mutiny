@@ -269,6 +269,7 @@ def test_11_cannot_import_or_execute_customer_adapter(
             "/api/campaigns",
             json={
                 "population_size": 2,
+                "elite_count": 1,
                 "max_generations": 1,
                 "target": "openai_agents",
                 "project_path": str(project),
@@ -380,6 +381,7 @@ def test_14_ingest_does_not_open_local_project_key(
                 "project_label": str(project),
                 "config": {
                     "population_size": 2,
+                    "elite_count": 1,
                     "max_generations": 1,
                     "target": "openai_agents",
                 },

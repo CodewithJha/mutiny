@@ -127,6 +127,7 @@ def test_16_allow_project_exec_ignored_with_valid_token(
         headers=_auth(),
         json={
             "population_size": 2,
+            "elite_count": 1,
             "max_generations": 1,
             "target": "openai_agents",
             "project_path": str(project),

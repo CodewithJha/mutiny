@@ -113,7 +113,6 @@ elite_count: 2
 max_turns: 4
 stop_on_first_violation: true
 rng_seed: 5
-use_boundary_seeds: true
 
 # Optional Hosted control plane (opt-in via `mutiny run --hosted`).
 # URL here does NOT auto-select Hosted — local Core is the default.

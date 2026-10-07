@@ -287,6 +287,7 @@ def test_tools_not_observable_preserves_scored_candidate_metrics():
 def test_adapter_runtime_error_becomes_campaign_status_error():
     config = CampaignConfig(
         population_size=2,
+        elite_count=1,
         max_generations=1,
         max_turns=1,
     )
@@ -349,6 +350,7 @@ def test_violation_wins_when_slow_candidate_exceeds_budget():
         seeds=seeds,
         config=CampaignConfig(
             population_size=1,
+            elite_count=0,
             max_generations=1,
             wall_clock_seconds=0.01,
             step_timeout_seconds=0.5,
@@ -369,7 +371,7 @@ def test_hung_candidate_step_is_recorded_as_candidate_error():
         adapter=HungAdapter(),
         policy_set=_policy(),
         config=CampaignConfig(
-            population_size=1, max_generations=1, step_timeout_seconds=0.01
+            population_size=1, elite_count=0, max_generations=1, step_timeout_seconds=0.01
         ),
     )
     result = engine.run()
@@ -382,6 +384,7 @@ def test_hung_candidate_step_is_recorded_as_candidate_error():
 def test_event_handler_raise_during_seed_emit_handled_as_status_error():
     config = CampaignConfig(
         population_size=2,
+        elite_count=1,
         max_generations=1,
         max_turns=1,
     )

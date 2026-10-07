@@ -68,6 +68,18 @@ def _scaffold(tmp: Path) -> Path:
     return tmp
 
 
+@pytest.mark.parametrize("elite_count", [4, 5])
+def test_invalid_elite_count_exits_2_before_execution(tmp_path, capsys, elite_count):
+    root = _scaffold(tmp_path)
+    (root / "mutiny.yaml").write_text(
+        yaml.dump({"population_size": 4, "elite_count": elite_count}), encoding="utf-8"
+    )
+    assert main(["run", "--path", str(root)]) == 2
+    captured = capsys.readouterr()
+    assert "elite_count must be less than population_size" in captured.err
+    assert "Local campaign" not in captured.out
+
+
 def test_empty_dir_mutiny_run_exits_2_with_clean_stderr(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:

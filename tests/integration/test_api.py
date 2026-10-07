@@ -50,6 +50,29 @@ def test_health(client: TestClient):
     assert "openai_support_agent" not in body["target_allowlist"]
 
 
+@pytest.mark.parametrize("elite_count", [3, 4])
+def test_create_rejects_elites_filling_population(client, elite_count):
+    response = client.post(
+        "/api/campaigns", json={"population_size": 3, "elite_count": elite_count}
+    )
+    assert response.status_code == 422
+    assert "elite_count must be less than population_size" in response.text
+
+
+def test_start_rejects_invalid_persisted_elite_config(client):
+    from mutiny_api.schemas import CampaignCreateRequest
+
+    config = CampaignCreateRequest(population_size=3, elite_count=1).model_dump()
+    config["elite_count"] = 3
+    client.app.state.repo.create_campaign("invalid-elites", config)
+    response = client.post(
+        "/api/campaigns/invalid-elites/start", json={"attestation": True}
+    )
+    assert response.status_code == 422
+    assert "elite_count must be less than population_size" in response.text
+    assert client.app.state.repo.get_campaign("invalid-elites")["status"] == "created"
+
+
 def test_health_queries_sqlite_only_under_repository_lock(client: TestClient):
     """The health endpoint must not bypass the repository mutex."""
     repo = client.app.state.repo

@@ -7,7 +7,6 @@ elite_count: 2
 max_turns: 4
 stop_on_first_violation: true
 rng_seed: 5
-use_boundary_seeds: true
 
 hosted:
   api_url: "http://127.0.0.1:8000"

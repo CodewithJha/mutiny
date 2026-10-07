@@ -360,7 +360,6 @@ def build_campaign_open_payload(bundle: LocalRunBundle) -> dict[str, Any]:
             bundle.config.get("stop_on_first_violation", True)
         ),
         "rng_seed": int(bundle.config.get("rng_seed", 0)),
-        "use_boundary_seeds": bool(bundle.config.get("use_boundary_seeds", True)),
         "execution_mode": EXECUTION_MODE,
         "adapter": adapter,
     }

@@ -147,6 +147,7 @@ def test_06_07_expensive_stricter_than_normal(client: TestClient) -> None:
         "target": "in_process_demo",
         "rng_seed": 1,
         "population_size": 1,
+        "elite_count": 0,
         "max_generations": 1,
     }
     assert client.post("/api/campaigns", headers=_auth(), json=bodies).status_code == 201
@@ -251,6 +252,7 @@ def test_16_customer_execution_still_removed(client: TestClient) -> None:
             "project_path": "examples/openai_support_agent",
             "rng_seed": 1,
             "population_size": 1,
+            "elite_count": 0,
             "max_generations": 1,
         },
     )
@@ -317,6 +319,7 @@ def test_21_22_ingest_and_campaign_under_limit(
                 "target": "in_process_demo",
                 "rng_seed": 1,
                 "population_size": 2,
+                "elite_count": 1,
                 "max_generations": 1,
             },
         )
