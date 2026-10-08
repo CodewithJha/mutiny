@@ -50,6 +50,18 @@ def test_health(client: TestClient):
     assert "openai_support_agent" not in body["target_allowlist"]
 
 
+def test_health_degrades_when_execution_slot_is_full(client: TestClient):
+    client.app.state.repo.create_campaign(
+        "health-running-campaign", {}, status="running"
+    )
+
+    body = client.get("/api/health").json()
+
+    assert body["max_concurrent_campaigns"] == 1
+    assert body["running_campaigns"] == 1
+    assert body["status"] == "degraded"
+
+
 def test_health_queries_sqlite_only_under_repository_lock(client: TestClient):
     """The health endpoint must not bypass the repository mutex."""
     repo = client.app.state.repo

@@ -327,9 +327,10 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
         llm_ok = bool(cfg.configured)
         model = cfg.model if llm_ok else f"unconfigured:{DEFAULT_MUTATION_MODEL}"
         mutator_mode = "featherless" if llm_ok else "template"
+        max_concurrent_campaigns = 1
         running = len(repo.list_running_campaigns())
         status = "ok" if db_ok else "degraded"
-        if running > 1:
+        if running >= max_concurrent_campaigns:
             status = "degraded"
         return HealthResponse(
             status=status,
@@ -341,7 +342,7 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
             llm_configured=llm_ok,
             db_latency_ms=latency_ms,
             schema_version=SCHEMA_VERSION,
-            max_concurrent_campaigns=1,
+            max_concurrent_campaigns=max_concurrent_campaigns,
             running_campaigns=running,
             adapter_loading="trusted_demo_only",
         )

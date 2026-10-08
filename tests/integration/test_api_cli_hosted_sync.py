@@ -91,10 +91,40 @@ def test_cli_built_payloads_ingest_end_to_end(client: TestClient, tmp_path: Path
     complete_body = build_complete_payload(bundle)
 
     assert open_body["execution_mode"] == "local_cli"
+    assert open_body["status"] == "created"
     assert "project_path" not in open_body
 
-    r1 = client.post("/api/ingest/v1/campaigns", headers=_auth(), json=open_body)
+    # Legacy clients sent ``running``. Hosted must normalize that value so an
+    # interrupted observe-only upload cannot block the real execution slot.
+    legacy_open_body = {**open_body, "status": "running"}
+    r1 = client.post(
+        "/api/ingest/v1/campaigns", headers=_auth(), json=legacy_open_body
+    )
     assert r1.status_code in (200, 201), r1.text
+    assert r1.json()["campaign"]["status"] == "created"
+
+    health = client.get("/api/health", headers=_auth())
+    assert health.status_code == 200
+    assert health.json()["running_campaigns"] == 0
+
+    demo = client.post(
+        "/api/campaigns",
+        headers=_auth(),
+        json={
+            "population_size": 2,
+            "max_generations": 1,
+            "rng_seed": 0,
+            "use_boundary_seeds": True,
+            "target": "in_process_demo",
+        },
+    )
+    assert demo.status_code == 201, demo.text
+    started = client.post(
+        f"/api/campaigns/{demo.json()['id']}/start",
+        headers=_auth(),
+        json={"attestation": True},
+    )
+    assert started.status_code == 200, started.text
 
     r2 = client.post(
         f"/api/ingest/v1/campaigns/{bundle.campaign_id}/batch",
@@ -123,7 +153,9 @@ def test_cli_built_payloads_ingest_end_to_end(client: TestClient, tmp_path: Path
 
     # Idempotent retry with identical CLI payloads.
     assert (
-        client.post("/api/ingest/v1/campaigns", headers=_auth(), json=open_body).status_code
+        client.post(
+            "/api/ingest/v1/campaigns", headers=_auth(), json=legacy_open_body
+        ).status_code
         in (200, 201)
     )
     assert (
