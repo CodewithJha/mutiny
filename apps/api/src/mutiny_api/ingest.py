@@ -184,7 +184,10 @@ class IngestService:
             body.campaign_id,
             stored_config,
             project_id=project_id,
-            status=body.status,
+            # Ingest campaigns are observe-only. Normalize older CLI clients
+            # that still send ``running`` so an interrupted upload cannot
+            # occupy the supervisor's single execution slot indefinitely.
+            status="created",
         )
         return {"campaign": camp, "created": True}
 

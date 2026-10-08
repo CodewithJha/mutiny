@@ -374,7 +374,9 @@ def build_campaign_open_payload(bundle: LocalRunBundle) -> dict[str, Any]:
         "project_name": bundle.project_root.name,
         "project_label": bundle.project_root.name,
         "adapter": adapter,
-        "status": "running",
+        # Observe-only ingest must not consume the Hosted execution slot if the
+        # upload is interrupted before the terminal completion request.
+        "status": "created",
         "attestation": True,
         "started_at": bundle.started_at or _utcnow(),
         "config": cfg,
