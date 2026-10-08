@@ -1,0 +1,12 @@
+# Python workspace and its shared dependency definitions.
+/packages/ @CodewithJha
+/apps/api/ @CodewithJha
+/apps/demo_agent/ @CodewithJha
+/pyproject.toml @CodewithJha
+/uv.lock @CodewithJha
+
+# Hosted UI and its npm manifests.
+/apps/web/ @CodewithJha
+
+# Workflows, Dependabot configuration, and this ownership file.
+/.github/ @CodewithJha
