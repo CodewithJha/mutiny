@@ -407,7 +407,7 @@ def test_10_first_campaign_ingestion(client: TestClient) -> None:
     assert r.status_code == 201
     camp = r.json()["campaign"]
     assert camp["id"] == cid
-    assert camp["status"] == "running"
+    assert camp["status"] == "created"
     assert camp["config"]["execution_mode"] == "local_cli"
     assert camp["config"]["local_project_key"] == "unique-key-10"
     assert camp["project_id"]
