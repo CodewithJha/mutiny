@@ -114,6 +114,7 @@ PR CI (see `.github/workflows/ci.yml`) gates on Python **3.11** and **3.12**:
 
 | Check | Local equivalent |
 |---|---|
+| Python lint | `uv run ruff check` |
 | Unit | `uv run pytest tests/unit -q` |
 | Integration (offline) | `uv run pytest tests/integration -q` |
 | Reliability | `uv run pytest tests/reliability -q` |
@@ -123,10 +124,19 @@ PR CI (see `.github/workflows/ci.yml`) gates on Python **3.11** and **3.12**:
 
 ```bash
 uv sync --extra dev
+uv run ruff check                   # pinned correctness rules from pyproject.toml
 uv run pytest tests/unit -q          # default for most PRs
 uv run pytest tests/integration -q   # when touching API / Hosted / sample loop
 uv run pytest tests/reliability -q   # when touching campaign / minimize / flaky paths
 ```
+
+The initial Ruff gate uses the pinned version in the `dev` extra and checks the
+whole repository with `E9`, `F63`, `F7`, and `F82` (including invalid control flow
+and undefined names). These rules pass the existing code without a mass rewrite.
+Unused-import and style cleanup, formatting, and mypy are not part of this first
+gate; expand the rule set in separate, focused changes. Run `uv run ruff check`
+from the repository root to use the same configuration as CI. When updating Ruff,
+keep the `dev` dependency pin and `tool.ruff.required-version` in sync.
 
 Optional offline smoke: `cd examples/openai_support_agent && uv run mutiny init && uv run mutiny run`.
 
