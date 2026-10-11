@@ -23,7 +23,7 @@ dev = [
     "pytest>=8.0",
 ]
 llm = [
-    "openai>=1.40",
+    "openai>=3.26.0",
 ]
 
 [build-system]
