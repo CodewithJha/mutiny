@@ -8,7 +8,7 @@ dependencies = [
     "demo-agent",
     "mutiny-openai-agents",
     "fastapi>=0.115",
-    "uvicorn[standard]>=0.30",
+    "uvicorn[standard]>=0.54.0",
     "httpx>=0.27",
 ]
 
