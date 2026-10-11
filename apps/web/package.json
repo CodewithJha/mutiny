@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@xyflow/react": "^12.11.2",
-    "next": "15.5.27",
+    "next": "16.4.0",
     "react": "19.1.0",
     "react-dom": "19.1.0"
   },
