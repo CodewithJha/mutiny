@@ -415,6 +415,29 @@ def test_10_first_campaign_ingestion(client: TestClient) -> None:
     assert camp["project"]["path"].startswith(INGEST_LOCAL_KEY_PREFIX)
 
 
+def test_ingest_campaign_cannot_be_started(client: TestClient) -> None:
+    response, cid, _ = _open_campaign(client)
+    assert response.status_code == 201
+    assert response.json()["campaign"]["status"] == "created"
+
+    started = client.post(
+        f"/api/campaigns/{cid}/start",
+        headers=_auth(),
+        json={"attestation": True},
+    )
+    assert started.status_code == 409
+    assert started.json()["error"]["code"] == "campaign_conflict"
+
+    campaign = client.get(f"/api/campaigns/{cid}", headers=_auth())
+    assert campaign.status_code == 200
+    assert campaign.json()["status"] == "created"
+
+    health = client.get("/api/health", headers=_auth())
+    assert health.status_code == 200
+    assert health.json()["status"] == "ok"
+    assert health.json()["running_campaigns"] == 0
+
+
 def test_11_duplicate_campaign_ingestion(client: TestClient) -> None:
     r1, cid, payload = _open_campaign(client, local_project_key="dup-key")
     assert r1.status_code == 201

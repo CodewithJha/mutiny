@@ -294,6 +294,8 @@ class CampaignSupervisor:
             raise RuntimeError(
                 f"cannot start campaign in status={campaign['status']}"
             )
+        if campaign["config"].get("execution_mode") == "local_cli":
+            raise RuntimeError("cannot start observe-only ingest campaign")
         running = self.repo.list_running_campaigns()
         if running:
             raise RuntimeError(

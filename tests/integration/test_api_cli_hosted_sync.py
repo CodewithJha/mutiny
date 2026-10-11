@@ -112,9 +112,9 @@ def test_cli_built_payloads_ingest_end_to_end(client: TestClient, tmp_path: Path
         headers=_auth(),
         json={
             "population_size": 2,
+            "elite_count": 1,
             "max_generations": 1,
             "rng_seed": 0,
-            "use_boundary_seeds": True,
             "target": "in_process_demo",
         },
     )
