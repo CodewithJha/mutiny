@@ -5,7 +5,7 @@ description = "Mutiny deliberately vulnerable demo support agent (mock tools onl
 requires-python = ">=3.11"
 dependencies = [
     "mutiny-core",
-    "pydantic>=2.0,<3",
+    "pydantic>=2.13.5,<3",
 ]
 
 [build-system]
