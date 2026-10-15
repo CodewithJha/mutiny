@@ -377,6 +377,23 @@ Prefer **campaign-centric** routes over a parallel `/runs` resource. New write p
 - `GET /api/campaigns/{id}/events` (**SSE** — unchanged protocol)
 - `GET /api/regressions`, `GET /api/tests/runs`, …
 
+### Trusted demo minimization and lineage
+
+For `in_process_demo`, `POST /api/candidates/{id}/minimize` and
+`POST /api/candidates/{id}/regression` accept optional `target_rule_ids`. An
+omitted or empty list uses the candidate's violated hit ids, falling back to
+`genome.target_rule_ids`. With no targets in either source, the API returns
+`400 target_rules_required` before execution; it never defaults to a demo rule.
+
+Successful minimization stores a **child candidate** with `status=minimized` and
+`parent_id` pointing to the original. The original genome, trace, and hits are
+unchanged. The response and `exploit.minimized` event retain the source
+`candidate_id` and add `minimized_candidate_id` (null if not reproducible).
+Retrieve the child with `GET /api/candidates/{minimized_candidate_id}` or the
+campaign's candidate list. Re-minimizing the original starts from its original
+messages and creates a new child. Either candidate can be used to save a
+regression, which independently rechecks reproduction.
+
 ### Explicit non-goals for ingest
 
 - Do not overload `POST /api/campaigns/{id}/start` to mean “execute customer project” for Production Hosted.

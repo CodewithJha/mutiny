@@ -63,6 +63,7 @@ from mutiny_api.schemas import (
 from mutiny_api.supervisor import (
     HARNESS_POLICY_PATH,
     CampaignSupervisor,
+    CandidateTargetRulesRequired,
     EventHub,
     HostedCustomerExecutionRemoved,
     HostedFilesystemAccessRemoved,
@@ -583,6 +584,8 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
             )
         except HostedCustomerExecutionRemoved as exc:
             raise_api(410, "hosted_customer_execution_removed", str(exc))
+        except CandidateTargetRulesRequired as exc:
+            raise_api(400, "target_rules_required", str(exc))
         except KeyError:
             raise_api(404, "candidate_not_found", "candidate not found")
 
@@ -603,6 +606,8 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
             )
         except HostedCustomerExecutionRemoved as exc:
             raise_api(410, "hosted_customer_execution_removed", str(exc))
+        except CandidateTargetRulesRequired as exc:
+            raise_api(400, "target_rules_required", str(exc))
         except KeyError:
             raise_api(404, "candidate_not_found", "candidate not found")
         except RegressionNotReproducibleError as exc:

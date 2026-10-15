@@ -17,6 +17,7 @@ from mutiny_core import (
     MutationEngine,
     MutinyEvent,
     PolicySet,
+    PolicyEvaluator,
     PolicyValidationError,
     load_policy_file,
     minimize_genome,
@@ -55,6 +56,25 @@ HOSTED_FILESYSTEM_ACCESS_REMOVED_MSG = (
     "`mutiny run` or `mutiny run --hosted` (local exec + Hosted ingest). "
     "MUTINY_ALLOW_PROJECT_EXEC does not restore filesystem access."
 )
+
+
+class CandidateTargetRulesRequired(ValueError):
+    """A candidate has no rules to reproduce and no explicit targets were sent."""
+
+
+def _candidate_target_rules(
+    candidate: dict[str, Any], genome: AttackGenome, requested: list[str] | None
+) -> list[str]:
+    rules = requested or [
+        hit["rule_id"] for hit in candidate.get("hits") or []
+        if hit.get("violated") and hit.get("rule_id")
+    ] or genome.target_rule_ids
+    if not rules:
+        # An empty rule set would make the minimizer's all(...) gate vacuous.
+        raise CandidateTargetRulesRequired(
+            "No target rules found; provide target_rule_ids explicitly."
+        )
+    return list(dict.fromkeys(rules))
 
 
 class HostedCustomerExecutionRemoved(RuntimeError):
@@ -502,8 +522,8 @@ class CampaignSupervisor:
         camp = self.repo.get_campaign(campaign_id)
         cfg = (camp or {}).get("config") or {}
         policy = load_policy_for_config(cfg)
-        rules = target_rule_ids or ["refund_limit"]
         genome = AttackGenome.model_validate(cand["genome"])
+        rules = _candidate_target_rules(cand, genome, target_rule_ids)
         self._persist_and_publish(
             campaign_id,
             EventType.MINIMIZATION_STARTED.value,
@@ -518,28 +538,44 @@ class CampaignSupervisor:
             campaign_id=campaign_id,
             candidate_id=candidate_id,
         )
+        minimized_candidate_id = None
         if result.still_reproduces:
-            # Persist minimized genome as updated candidate status
+            # Core gives the minimized genome a new id. Store that child so the
+            # original conversation, trace, and hits remain available for review.
+            child = result.minimized_genome
+            minimized_candidate_id = child.id
+            child.parent_id = candidate_id
+            child.target_rule_ids = rules
+            child.metadata["minimized_from"] = candidate_id
+            trace = result.last_trace.model_copy(deep=True) if result.last_trace else None
+            hits = []
+            if trace:
+                trace.candidate_id = child.id
+                trace.status = "minimized"
+                trace.fitness = 1.0
+                trace.policy_hits = PolicyEvaluator().evaluate(
+                    policy, trace, adapter.context(trace.session_id)
+                )
+                hits = [hit.model_dump(mode="json") for hit in trace.policy_hits]
             self.repo.upsert_candidate(
-                candidate_id=candidate_id,
+                candidate_id=child.id,
                 campaign_id=campaign_id,
-                parent_id=cand.get("parent_id"),
-                generation=cand["generation"],
-                genome=result.minimized_genome.model_dump(),
+                parent_id=candidate_id,
+                generation=child.generation,
+                genome=child.model_dump(),
                 fitness=1.0,
                 status="minimized",
                 violated=True,
-                hits=cand.get("hits") or [],
+                hits=hits,
             )
-            if result.last_trace:
-                self.repo.upsert_trace(
-                    candidate_id, result.last_trace.model_dump(mode="json")
-                )
+            if trace:
+                self.repo.upsert_trace(child.id, trace.model_dump(mode="json"))
         self._persist_and_publish(
             campaign_id,
             EventType.EXPLOIT_MINIMIZED.value,
             {
                 "candidate_id": candidate_id,
+                "minimized_candidate_id": minimized_candidate_id,
                 "still_reproduces": result.still_reproduces,
                 "original_turn_count": result.original_turn_count,
                 "minimized_turn_count": result.minimized_turn_count,
@@ -549,6 +585,7 @@ class CampaignSupervisor:
         )
         return {
             "candidate_id": candidate_id,
+            "minimized_candidate_id": minimized_candidate_id,
             "still_reproduces": result.still_reproduces,
             "original_turn_count": result.original_turn_count,
             "minimized_turn_count": result.minimized_turn_count,
@@ -571,8 +608,8 @@ class CampaignSupervisor:
         camp = self.repo.get_campaign(campaign_id)
         cfg = (camp or {}).get("config") or {}
         policy = load_policy_for_config(cfg)
-        rules = target_rule_ids or ["refund_limit"]
         genome = AttackGenome.model_validate(cand["genome"])
+        rules = _candidate_target_rules(cand, genome, target_rule_ids)
         adapter = _make_adapter(cfg)
         minimized = minimize_genome(
             genome,
