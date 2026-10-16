@@ -236,6 +236,15 @@ uv run mutiny test    # replay saved regressions after a finding is saved
 
 The sample agent uses a scripted offline model when `OPENAI_API_KEY` is unset — good for local smoke and CI. More detail: [`examples/openai_support_agent/`](./examples/openai_support_agent/).
 
+**Target credentials and mutation credentials are separate.** `OPENAI_API_KEY`
+alone does not enable the Featherless mutator. To enable LLM mutations, set
+`MUTINY_FEATHERLESS_API_KEY` (or `FEATHERLESS_API_KEY`). A non-empty
+`MUTINY_FEATHERLESS_BASE_URL` explicitly opts into a compatible endpoint and
+allows `OPENAI_API_KEY` as a fallback mutation key; use a key issued for that
+endpoint. Otherwise mutations use templates. Invalid `MUTINY_LLM_TIMEOUT` or
+`MUTINY_LLM_TEMPERATURE` values also select templates, and `/api/health` reports
+`llm_configured=false` while remaining available. See [`.env.example`](./.env.example).
+
 ### Your own OpenAI Agents SDK project
 
 ```bash
