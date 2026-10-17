@@ -74,6 +74,38 @@ def test_extract_tool_calls_parses_json_arguments() -> None:
     assert extract_assistant_message(result) == "done"  # type: ignore[arg-type]
 
 
+@pytest.mark.parametrize(
+    ("raw_item", "expected"),
+    [
+        (
+            {"name": "issue_refund", "arguments": {"amount": 250}},
+            {"amount": 250},
+        ),
+        (
+            {"name": "issue_refund", "arguments": "not-json"},
+            {"_raw": "not-json"},
+        ),
+        (
+            {"name": "issue_refund", "arguments": "[1, 2]"},
+            {"value": [1, 2]},
+        ),
+    ],
+)
+def test_extract_tool_calls_accepts_dict_raw_items_and_argument_shapes(
+    raw_item: dict[str, Any], expected: dict[str, Any]
+) -> None:
+    """SDK raw items may expose dicts and malformed/scalar argument payloads."""
+    item = SimpleNamespace(type="tool_call_item", raw_item=raw_item)
+    result = _FakeResult(final_output=None, new_items=[item])
+
+    calls = extract_tool_calls(result)  # type: ignore[arg-type]
+
+    assert len(calls) == 1
+    assert calls[0].name == "issue_refund"
+    assert calls[0].id == "oa-tc-1"
+    assert calls[0].arguments == expected
+
+
 def test_adapter_step_maps_runner_result() -> None:
     fake_agent = SimpleNamespace(name="A", tools=[])
     adapter = OpenAIAgentsAdapter(
