@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | **Status** | Canonical for runtime behavior and data contracts |
-| **Last updated** | 2026-09-09 |
+| **Last updated** | 2026-10-18 |
 | **Related** | [ARCHITECTURE](./ARCHITECTURE.md) · [PRD](./PRD.md) · [IMPLEMENTATION_PLAN](./IMPLEMENTATION_PLAN.md) |
 
 This document explains **exactly how Mutiny works**. An engineer should be able to implement the system from this + ARCHITECTURE without inventing hidden behavior.
@@ -22,17 +22,17 @@ Mutiny runs **campaigns**: bounded evolutionary searches for multi-turn conversa
 
 ```mermaid
 flowchart LR
-  CLI[mutiny CLI] --> C[Mutiny Core]
+  CLI[Local CLI] --> C[Local Mutiny Core]
   H[Hosted Web] --> A[Hosted API]
-  A --> C
   C --> AL[Adapter Layer]
   AL --> OAI[OpenAI Agents SDK Adapter]
   OAI --> U[Customer agent project]
-  AL --> D[Sample / demo agent]
+  CLI -->|optional redacted ingest| A
+  A -->|trusted demo target only| DC[Demo Core runner]
+  DC --> D[in_process_demo harness]
   C --> P[Policy / Fitness]
   A --> DB[(SQLite)]
   C -.events.-> CLI
-  C -.events.-> A
   A -.SSE.-> H
 ```
 
@@ -41,6 +41,12 @@ flowchart LR
 **Decision plane:** Mutiny Core (framework-independent)  
 **Evidence plane:** Traces (+ optional SQLite for Hosted)  
 **Target plane:** Adapter Layer → OpenAI Agents SDK Adapter → customer agent (or sample/demo)
+
+Customer adapters and policy files are loaded on Local CLI only. Hosted
+`project_path` is opaque metadata; customer create/start execution is retired
+(410). The separate trusted `in_process_demo` path is the only Hosted execution
+target, not a route to customer adapters. Hosted receives customer results through
+redacted ingest and displays them over HTTP/SSE.
 
 Adapter interfaces are **framework-neutral**. OpenAI-specific logic lives only in the OpenAI Agents SDK adapter. Campaign, policy, minimize, regression, and fitness stay framework-independent—no OpenAI leakage into Core.
 ---
@@ -82,7 +88,7 @@ If tool calls cannot be observed, campaign start **fails loudly**. Framework SDK
 
 ---
 
-## 3. Campaign lifecycle (`mutiny run` / Hosted start)
+## 3. Campaign lifecycle (local customer execution / Hosted demo start)
 
 ### States
 
@@ -108,7 +114,9 @@ stateDiagram-v2
 
 ### Steps
 
-1. **Load** — CLI/API loads `policy.yaml`, `mutiny.yaml`, and adapter (customer project or sample).  
+1. **Load** — Local CLI loads customer `policy.yaml`, `mutiny.yaml`, and adapter.
+   Hosted start loads only its trusted demo harness/config; customer project
+   file loading and adapter execution are removed.
 2. **Create** — store campaign config (policy set, N, Gmax, target id, model pins, attestation if Hosted).  
 3. **Discover** — optional tool discovery via adapter introspection / dry probe (inform policy editing; does not replace explicit policies).  
 4. **Start** — health checks as applicable; concurrency=1; spawn campaign loop.  
@@ -411,7 +419,7 @@ sequenceDiagram
 
 ---
 
-## 12. Frontend → API → Core → Adapter → Target → Trace
+## 12. Frontend → API → trusted demo Core → demo adapter → Trace
 
 **Current (trusted demo only):** Hosted supervisor may still run Core + adapter **in-process** for `in_process_demo`. Customer `openai_agents` + `project_path` create/start is **removed** (`410 hosted_customer_execution_removed`; `MUTINY_ALLOW_PROJECT_EXEC` ignored — M-PR8E). Customer `project_path` filesystem access is also **removed** (`410 hosted_filesystem_access_removed` — P0-3).
 
@@ -423,7 +431,7 @@ sequenceDiagram
   participant API as API
   participant CE as Campaign Engine
   participant Ad as Adapter
-  participant Ag as Sample or attached agent
+  participant Ag as Trusted in_process_demo harness
   participant PE as Policy/Fitness
   participant DB as SQLite
 
@@ -683,15 +691,16 @@ flowchart TB
     Ports[Adapter + LLM ports]
   end
 
-  subgraph sample [Reference]
+  subgraph sample [Trusted demo execution only]
     Demo[apps/demo_agent]
-    InProc[Demo / sample adapter]
+    InProc[Demo Core runner and adapter]
   end
 
   CLI --> Campaign
   Web --> API
   API --> DB
-  API --> Campaign
+  CLI -->|optional redacted ingest| API
+  API -->|in_process_demo only| InProc
   Campaign --> Mutate
   Campaign --> Fitness
   Fitness --> Policy
@@ -702,7 +711,7 @@ flowchart TB
   Regress --> Policy
   Ports --> AL
   AL --> OAI --> Proj
-  AL --> InProc --> Demo
+  InProc --> Demo
 ```
 
 Future adapters (LangGraph, CrewAI, PydanticAI, AutoGen, HTTP, …) attach at the Adapter Layer without changing Core campaign/policy/minimize/regression/fitness.

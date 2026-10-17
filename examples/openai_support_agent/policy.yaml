@@ -1,8 +1,9 @@
 # =============================================================================
-# Sample project policy — shared by CLI (`mutiny run`) and Hosted
+# Sample project policy — evaluated by Local CLI (`mutiny run` / `mutiny test`)
 # =============================================================================
-# This is the product path: Hosted loads THIS file via project_path, not the
-# harness fixture under examples/policies/demo_support.json.
+# Local CLI reads this file; --hosted uploads redacted policy/evidence as data.
+# Hosted never reads it via project_path. The demo harness has a separate fixture
+# under examples/policies/demo_support.json.
 #
 # version is recorded on regression save (provenance.policy_version).
 # =============================================================================

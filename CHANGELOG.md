@@ -20,6 +20,11 @@ source checkout for these changes until maintainers publish another release.
 
 ### Fixed
 
+- Correct sample/scaffold Hosted copy and system diagrams: Local CLI executes
+  customer adapters; Hosted observes redacted ingest. `/api/meta` now advertises
+  only `in_process_demo` as a Hosted execution target and marks `openai_agents`
+  retired, with no `project_path` execution requirement (#62).
+
 - Coerce numeric-looking string tool arguments for `gt`/`gte`/`lt`/`lte`
   constraints and numeric boundary fitness (#42, commit `bd6a37b`, PR #50).
   Currency-formatted numeric arguments are also recognized (PR #83). These

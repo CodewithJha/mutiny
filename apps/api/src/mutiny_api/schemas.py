@@ -91,7 +91,7 @@ class HealthResponse(BaseModel):
     demo_pin: str | None = "iris-demo-pin"
     # Supported campaign targets (openai_agents create/start retired on Hosted)
     target_allowlist: list[str] = Field(
-        default_factory=lambda: ["in_process_demo", "openai_agents"]
+        default_factory=lambda: ["in_process_demo"]
     )
     # M-PR8E: customer project_path adapter exec removed; trusted demo only.
     adapter_loading: str = "trusted_demo_only"
@@ -117,8 +117,10 @@ class MetaResponse(BaseModel):
     safety: dict[str, Any] = Field(
         default_factory=lambda: {
             "attestation_required": True,
-            "targets": ["in_process_demo", "openai_agents"],
-            "project_path_required_for": ["openai_agents"],
+            "targets": ["in_process_demo"],
+            "project_path_required_for": [],
+            "retired_execution_targets": ["openai_agents"],
+            "customer_execution_location": "local_cli",
             "hosted_customer_adapter_exec": False,
             "hosted_customer_execution": "removed",
             "hosted_customer_filesystem": "removed",

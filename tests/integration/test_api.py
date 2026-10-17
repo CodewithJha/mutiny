@@ -44,8 +44,7 @@ def test_health(client: TestClient):
     assert body["api"] is True
     assert body["db"] is True
     assert body["status"] == "ok"
-    assert "openai_agents" in body["target_allowlist"]
-    assert "in_process_demo" in body["target_allowlist"]
+    assert body["target_allowlist"] == ["in_process_demo"]
     assert body["adapter_loading"] == "trusted_demo_only"
     assert "openai_support_agent" not in body["target_allowlist"]
 
@@ -220,8 +219,18 @@ def test_meta_project_path_model(client: TestClient):
     r = client.get("/api/meta")
     assert r.status_code == 200
     safety = r.json()["safety"]
-    assert "openai_agents" in safety["targets"]
-    assert "openai_agents" in safety["project_path_required_for"]
+    assert safety["targets"] == ["in_process_demo"]
+    assert safety["project_path_required_for"] == []
+    assert safety["retired_execution_targets"] == ["openai_agents"]
+    assert safety["customer_execution_location"] == "local_cli"
+    from mutiny_api.schemas import MetaResponse
+
+    defaults = MetaResponse(version="test").safety
+    for key in (
+        "targets", "project_path_required_for", "retired_execution_targets",
+        "customer_execution_location",
+    ):
+        assert defaults[key] == safety[key]
     assert safety["hosted_customer_adapter_exec"] is False
     assert safety["hosted_customer_adapter_exec_env"] == "MUTINY_ALLOW_PROJECT_EXEC"
     assert safety["hosted_customer_execution"] == "removed"

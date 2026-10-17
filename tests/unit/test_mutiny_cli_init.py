@@ -35,7 +35,7 @@ def test_mutiny_init_creates_artifacts(tmp_path: Path, capsys) -> None:
     assert "bump" in text.lower() or "version" in text
     cfg = yaml.safe_load(config.read_text())
     assert "api_url" in cfg["hosted"]
-    assert "target" not in cfg["hosted"]  # Hosted uses cwd as project_path
+    assert "target" not in cfg["hosted"]  # Hosted receives local results through ingest.
     assert cfg["hosted"].get("policy_set_id") is None  # project policy.yaml, not demo_support
     assert "OpenAI Agents SDK" in adapter.read_text() or "OpenAIAgentsAdapter" in adapter.read_text()
 

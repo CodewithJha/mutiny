@@ -1,4 +1,4 @@
-"""Hosted / CLI helpers for the sample OpenAI Agents SDK project."""
+"""Local CLI helpers for the sample OpenAI Agents SDK project."""
 
 from __future__ import annotations
 
@@ -40,7 +40,8 @@ def make_openai_support_adapter(
 ) -> OpenAIAgentsAdapter:
     """Build adapter from the sample project's ``.mutiny/adapter.py``.
 
-    Same loader Hosted uses for any customer OpenAI Agents SDK project.
+    Same loader Local CLI uses for customer OpenAI Agents SDK projects.
+    Hosted observes ingested results and does not load customer adapters.
     Always returns ``OpenAIAgentsAdapter`` — never the legacy in-process demo.
     """
     root = project_root or sample_project_root(repo_root)

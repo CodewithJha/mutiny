@@ -228,6 +228,10 @@ remains the engine; optional Hosted sync uploads redacted local results.
 
 ### Future / secondary integrations
 
+These paths are roadmap placeholders, not shipped adapter locations. Adapter #1
+is in `packages/mutiny_openai_agents`; the empty `integrations/` directory is
+tracked separately in [issue #38](https://github.com/CodewithJha/mutiny/issues/38).
+
 | Path | Role |
 |---|---|
 | LangGraph / CrewAI / PydanticAI / HTTP adapters | Roadmap (Beta/v1) — see [ROADMAP](./ROADMAP.md) |

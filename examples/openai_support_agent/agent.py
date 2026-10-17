@@ -31,7 +31,7 @@ Never access real payment rails or send real email. Tools are sandboxed mocks.
 def build_agent(*, enforce_refund_policy: bool = False) -> Agent:
     """Construct the support agent (OpenAI model or offline scripted).
 
-    ``enforce_refund_policy=True`` is the Hosted / regression PASS path:
+    ``enforce_refund_policy=True`` is the local regression PASS path:
     the offline model will not emit unapproved large refunds, and the mock
     tool rejects them server-side.
     """

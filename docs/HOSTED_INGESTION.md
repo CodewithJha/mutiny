@@ -5,9 +5,11 @@
 | **Status** | **Complete (M-PR8A–E)** — contract + Hosted ingest API + CLI local-exec sync + Web observe copy + **production customer `exec_module` removed** |
 | **Milestone** | M-PR8A–E (ADR-019 observe-only Hosted) |
 | **Anchors** | ADR-019 (Option A observe-only), ADR-021 (Bearer auth), M-PR3 (redaction), M-PR1 (historical kill-switch; superseded by M-PR8E) |
-| **Last updated** | 2026-09-09 |
+| **Last updated** | 2026-10-18 |
 
-This document defines the **CLI → Hosted ingestion contract**: how a completed (or streaming) Local CLI campaign/test becomes Hosted lineage without Hosted executing customer Python.
+This document defines the **CLI → Hosted ingestion contract**. Current CLI
+uploads completed campaigns with `mutiny run --hosted`; test-run envelopes and
+streaming describe API capabilities or future clients, not available CLI flags.
 
 **Out of scope here:** upload endpoints, schema migrations, CLI/Hosted runtime changes, workers, retries, signing, object storage, multi-tenancy.
 
@@ -21,7 +23,7 @@ Give Mutiny a smallest stable contract so that:
 2. Hosted persists **sanitized** campaign metadata, events, evidence, regressions, and test-run results.
 3. Existing Hosted concepts (`projects`, `campaigns`, `candidates`, `traces`, `events`, `regressions`, `test_runs`, SSE) are **reused**, not duplicated under a second “runs” ontology.
 4. Local campaign success **never** depends on Hosted availability.
-5. Future `mutiny run --hosted` means **local execute + sync**, not “execute adapter inside Hosted.”
+5. Implemented `mutiny run --hosted` means **local execute + sync**, not “execute adapter inside Hosted.”
 
 ---
 
@@ -41,7 +43,7 @@ CampaignSupervisor customer path → REMOVED (410 hosted_customer_execution_remo
 ### Current (ADR-019 / this contract — **Implemented** through M-PR8E)
 
 ```text
-Local CLI (mutiny run / mutiny test)
+Local CLI (mutiny run --hosted; mutiny test stays local)
         │
         │  customer adapter + Core campaign / replay
         │  policy evaluate → fitness → minimize (raw in-memory OK)
@@ -248,7 +250,7 @@ CLI still reports local success/failure as today
         ↓
 warn on stderr; write .mutiny/hosted-pending/<campaign_id>.json (sanitized)
         ↓
-retry later (manual or future `mutiny sync`) — **not** auto-retried in M-PR8C
+retry manually; `mutiny sync` does not exist — no automatic retry in M-PR8C
 ```
 
 **Rules:**
@@ -318,7 +320,9 @@ Hosted stores:
 
 **Ownership without new columns (v1):** regressions remain linked via `campaign_id` → `campaigns.project_id` (same join Hosted list-by-project uses today). Adding `project_id` on `regressions` is **deferred** (called out in PRODUCTION_READINESS later work) unless implementation proves the join insufficient.
 
-**Hosted does not execute** regression replay for CLI-originated test runs. Existing `POST /api/tests/run` supervisor path remains interim localhost/demo behavior until M-PR8 removes customer exec.
+**Hosted does not execute** regression replay for CLI-originated test runs.
+`POST /api/tests/run` may replay the trusted demo harness only; customer execution
+was removed by M-PR8E. API test-run ingest does not imply a CLI upload flag.
 
 ---
 
@@ -330,6 +334,10 @@ Hosted stores:
 | `mutiny run --hosted` / `--hosted-url` | **Local Core execution**, then **end-of-run** redacted ingest to Hosted. **Does not** mean “run adapter inside Hosted.” |
 | `mutiny test` | Local replay only by default. |
 | `mutiny test --hosted` | **Not implemented in M-PR8C** (payload helper exists; CLI flag deferred). |
+| `mutiny sync` | **Not implemented**; future retry tooling only, not an available command. |
+
+Neither deferred command appears in CLI help. Run `mutiny test` locally; do not
+use the future flag or retry command as onboarding steps.
 
 **Semantics:**
 

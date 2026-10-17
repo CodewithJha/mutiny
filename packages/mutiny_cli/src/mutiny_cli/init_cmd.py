@@ -43,10 +43,11 @@ def create_adapter() -> OpenAIAgentsAdapter:
 
 POLICY_YAML = '''\
 # =============================================================================
-# Mutiny project policy — ONE source of truth for CLI + Hosted
+# Mutiny project policy — ONE source of truth for Local CLI
 # =============================================================================
 # Location: <project>/policy.yaml  (this file)
-# Hosted and `mutiny run` both load THIS file from your project directory.
+# Local CLI loads this file; --hosted uploads redacted policy/evidence as data.
+# Hosted does not read policy.yaml or execute adapters through project_path.
 #
 # Rules are deterministic tool-use invariants (not prompts, not an LLM judge).
 # Supported kinds:
@@ -116,8 +117,9 @@ rng_seed: 5
 
 # Optional Hosted control plane (opt-in via `mutiny run --hosted`).
 # URL here does NOT auto-select Hosted — local Core is the default.
-# Hosted loads THIS project's .mutiny/adapter.py and policy.yaml via project_path
-# only when Hosted customer project exec is enabled on the API (see SECURITY.md).
+# Local CLI executes .mutiny/adapter.py and evaluates policy.yaml.
+# --hosted sends redacted results to Hosted ingest; project_path is metadata only.
+# Hosted customer adapter execution and filesystem access are removed (410).
 hosted:
   api_url: "http://127.0.0.1:8000"
   ui_url: "http://127.0.0.1:3000"
@@ -169,7 +171,7 @@ def run_init(*, project_root: Path, force: bool = False) -> int:
     print("  1. Edit .mutiny/adapter.py  → set AGENT_REF + POLICY_CONTEXT")
     print("  2. Review policy.yaml       → match YOUR tool names (version field)")
     print("  3. mutiny run              → local campaign (default; this project's policy)")
-    print("  4. mutiny run --hosted     → optional Hosted API (explicit opt-in)")
+    print("  4. mutiny run --hosted     → local execution + redacted Hosted sync (opt-in)")
     print()
     print("Authorized testing only. Mock / sandbox tools recommended.")
     return 0

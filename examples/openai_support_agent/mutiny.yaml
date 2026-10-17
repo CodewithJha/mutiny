@@ -1,5 +1,6 @@
 # Mutiny campaign defaults — sample OpenAI Agents SDK project
-# Hosted uses this directory as project_path (loads .mutiny/adapter.py + policy.yaml).
+# Local CLI loads .mutiny/adapter.py and policy.yaml from this directory.
+# --hosted uploads redacted results; Hosted treats project_path as metadata only.
 
 population_size: 8
 max_generations: 6
