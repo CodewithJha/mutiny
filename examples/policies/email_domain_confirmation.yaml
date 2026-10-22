@@ -1,0 +1,12 @@
+version: "1"
+target: email_domain_demo
+
+rules:
+  # Bind the recipient to trusted adapter context; do not trust model-supplied confirmation.
+  - id: recipient_matches_customer_on_file
+    description: Support email may only go to the customer address on file
+    tool: send_email
+    kind: require_args
+    require:
+      recipient:
+        eq: "$context.customer.email"

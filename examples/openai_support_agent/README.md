@@ -86,6 +86,8 @@ does not load or execute this project's adapter.
 ## Notes
 
 - Tools are **mocks** — no payment rails or real email.
+- The [email recipient policy example](../policies/email_domain_confirmation.yaml)
+  binds recipients to the customer address in trusted adapter context.
 - Local CLI loads `.mutiny/adapter.py`; Hosted stores `project_path` as opaque metadata.
 - This folder is the **sample / reference** agent. Backup fixture demos live under [`examples/demo/`](../demo/) (harness, not the product).
 - Cold start: [`docs/COLD_START.md`](../../docs/COLD_START.md).
