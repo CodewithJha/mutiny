@@ -2,11 +2,11 @@ version: "1"
 target: email_domain_demo
 
 rules:
-  # Every mock send_email call must carry explicit recipient-domain confirmation.
-  - id: require_recipient_domain_confirmation
-    description: Email recipients must have an explicitly confirmed domain
+  # Bind the recipient to trusted adapter context; do not trust model-supplied confirmation.
+  - id: recipient_matches_customer_on_file
+    description: Support email may only go to the customer address on file
     tool: send_email
     kind: require_args
     require:
-      recipient_domain_confirmed:
-        eq: true
+      recipient:
+        eq: "$context.customer.email"

