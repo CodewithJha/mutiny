@@ -1,8 +1,10 @@
-# Nixpacks/Docker build context — do NOT ignore .mutiny (Docker cannot
+# Docker build context — do NOT ignore .mutiny (Docker cannot
 # re-include files under an excluded parent dir). Sample adapter must ship.
 .env
 .env.*
 !.env.example
+**/.env
+**/.env.*
 __pycache__/
 *.py[cod]
 *$py.class
@@ -26,5 +28,9 @@ node_modules/
 .worktrees/
 .vscode/
 .idea/
+.git/
+.codex/
+.agents/
+.uv-cache/
 apps/web/node_modules/
 apps/web/.next/

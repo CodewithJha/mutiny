@@ -129,6 +129,34 @@ mutiny db restore --from /secure/backups/mutiny-YYYYMMDD.sqlite --db /path/to/mu
 
 **Not provided:** automated off-site replication, PostgreSQL, or Web `POST /api/db/*` endpoints.
 
+## Container deployment (MUT-012 / #63)
+
+Compose builds the API and production Next.js UI from the root Dockerfile.
+Python dependencies are installed with `uv sync --locked` and JavaScript
+dependencies with `npm ci` during image build. Restarts use the built virtual
+environment / standalone server; no package installation occurs at startup.
+Rebuild images to apply dependency or base-image updates. Lockfiles constrain
+application dependencies; image tags and build tooling still require trusted
+registries and a trusted build environment.
+
+The API runs as UID/GID 10001 and the UI as the image's `node` user. Source and
+dependencies in the API image are root-owned. Compose mounts only the named
+`mutiny-data` volume at `/app/data`, with no host checkout bind mount. Both host
+ports bind to `127.0.0.1`. The API still listens on `0.0.0.0` inside its container
+and requires `MUTINY_API_TOKEN` through `python -m mutiny_api` before listening.
+
+The UI proxies that shared operator token for its visitors. Keep it on a trusted
+local machine: exposing port 3000 through a public proxy requires separate
+access control. Non-root execution and restricted mounts reduce host exposure;
+containers still share the host kernel and are not a sandbox for hostile agents.
+
+Railway builds the default API image and uses its installed Python environment.
+Its startup keeps the existing sample-ensure check; customer execution remains
+removed. Configure a persistent volume at `/app/data` writable by UID/GID 10001
+if durable storage is needed. New Docker named volumes inherit image directory
+ownership; existing or externally provisioned volumes need permissions set by
+the operator. See [COLD_START](./docs/COLD_START.md) for commands and backup notes.
+
 ## Reporting a vulnerability
 
 Please **do not** open a public GitHub issue for security-sensitive reports.

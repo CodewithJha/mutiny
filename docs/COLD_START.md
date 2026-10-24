@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | **Status** | Canonical clean-machine bootstrap |
-| **Last updated** | 2026-08-09 |
+| **Last updated** | 2026-10-24 |
 | **Pin** | [`config/demo_pin.json`](../config/demo_pin.json) |
 
 Use this on a clean machine. Competitive claims stay frozen to [COMPETITOR_ANALYSIS.md](./COMPETITOR_ANALYSIS.md).
@@ -86,7 +86,60 @@ Verify:
 - [ ] Open `http://127.0.0.1:3000` — safety banner visible  
 - [ ] Narrative: sample/reference agent, not “this is the product”  
 
-**docker-compose:** use when you want containerized API + web (`docker compose up --build`). Prefer `scripts/dev.sh` for local iteration. Compose sets `MUTINY_DB_PATH=/app/data/mutiny.sqlite` (honored by the API). The bind mount `.:/app` keeps that file on the host under `./data/`; there is no separate named volume. Compose binds the API to `0.0.0.0`, so **`MUTINY_API_TOKEN` is required** (P0-1/P0-4) — unset/empty fails closed before listen. Set the same value on `api` and `web`. Compose also sets `MUTINY_API_URL=http://api:8000` on `web` so Next rewrites reach the API service (not `127.0.0.1`).
+### Containerized local demo (MUT-012 / #63)
+
+Set `MUTINY_API_TOKEN` in your shell or an uncommitted `.env` file, then run:
+
+```bash
+docker compose up --build -d
+curl -f http://127.0.0.1:8000/api/health
+# Open http://127.0.0.1:3000
+docker compose down
+```
+
+Both host ports publish only on `127.0.0.1`. The UI acts for its visitors using
+the operator token, so keep it local or behind your own authenticated proxy.
+Compose passes the same token to both services. The API's internal `0.0.0.0`
+bind still fails closed without a token; the supported entrypoint remains
+`python -m mutiny_api`.
+
+Dependencies are installed at image build (`uv sync --locked --no-dev
+--no-editable --package mutiny-api`, `npm ci`, `npm run build`). Runtime uses
+non-root users and the prebuilt Python environment / Next.js standalone server.
+Rebuild after dependency or source changes; use `scripts/dev.sh` for hot reload.
+The web image's API rewrite destination is a **build argument**,
+`MUTINY_API_URL` (Compose: `http://api:8000`), because Next.js bakes rewrites into
+its build. The token is runtime-only; never supply it as a build argument.
+
+Only a named `mutiny-data` volume is mounted at `/app/data`; neither container
+mounts the host checkout. The database is `/app/data/mutiny.sqlite`, not the
+host's `./data/mutiny.sqlite`. `docker compose down` retains the volume;
+`docker compose down -v` deletes it. To back it up using the documented SQLite
+backup API, stage the backup inside the volume and copy it out:
+
+```bash
+docker compose exec api python -c "import sqlite3; source=sqlite3.connect('/app/data/mutiny.sqlite'); dest=sqlite3.connect('/app/data/backup.sqlite'); source.backup(dest); dest.close(); source.close()"
+docker compose cp api:/app/data/backup.sqlite ./mutiny-backup.sqlite
+```
+
+Keep backups private. Existing host `./data/` databases are not migrated
+automatically; back them up and restore deliberately before switching. An
+existing volume or an optional data-only bind mount must be writable by API
+UID/GID `10001:10001`; fresh named volumes inherit image directory ownership.
+
+### Railway API image
+
+`railway.toml` selects the root Dockerfile's final `api` stage. Build dependencies
+are already installed; startup runs the existing sample-ensure check and then
+`python -m mutiny_api`, expanding Railway's `PORT`. Set `MUTINY_API_TOKEN` in the
+service environment. No `uv sync` or package manager runs at boot. The sample
+files are prepared during image build, preserving the existing ensure behavior
+(MUT-066 is separate).
+
+For persistence, attach a volume at `/app/data` with ownership allowing UID/GID
+`10001:10001` to write it. Without a volume, database state is ephemeral across
+replacement deployments. This change does not provide public UI authentication
+or multi-tenant isolation; see [SECURITY.md](../SECURITY.md#container-deployment-mut-012--63).
 
 ---
 

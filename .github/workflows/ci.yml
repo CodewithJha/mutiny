@@ -140,6 +140,57 @@ jobs:
       - name: Build
         run: npm run build
 
+  container-smoke:
+    name: container-smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      MUTINY_API_TOKEN: container-ci-dummy-token
+      COMPOSE_PROJECT_NAME: mutiny-ci
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build and start production images
+        run: docker compose up --build -d
+
+      - name: Check readiness and container boundaries
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:8000/api/health >/dev/null &&
+               curl --fail --silent http://127.0.0.1:3000 >/dev/null; then
+              break
+            fi
+            sleep 2
+          done
+          curl --fail http://127.0.0.1:8000/api/health
+          curl --fail --silent http://127.0.0.1:3000 >/dev/null
+          # Same-origin proxy must reach the API and inject the runtime token.
+          curl --fail http://127.0.0.1:3000/api/campaigns
+          docker compose exec -T api sh -c 'test "$(id -u)" = 10001 && test -w /app/data && test ! -w /app/.venv && test ! -w /app/examples'
+          docker compose exec -T web sh -c 'test "$(id -u)" != 0'
+          # The named volume is the only API mount; web has no host mounts.
+          test "$(docker inspect --format '{{len .Mounts}}' "$(docker compose ps -q api)")" = 1
+          test "$(docker inspect --format '{{(index .Mounts 0).Type}}' "$(docker compose ps -q api)")" = volume
+          test "$(docker inspect --format '{{len .Mounts}}' "$(docker compose ps -q web)")" = 0
+
+      - name: Confirm missing token fails before listen
+        run: |
+          set +e
+          timeout 15 docker compose run --rm --no-deps -e MUTINY_API_TOKEN= api
+          status=$?
+          test "$status" = 2
+
+      - name: Container logs
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Clean up test containers and data
+        if: always()
+        run: docker compose down -v
+
   package-build:
     name: package-build
     runs-on: ubuntu-latest

@@ -1,16 +1,12 @@
 services:
   api:
-    image: python:3.12-slim
-    working_dir: /app
+    build:
+      context: .
+      target: api
     volumes:
-      # Bind-mount keeps MUTINY_DB_PATH (/app/data/...) on the host ./data/
-      - .:/app
-    command: >
-      bash -lc "pip install -q uv && uv sync &&
-      PYTHONPATH=apps/api/src:apps/demo_agent/src:packages/mutiny_core/src
-      uv run python -m mutiny_api --host 0.0.0.0 --port 8000"
+      - mutiny-data:/app/data
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     environment:
       # Honored by mutiny_api.db.resolve_db_path (M-PR4).
       - MUTINY_DB_PATH=/app/data/mutiny.sqlite
@@ -18,18 +14,20 @@ services:
       # Set the same value on `web` so the Next rewrite can inject Authorization.
       - MUTINY_API_TOKEN=${MUTINY_API_TOKEN:?set MUTINY_API_TOKEN for non-loopback Hosted}
   web:
-    image: node:22-bookworm
-    working_dir: /app/apps/web
-    volumes:
-      - .:/app
-    command: bash -lc "npm install && npm run dev -- --hostname 0.0.0.0 --port 3000"
+    build:
+      context: .
+      target: web
+      args:
+        MUTINY_API_URL: http://api:8000
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     depends_on:
       - api
     environment:
-      - WATCHPACK_POLLING=true
       # Same token as `api` so middleware can inject Authorization on rewrites.
       # Use the Docker service hostname — 127.0.0.1 is wrong inside this container.
       - MUTINY_API_TOKEN=${MUTINY_API_TOKEN:?set MUTINY_API_TOKEN for non-loopback Hosted}
-      - MUTINY_API_URL=http://api:8000
+      # API destination is set at image build time above.
+
+volumes:
+  mutiny-data:
