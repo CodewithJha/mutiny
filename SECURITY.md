@@ -129,6 +129,21 @@ mutiny db restore --from /secure/backups/mutiny-YYYYMMDD.sqlite --db /path/to/mu
 
 **Not provided:** automated off-site replication, PostgreSQL, or Web `POST /api/db/*` endpoints.
 
+## Attestation audit metadata (P1-1)
+
+Attestation is an operator acknowledgment, not authorization. Single-tenant
+authorization remains possession of `MUTINY_API_TOKEN` when configured; the
+shared token does not identify an individual person. Loopback demos may run
+without authentication under the rules above.
+
+Accepted campaign starts persist `attestation: true` and a server-generated UTC
+`attested_at` in the `attestation.accepted` event. Campaign ingestion persists
+the same fields in campaign config. For ingestion, this is the server receipt
+time, not the local execution time; client timestamps cannot override it, and
+idempotent retries retain the original value. Existing records are not backfilled.
+This audit metadata stores neither the raw bearer token nor a token fingerprint.
+No individual identity, multi-tenant authorization, or customer execution is added.
+
 ## Reporting a vulnerability
 
 Please **do not** open a public GitHub issue for security-sensitive reports.
