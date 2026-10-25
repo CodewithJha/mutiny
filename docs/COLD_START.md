@@ -82,7 +82,7 @@ If `apps/web/node_modules` is missing, run `cd apps/web && npm install` first.
 
 Verify:
 
-- [ ] `GET http://127.0.0.1:8000/api/health` → healthy JSON  
+- [ ] `GET http://127.0.0.1:8000/api/health` → inspect `status` using the [health field guide](./API_HEALTH.md)
 - [ ] Open `http://127.0.0.1:3000` — safety banner visible  
 - [ ] Narrative: sample/reference agent, not “this is the product”  
 

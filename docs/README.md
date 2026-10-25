@@ -47,6 +47,7 @@ with sandboxed mock tools for demos.
 | [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) | Milestones, DoD, sequencing | Product vision, long-term roadmap |
 | [DEMO_SCRIPT.md](./DEMO_SCRIPT.md) | Live demo scripts, backup, Q&A | System internals |
 | [COLD_START.md](./COLD_START.md) | Clean-machine bootstrap + smoke gate | Product narrative |
+| [API_HEALTH.md](./API_HEALTH.md) | Hosted health response fields and interpretation | External model connectivity or customer adapter validation |
 | [GOOD_FIRST_ISSUES.md](./GOOD_FIRST_ISSUES.md) | Catalog of small contributor tasks | Execution ownership of Core redesigns |
 | [CLI.md](./CLI.md) | `mutiny` commands and flags from `--help` | Hosted UI walkthrough |
 | [../CHANGELOG.md](../CHANGELOG.md) | Unreleased + release notes | Live demo narration |
