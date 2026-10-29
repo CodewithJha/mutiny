@@ -165,7 +165,7 @@ MVP limitations are labeled as such, not “bugs.”
 
 | ID | Finding | Evidence | Targets |
 |---|---|---|---|
-| P1-1 | Attestation is **not authorization** (boolean only) | `CampaignStartRequest.attestation`; supervisor `PermissionError` if false | Hosted (and weak Local messaging) |
+| P1-1 | **Audit metadata shipped (#32)**; attestation remains acknowledgment, not authorization | Server UTC `attested_at` in start events / ingest config; false still rejected; no bearer token stored | Single-tenant token possession; individual identity and multi-tenant AuthZ remain out of scope |
 | P1-2 | Docs/architecture claim **rate limits** and **path/URL allowlisting** | **Partial:** in-process Hosted rate limits **shipped (P1-2)**; path/URL allowlisting still only the target enum | Hosted |
 | P1-3 | **Secret redaction** required by PRD — **implemented (M-PR3)** | `mutiny_core.redact`; persist/display wiring | Both (resolved for common patterns) |
 | P1-4 | CLI **Hosted-first** when `api_url` reachable — surprises operators; pushes `project_path` to API | ~~`run_cmd.py`~~ **Resolved (M-PR2):** local default; Hosted only via `--hosted` / `--hosted-url` | Local (ops safety); Hosted blast radius |
@@ -227,7 +227,7 @@ MVP limitations are labeled as such, not “bugs.”
 | Control | Local CLI | Hosted today |
 |---|---|---|
 | AuthN | OS user | **Bearer when configured** (`MUTINY_API_TOKEN`, M-PR7). Loopback may omit for local demo; **non-loopback fails closed without token** (P0-1/P0-4). Supported entrypoint: `python -m mutiny_api` |
-| AuthZ | Operator discipline | Checkbox attestation (not identity) — **P1-1 open** |
+| AuthZ | Operator discipline | Token possession; timestamped attestation acknowledgment (P1-1 audit metadata shipped), not individual identity |
 | Target isolation | Same process as developer agent | **M-PR8E + P0-3:** customer adapter exec + customer FS access permanently removed from Hosted; trusted `in_process_demo` only. **ADR-019 observe-only implemented** |
 | Network bind | N/A (CLI) | Deploy templates may bind `0.0.0.0` **only with** non-empty `MUTINY_API_TOKEN` |
 | Rate limit | N/A (CLI execution unlimited) | **In-process** token-bucket (P1-2; not distributed). Enabled by default when token set |
@@ -557,7 +557,8 @@ Scheduled after Target A gate; do not block 0.2.0.
 - [x] DB backup/export procedure (P2-6 — `mutiny db backup` / `restore`); `MUTINY_DB_PATH` configurable (**done M-PR4**)  
 - [x] Threat model in SECURITY.md matches observe-only + bind/auth + rate limits  
 - [ ] Version **1.0.0** (or explicit 0.4+ “Hosted beta” with same technical bar, labeled beta)  
-- [ ] AuthZ beyond attestation (P1-1); multi-tenant / durable ops as needed for full Target B
+- [x] P1-1 audit metadata: server UTC attestation timestamp persisted for starts and ingest; retries retain original ingest timestamp; no raw bearer token stored (#32).
+- [ ] Multi-tenant AuthZ / durable ops as needed for full Target B; timestamped acknowledgment is not authorization.
 
 ### Future implementation protocol (ONE problem at a time)
 
@@ -607,7 +608,7 @@ Scheduled after Target A gate; do not block 0.2.0.
 | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|
 | Public Hosted RCE via adapter load | Low (path removed) | Critical | M-PR8E permanent remove; observe-only ingest; no public multi-tenant claim |
-| Operators trust attestation as security | High | High | Docs + M-PR7 auth; P1-1 remains |
+| Operators trust attestation as security | High | High | Docs + M-PR7 auth; P1-1 timestamps acknowledgment, not identity or authorization |
 | Doc drift causes wrong roadmap work | Med | Med | P1-7 reconcile; this doc as gate |
 | Refund hardcoding → false “engine doesn’t work” on other tools | Med | Med | M-PR6 |
 | Secret leakage in SQLite/SSE | Med | High | M-PR3 |
@@ -675,7 +676,7 @@ ADR-017 already supersedes ADR-001 for **product priority**. **M-PR2** aligns ru
 ### Critical Findings (P0/P1)
 
 - **P0:** ~~Unauthenticated Hosted + in-process adapter exec + policy write + public bind~~ — **mitigated** (M-PR8E, P0-3, P0-1/P0-4).  
-- **P1 open:** Attestation≠authorization (P1-1); path/URL allowlisting still target enum (remainder of P1-2). *(P1-2 rate limits shipped; P1-3…P1-7 resolved.)*
+- **P1 status:** P1-1 audit metadata shipped (#32); attestation still does not grant authorization. Path/URL allowlisting remains a target enum (remainder of P1-2). *(P1-2 rate limits shipped; P1-3…P1-7 resolved.)*
 
 ### Architectural Findings (ADR needed)
 
@@ -710,7 +711,7 @@ ADR-017 already supersedes ADR-001 for **product priority**. **M-PR2** aligns ru
 9. M-PR8 ADR-019 Hosted execution model  
 10. **P0-3 / P0-1/P0-4 / P1-2 / P1-7** — FS-inert, bind fail-closed, in-process rate limits, docs reconcile (**done**)  
 
-Then remaining P1-1 / P2-* / P3/P4; **1.0.0** only after Target B DoD.
+Then remaining authorization / P2-* / P3/P4 work; **1.0.0** only after Target B DoD.
 
 ### Release Plan
 
