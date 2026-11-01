@@ -64,6 +64,13 @@ source checkout for these changes until maintainers publish another release.
 - The Hosted Policies page no longer calls the retired policy file APIs; it
   shows local-CLI guidance, and the web package gains its first tests (#60,
   PR #137).
+- Hosted records a server-generated UTC `attested_at` for accepted campaign
+  starts and ingested campaigns (stable across idempotent retries; no token
+  stored). Attestation remains an acknowledgment, not authorization (#32,
+  PR #133).
+- Dependencies: Next.js 15.5.28 / React 19.3.1 (Next security release, PR #130);
+  locked fastapi 0.162, openai 3.37, openai-agents 0.24, pydantic 2.14 (PR #131);
+  setup-uv 10.3.0 in CI (PR #129).
 
 ### Removed
 

@@ -2,7 +2,7 @@
 
 Lightweight index of GitHub issues filed from the Mutiny deep audit (findings MUT-001–MUT-068). This is **not** another audit.
 
-Verified against repo `main` (`ade3c11`, after contributor PRs #83–#86, #88, #89, #91–#100, #118, #119, #122–#125, #127, #135, #137; #87 reverted in #90).
+Verified against repo `main` (`8724f9f`, after contributor PRs #83–#86, #88, #89, #91–#100, #118, #119, #122–#125, #127, #133, #135, #137; #87 reverted in #90).
 
 **How to pick work**
 
@@ -72,7 +72,7 @@ Demo process globals (MUT-046) were skipped: Hosted concurrency is 1 and CLI is 
 | MUT-036, MUT-039, MUT-047 | Low value or already noted on a related issue. |
 | MUT-049, MUT-055–MUT-058, MUT-060–MUT-063, MUT-066 | Needs verification — not scheduled as bugs. |
 | MUT-057 | Already documented in SECURITY.md (raw uvicorn bind). |
-| MUT-059 | Accepted single-tenant ingest IDs. Related attestation work: [#32](https://github.com/CodewithJha/mutiny/issues/32). |
+| MUT-059 | Accepted single-tenant ingest IDs. Attestation timestamps shipped in [#32](https://github.com/CodewithJha/mutiny/issues/32) (PR #133). |
 | MUT-067, MUT-068 | Informational documented trust models — not bugs. |
 
 Full mapping lives in the audit-to-issues filing notes (conversation / maintainer summary). Source of truth for remaining work: the GitHub issues above.
