@@ -16,6 +16,7 @@ import asyncio
 import json
 import logging
 import os
+from datetime import datetime, timezone
 from typing import Any
 
 from mutiny_core.redact import REDACTED, redact_secrets
@@ -113,7 +114,7 @@ def enforce_envelope(body: IngestEnvelopeBase) -> None:
 
 def _campaign_config_fingerprint(config: dict[str, Any]) -> str:
     """Compare durable ingest config identity (ignore volatile timestamps)."""
-    skip = {"started_at", "completed_at", "seq", "mutiny_version"}
+    skip = {"started_at", "completed_at", "seq", "mutiny_version", "attested_at"}
     filtered = {k: v for k, v in config.items() if k not in skip}
     return stable_json_hash(filtered)
 
@@ -213,6 +214,9 @@ class IngestService:
         cfg["execution_mode"] = "local_cli"
         cfg["ingest"] = True
         cfg["attestation"] = True
+        # Server receipt time, never an uploaded timestamp. Retries retain the
+        # original stored config and exclude this field from identity checks.
+        cfg["attested_at"] = datetime.now(timezone.utc).isoformat()
         if body.mutiny_version:
             cfg["mutiny_version"] = body.mutiny_version
         if body.adapter:

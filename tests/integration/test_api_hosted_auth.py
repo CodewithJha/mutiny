@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock
@@ -19,6 +20,8 @@ from mutiny_api.auth import (
     tokens_match,
 )
 from mutiny_cli import run_cmd
+from mutiny_api.db import connect
+from mutiny_api.repository import Repository
 
 
 FAKE_TOKEN = "test-mutiny-api-token-mpr7-not-real"
@@ -468,3 +471,44 @@ def test_e2e_campaign_auth_gate(client: TestClient) -> None:
 def test_auth_disabled_allows_local_demo(client_no_auth: TestClient) -> None:
     r = client_no_auth.get("/api/campaigns")
     assert r.status_code == 200
+
+
+@pytest.mark.parametrize("client_fixture", ["client", "client_no_auth"])
+def test_start_persists_attestation_timestamp(
+    client_fixture, request, api_db, caplog
+) -> None:
+    client = request.getfixturevalue(client_fixture)
+    headers = _auth_headers() if client_fixture == "client" else {}
+    created = client.post(
+        "/api/campaigns", headers=headers,
+        json={
+            "population_size": 2, "max_generations": 1, "elite_count": 1,
+            "max_turns": 2, "target": "in_process_demo",
+        },
+    )
+    assert created.status_code == 201, created.text
+    cid = created.json()["id"]
+    denied = client.post(
+        f"/api/campaigns/{cid}/start", headers=headers,
+        json={"attestation": False},
+    )
+    assert denied.status_code == 403
+    before = datetime.now(timezone.utc)
+    started = client.post(
+        f"/api/campaigns/{cid}/start", headers=headers,
+        json={"attestation": True},
+    )
+    assert started.status_code == 200, started.text
+    after = datetime.now(timezone.utc)
+    conn = connect(api_db)
+    try:
+        events = Repository(conn).list_events(cid)
+        accepted = [e for e in events if e["type"] == "attestation.accepted"]
+        assert len(accepted) == 1
+        payload = accepted[0]["payload"]
+        assert payload["attestation"] is True
+        assert before <= datetime.fromisoformat(payload["attested_at"]) <= after
+        assert FAKE_TOKEN not in "\n".join(conn.iterdump())
+    finally:
+        conn.close()
+    assert FAKE_TOKEN not in caplog.text

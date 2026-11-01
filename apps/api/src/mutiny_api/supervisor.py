@@ -7,6 +7,7 @@ import threading
 import time
 import uuid
 from collections import defaultdict
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -345,6 +346,7 @@ class CampaignSupervisor:
             "attestation.accepted",
             {
                 "attestation": True,
+                "attested_at": datetime.now(timezone.utc).isoformat(),
                 "request_id": request_id,
                 "target": campaign["config"].get("target"),
                 "project_path": campaign["config"].get("project_path"),

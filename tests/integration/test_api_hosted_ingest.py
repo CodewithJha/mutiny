@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from unittest.mock import patch
@@ -98,6 +99,38 @@ def _open_campaign(
         headers=_auth(),
         json=payload,
     ), cid, payload
+
+
+def test_attestation_timestamp_is_server_owned_and_stable(client, api_db, caplog):
+    payload = _envelope(
+        campaign_id="attestation-audit", local_project_key="audit-project",
+        attestation=False, config={"attested_at": "1900-01-01T00:00:00+00:00"},
+    )
+    url = "/api/ingest/v1/campaigns"
+    denied = client.post(url, headers=_auth(), json=payload)
+    assert denied.status_code == 400
+    assert denied.json()["error"]["code"] == "attestation_required"
+    payload["attestation"] = True
+    before = datetime.now(timezone.utc)
+    opened = client.post(url, headers=_auth(), json=payload)
+    after = datetime.now(timezone.utc)
+    assert opened.status_code == 201, opened.text
+    timestamp = opened.json()["campaign"]["config"]["attested_at"]
+    assert before <= datetime.fromisoformat(timestamp) <= after
+    payload["config"]["attested_at"] = "2099-01-01T00:00:00+00:00"
+    retry = client.post(url, headers=_auth(), json=payload)
+    assert retry.status_code == 201, retry.text
+    assert retry.json()["created"] is False
+    assert retry.json()["campaign"]["config"]["attested_at"] == timestamp
+    conn = connect(api_db)
+    try:
+        config = Repository(conn).get_campaign(payload["campaign_id"])["config"]
+        assert config["attestation"] is True
+        assert config["attested_at"] == timestamp
+        assert FAKE_TOKEN not in "\n".join(conn.iterdump())
+    finally:
+        conn.close()
+    assert FAKE_TOKEN not in caplog.text
 
 
 @pytest.mark.parametrize("kind", ["candidate", "trace", "regression"])
