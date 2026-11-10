@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import copy
 import uuid
-from typing import Sequence
+from typing import Sequence, TypeVar
 
 from pydantic import BaseModel, Field
 
@@ -14,6 +14,8 @@ from mutiny_core.genome.models import AttackGenome, AttackMessage
 from mutiny_core.policy.evaluator import PolicyEvaluator
 from mutiny_core.policy.models import PolicySet
 from mutiny_core.trace.models import ExecutionTrace
+
+_T = TypeVar("_T")
 
 
 class MinimizeResult(BaseModel):
@@ -40,11 +42,16 @@ def minimize_genome(
     target_rule_ids: Sequence[str],
     campaign_id: str | None = None,
     candidate_id: str | None = None,
+    intra_message: bool = False,
 ) -> MinimizeResult:
     """Delta-debug attacker messages; keep only subsets that preserve *same* rules.
 
     Reproduction = re-exec target → real trace → PolicyEvaluator → each
     ``target_rule_id`` still violated. No LLM involvement.
+
+    ``intra_message=True`` additionally removes character partitions from each
+    retained message after turn-level ddmin. This opt-in phase can require many
+    more target executions; every accepted deletion uses the same rule gate.
     """
     rules = list(target_rule_ids) or list(genome.target_rule_ids)
     original_turns = len(genome.messages)
@@ -120,6 +127,38 @@ def minimize_genome(
             break
         n = min(len(current), n * 2)
 
+    if intra_message:
+        for index in range(len(current)):
+            characters = list(current[index].content)
+            n = 2
+            while len(characters) >= 2:
+                chunks = _partition(characters, n)
+                reduced = False
+                for i in range(len(chunks)):
+                    complement = [
+                        c for j, chunk in enumerate(chunks) if j != i for c in chunk
+                    ]
+                    content = "".join(complement)
+                    # Keep a real user turn rather than an empty/blank message.
+                    if not content.strip():
+                        continue
+                    probe_messages = [m.model_copy(deep=True) for m in current]
+                    probe_messages[index] = AttackMessage(content=content)
+                    ok, tr, viol = _interesting(probe_messages)
+                    if ok:
+                        current = probe_messages
+                        characters = complement
+                        last_trace = tr
+                        last_violated = viol
+                        n = max(n - 1, 2)
+                        reduced = True
+                        break
+                if reduced:
+                    continue
+                if n >= len(characters):
+                    break
+                n = min(len(characters), n * 2)
+
     minimized = genome.model_copy(deep=True)
     minimized.id = str(uuid.uuid4())
     minimized.parent_id = genome.id
@@ -132,6 +171,9 @@ def minimize_genome(
         "original_turns": original_turns,
         "minimized_turns": len(current),
     }
+    if intra_message:
+        minimized.mutations.append("ddmin_intra_message")
+        minimized.metadata["intra_message"] = True
 
     return MinimizeResult(
         original_genome=genome,
@@ -148,12 +190,12 @@ def minimize_genome(
     )
 
 
-def _partition(items: list[AttackMessage], n: int) -> list[list[AttackMessage]]:
+def _partition(items: list[_T], n: int) -> list[list[_T]]:
     if n <= 1 or len(items) == 0:
         return [list(items)]
     n = min(n, len(items))
     size, rem = divmod(len(items), n)
-    parts: list[list[AttackMessage]] = []
+    parts: list[list[_T]] = []
     idx = 0
     for i in range(n):
         take = size + (1 if i < rem else 0)

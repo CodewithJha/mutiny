@@ -305,7 +305,7 @@ Multiple operators on the same constraint are combined with logical AND: all pre
 
 ## 8. Minimization lifecycle
 
-Goal: smallest message list that still yields the **same rule violation** under re-execution.
+Goal: reduce the conversation while preserving **every target rule violation** under re-execution.
 
 ```mermaid
 flowchart TD
@@ -314,13 +314,28 @@ flowchart TD
   RX -->|still violates| Keep[Accept subset]
   RX -->|not| Reject[Reject subset]
   Keep --> DD
-  DD --> Short{optional AI shorten?}
-  Short -->|yes| AI[Propose shorter text]
-  AI --> RX2[Re-exec gate]
-  RX2 -->|ok| Out[Minimized genome]
+  DD --> Short{intra_message enabled?}
+  Short -->|yes| Chars[Delete character partitions]
+  Chars --> RX2[Re-exec + PolicyEval]
+  RX2 -->|ok| Accept[Accept shorter text]
   RX2 -->|fail| KeepMsg[Keep previous text]
+  Accept --> Chars
+  KeepMsg --> Chars
+  Chars -->|partitions exhausted| Out[Minimized genome]
   Short -->|no| Out
 ```
+
+The Core Python API accepts `minimize_genome(..., intra_message=True)` to run
+character-level ddmin on each retained message after turn-level shrinking.
+The default is `False`; existing CLI and Hosted callers retain turn-only behavior.
+Every accepted deletion resets and executes the target, then checks all requested
+rule IDs through the same policy evaluator. Empty or whitespace-only proposals
+are skipped. `reexec_count` includes both phases and `last_trace` describes the
+accepted final conversation. Enabled runs record `ddmin_intra_message` in mutation
+history and `intra_message=true` in genome metadata.
+
+This phase uses no LLM or tokenizer. It can require many more target executions,
+especially when long text cannot be reduced, so callers must opt in deliberately.
 
 **Invariant:** CLI and Hosted API must refuse regression save unless `still_reproduces=true` on the final genome.
 
