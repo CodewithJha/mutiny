@@ -14,9 +14,11 @@ import ipaddress
 import json
 import logging
 import os
+import time
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Any, Literal
 from urllib.parse import urljoin
@@ -31,6 +33,9 @@ log = logging.getLogger("mutiny_cli.hosted_sync")
 INGEST_SCHEMA_VERSION = 1
 EXECUTION_MODE = "local_cli"
 DEFAULT_TIMEOUT_S = 30.0
+MAX_RATE_LIMIT_RETRIES = 2
+MAX_RETRY_AFTER_S = 5.0
+DEFAULT_RETRY_AFTER_S = 1.0
 
 # Local campaign OK but Hosted sync failed / refused (distinct from local fail=1).
 SYNC_FAILED_EXIT = 3
@@ -484,11 +489,28 @@ def write_pending_bundle(bundle: LocalRunBundle, payloads: dict[str, Any]) -> Pa
         "kind": "hosted_pending_sync",
         "campaign_id": bundle.campaign_id,
         "created_at": _utcnow(),
-        "note": "Sanitized ingest payloads; not executable. Retry is future work.",
+        "note": "Sanitized ingest payloads; not executable. Pending-file replay is future work.",
         "payloads": payloads,
     }
     path.write_text(json.dumps(doc, indent=2), encoding="utf-8")
     return path
+
+
+def _retry_after_seconds(value: str | None) -> float:
+    """Parse delta-seconds or an HTTP date, with a bounded fallback delay."""
+    if value is None:
+        return DEFAULT_RETRY_AFTER_S
+    try:
+        delay = float(int(value))
+    except (ValueError, OverflowError):
+        try:
+            when = parsedate_to_datetime(value)
+            if when.tzinfo is None:
+                when = when.replace(tzinfo=timezone.utc)
+            delay = (when - datetime.now(timezone.utc)).total_seconds()
+        except (ValueError, TypeError, OverflowError):
+            return DEFAULT_RETRY_AFTER_S
+    return min(MAX_RETRY_AFTER_S, max(0.0, delay))
 
 
 class HostedIngestClient:
@@ -553,41 +575,38 @@ class HostedIngestClient:
                 msg = f"{msg}: {detail[:160]}"
         raise HostedSyncError(msg, error_code=code, http_status=status)
 
-    def open_campaign(self, payload: dict[str, Any]) -> dict[str, Any]:
+    def _post(
+        self, path: str, payload: dict[str, Any], *, action: str
+    ) -> dict[str, Any]:
         with self._client() as client:
-            r = client.post("/api/ingest/v1/campaigns", json=payload)
-            self._raise_for_response(r, action="campaign open")
+            for attempt in range(MAX_RATE_LIMIT_RETRIES + 1):
+                r = client.post(path, json=payload)
+                if r.status_code != 429 or attempt == MAX_RATE_LIMIT_RETRIES:
+                    break
+                time.sleep(_retry_after_seconds(r.headers.get("Retry-After")))
+            self._raise_for_response(r, action=action)
             return r.json()
 
+    def open_campaign(self, payload: dict[str, Any]) -> dict[str, Any]:
+        return self._post("/api/ingest/v1/campaigns", payload, action="campaign open")
+
     def post_batch(self, campaign_id: str, payload: dict[str, Any]) -> dict[str, Any]:
-        with self._client() as client:
-            r = client.post(
-                f"/api/ingest/v1/campaigns/{campaign_id}/batch", json=payload
-            )
-            self._raise_for_response(r, action="batch ingest")
-            return r.json()
+        return self._post(
+            f"/api/ingest/v1/campaigns/{campaign_id}/batch", payload, action="batch ingest"
+        )
 
     def complete_campaign(
         self, campaign_id: str, payload: dict[str, Any]
     ) -> dict[str, Any]:
-        with self._client() as client:
-            r = client.post(
-                f"/api/ingest/v1/campaigns/{campaign_id}/complete", json=payload
-            )
-            self._raise_for_response(r, action="campaign complete")
-            return r.json()
+        return self._post(
+            f"/api/ingest/v1/campaigns/{campaign_id}/complete", payload, action="campaign complete"
+        )
 
     def post_regression(self, payload: dict[str, Any]) -> dict[str, Any]:
-        with self._client() as client:
-            r = client.post("/api/ingest/v1/regressions", json=payload)
-            self._raise_for_response(r, action="regression ingest")
-            return r.json()
+        return self._post("/api/ingest/v1/regressions", payload, action="regression ingest")
 
     def post_test_run(self, payload: dict[str, Any]) -> dict[str, Any]:
-        with self._client() as client:
-            r = client.post("/api/ingest/v1/test-runs", json=payload)
-            self._raise_for_response(r, action="test-run ingest")
-            return r.json()
+        return self._post("/api/ingest/v1/test-runs", payload, action="test-run ingest")
 
 
 def sync_local_campaign(

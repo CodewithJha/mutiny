@@ -1078,3 +1078,183 @@ def test_30_sync_module_has_no_exec_gadgets() -> None:
         "eval(",
     ):
         assert needle not in src
+
+
+@pytest.fixture
+def rate_limited_client(monkeypatch):
+    import httpx
+
+    requests = []
+    sleeps = []
+    responses = []
+    client = HostedIngestClient("http://127.0.0.1:8000", headers={"Authorization": f"Bearer {FAKE_TOKEN}"})
+
+    def handle(request):
+        requests.append(request)
+        response = responses.pop(0)
+        if isinstance(response, Exception):
+            raise response
+        return response
+
+    monkeypatch.delenv("MUTINY_DISABLE_SECRET_REDACTION", raising=False)
+    monkeypatch.setattr(hosted_sync.time, "sleep", sleeps.append)
+    monkeypatch.setattr(client, "_client", lambda: httpx.Client(
+        base_url=client.api_url, headers=client.headers, follow_redirects=False,
+        transport=httpx.MockTransport(handle),
+    ))
+    return client, requests, sleeps, responses
+
+
+@pytest.mark.parametrize("method,path", [
+    ("open_campaign", "/api/ingest/v1/campaigns"),
+    ("post_batch", "/api/ingest/v1/campaigns/c1/batch"),
+    ("complete_campaign", "/api/ingest/v1/campaigns/c1/complete"),
+    ("post_regression", "/api/ingest/v1/regressions"),
+    ("post_test_run", "/api/ingest/v1/test-runs"),
+])
+def test_ingest_posts_retry_429_with_identical_payload(rate_limited_client, method, path, caplog):
+    import httpx
+
+    client, requests, sleeps, responses = rate_limited_client
+    responses.extend([
+        httpx.Response(429, headers={"Retry-After": "2"}),
+        httpx.Response(200, json={"ok": True}),
+    ])
+    payload = {"schema_version": 1, "redaction": {"applied": True}, "event_id": "stable-id"}
+    args = ("c1", payload) if method in {"post_batch", "complete_campaign"} else (payload,)
+    assert getattr(client, method)(*args) == {"ok": True}
+    assert sleeps == [2.0]
+    assert len(requests) == 2
+    assert all(request.url.path == path for request in requests)
+    assert requests[0].content == requests[1].content
+    assert all(request.headers["Authorization"] == f"Bearer {FAKE_TOKEN}" for request in requests)
+    assert FAKE_TOKEN not in caplog.text
+
+
+@pytest.mark.parametrize("value,expected", [
+    (None, 1.0), ("", 1.0), ("invalid", 1.0), ("NaN", 1.0), ("inf", 1.0),
+    ("-10", 0.0), ("0", 0.0), ("999999", 5.0),
+])
+def test_retry_delay_is_bounded_with_safe_fallback(rate_limited_client, value, expected):
+    import httpx
+
+    client, requests, sleeps, responses = rate_limited_client
+    responses.extend([
+        httpx.Response(429, headers={} if value is None else {"Retry-After": value}),
+        httpx.Response(200, json={}),
+    ])
+    client.open_campaign({})
+    assert sleeps == [expected]
+    assert len(requests) == 2
+
+
+@pytest.mark.parametrize("offset,expected", [(3, 3.0), (-10, 0.0), (60, 5.0)])
+def test_retry_after_http_date(rate_limited_client, monkeypatch, offset, expected):
+    import httpx
+    from datetime import datetime, timedelta, timezone
+    from email.utils import format_datetime
+
+    now = datetime(2026, 11, 11, 12, 0, tzinfo=timezone.utc)
+
+    class Clock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return now
+
+    monkeypatch.setattr(hosted_sync, "datetime", Clock)
+    client, _, sleeps, responses = rate_limited_client
+    responses.extend([
+        httpx.Response(429, headers={"Retry-After": format_datetime(now + timedelta(seconds=offset), usegmt=True)}),
+        httpx.Response(200, json={}),
+    ])
+    client.open_campaign({})
+    assert sleeps == [expected]
+
+
+def test_repeated_429_exhausts_retries_and_keeps_pending_bundle(rate_limited_client, tmp_path):
+    import httpx
+
+    client, requests, sleeps, responses = rate_limited_client
+    responses.extend(httpx.Response(
+        429, headers={"Retry-After": "999"},
+        json={"error": {"code": "rate_limit_exceeded", "message": "wait"}},
+    ) for _ in range(3))
+    outcome = sync_local_campaign(
+        _bundle(tmp_path, campaign_id="limited", secret_in_trace=True),
+        api_url=client.api_url, client=client,
+    )
+    assert not outcome.ok
+    assert outcome.http_status == 429
+    assert outcome.error_code == "rate_limit_exceeded"
+    assert len(requests) == 3
+    assert sleeps == [5.0, 5.0]
+    assert outcome.pending_path.is_file()
+    saved = outcome.pending_path.read_text(encoding="utf-8")
+    assert SECRET_VALUE not in saved
+    assert FAKE_TOKEN not in saved
+    assert json.loads(saved)["payloads"]["batch"]["redaction"]["applied"] is True
+
+
+@pytest.mark.parametrize("status", [400, 401, 403, 409, 413, 500])
+def test_non_429_errors_do_not_retry(rate_limited_client, status):
+    import httpx
+
+    client, requests, sleeps, responses = rate_limited_client
+    responses.append(httpx.Response(status, json={"error": {"code": "original_error"}}))
+    with pytest.raises(HostedSyncError) as caught:
+        client.open_campaign({})
+    assert caught.value.http_status == status
+    assert caught.value.error_code == "original_error"
+    assert len(requests) == 1
+    assert sleeps == []
+
+
+def test_retry_stops_on_a_different_error(rate_limited_client):
+    import httpx
+
+    client, requests, sleeps, responses = rate_limited_client
+    responses.extend([httpx.Response(429, headers={"Retry-After": "1"}), httpx.Response(401, json={})])
+    with pytest.raises(HostedSyncError) as caught:
+        client.open_campaign({})
+    assert caught.value.http_status == 401
+    assert len(requests) == 2
+    assert sleeps == [1.0]
+
+
+def test_transport_errors_are_not_retried(rate_limited_client):
+    import httpx
+
+    client, requests, sleeps, responses = rate_limited_client
+    responses.append(httpx.ReadTimeout("offline timeout"))
+    with pytest.raises(httpx.ReadTimeout):
+        client.open_campaign({})
+    assert len(requests) == 1
+    assert sleeps == []
+
+
+def test_sync_recovers_from_429_without_regenerating_or_unredacting_payloads(rate_limited_client, tmp_path):
+    import httpx
+
+    client, requests, sleeps, responses = rate_limited_client
+    for _ in range(4):
+        responses.extend([httpx.Response(429, headers={"Retry-After": "0"}), httpx.Response(200, json={})])
+    outcome = sync_local_campaign(
+        _bundle(tmp_path, violated=True, secret_in_trace=True, with_regression=True),
+        api_url=client.api_url, client=client,
+    )
+    assert outcome.ok
+    assert sleeps == [0.0] * 4
+    assert len(requests) == 8
+    for index in range(0, len(requests), 2):
+        assert requests[index].content == requests[index + 1].content
+        assert SECRET_VALUE.encode() not in requests[index].content
+        assert json.loads(requests[index].content)["redaction"]["applied"] is True
+
+
+def test_retry_support_does_not_bypass_disabled_redaction(rate_limited_client, tmp_path, monkeypatch):
+    client, requests, sleeps, _ = rate_limited_client
+    monkeypatch.setenv("MUTINY_DISABLE_SECRET_REDACTION", "1")
+    outcome = sync_local_campaign(_bundle(tmp_path), api_url=client.api_url, client=client)
+    assert not outcome.ok
+    assert outcome.error_code == "redaction_disabled"
+    assert requests == sleeps == []

@@ -89,6 +89,14 @@ the freed name; if no finding reproduces, restore the backup. `mutiny run` has n
 
 **Hosted sync (M-PR8C):** After local campaign completion, CLI POSTs to `/api/ingest/v1/*` with `schema_version=1` and `redaction.applied=true`. Bearer from `MUTINY_API_TOKEN` when set. Local success + sync failure → exit **3** (local result remains authoritative). Missing `api_url` with `--hosted` → exit 2. Config URL alone never selects Hosted.
 
+**Rate limits:** Each ingest POST retries HTTP `429` up to twice (three attempts
+total), reusing the identical sanitized payload and IDs. `Retry-After` may be
+integer seconds or an HTTP date; each delay is capped at five seconds, with a
+one-second fallback for missing/malformed headers and zero for elapsed delays.
+Other HTTP errors and transport failures are not retried. After exhaustion, the
+existing sync failure/exit behavior and sanitized pending file are preserved.
+See [ingest retry semantics](./HOSTED_INGESTION.md#bounded-rate-limit-retries-43).
+
 **Destination policy:** By default, Hosted sync accepts only HTTP(S) URLs whose
 host is `localhost` or a literal loopback IP (`127.0.0.0/8` or `::1`). Other hosts
 require `--allow-remote-hosted` on the command line, even with `--hosted-url` or
