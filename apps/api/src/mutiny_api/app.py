@@ -151,9 +151,14 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
         conn.close()
         log.info("mutiny_api.shutdown")
 
+    # FastAPI's built-in documentation routes do not run app dependencies.
+    enable_docs = not auth_required()
     app = FastAPI(
         title="Mutiny Hosted API",
         version=__version__,
+        docs_url="/docs" if enable_docs else None,
+        redoc_url="/redoc" if enable_docs else None,
+        openapi_url="/openapi.json" if enable_docs else None,
         description=(
             "Hosted control plane for Mutiny: campaigns, SSE, minimize, regressions, "
             "and observe-only ingest (/api/ingest/v1). "

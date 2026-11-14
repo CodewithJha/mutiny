@@ -3,7 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 /**
  * When MUTINY_API_TOKEN is set on the web process, inject Authorization for
  * same-origin /api/* rewrites (including EventSource). The browser never sees
- * the token. Auth remains server-side on the FastAPI Hosted API (M-PR7).
+ * the token. Every visitor can act as the operator: keep this UI on loopback
+ * or behind a separate authenticated proxy (see SECURITY.md). This middleware
+ * does not authenticate browser users.
  */
 export function middleware(request: NextRequest) {
   const token = process.env.MUTINY_API_TOKEN?.trim();
