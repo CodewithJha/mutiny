@@ -205,7 +205,8 @@ export default function TestsPage() {
           <p className="page-kicker">Replay</p>
           <h1 className="page-title">Tests</h1>
           <p className="page-sub">
-            Replay saved regressions after you fix the agent — same Core path as{" "}
+            View saved tests and uploaded results. Run controls replay the bundled
+            demo only. Test your own project locally with{" "}
             <span className="font-mono text-dim">mutiny test</span>.
           </p>
         </div>
@@ -287,17 +288,22 @@ export default function TestsPage() {
 
       {!loading && regs.length === 0 && !error && (
         <EmptyState
-          title="No regression tests yet"
+          title="No saved tests yet"
           className="mt-8"
           action={
-            <Link href="/campaigns" className="btn btn-primary mt-2">
-              Go to campaigns
+            <Link
+              href="https://github.com/CodewithJha/mutiny/blob/main/docs/CLI.md#mutiny-test"
+              className="btn btn-primary mt-2"
+            >
+              Read the local testing guide
             </Link>
           }
         >
           <p>
-            Discover a violation in a campaign, minimize, save a regression —
-            then this dashboard becomes your post-fix home.
+            For your project, run <code>mutiny run --hosted</code> locally to sync
+            redacted campaign findings here. Replay saved tests locally with{" "}
+            <code>mutiny test</code>. Hosted observes your results; it does not run
+            your project&apos;s agent. The bundled demo uses its own agent and tests.
           </p>
         </EmptyState>
       )}
