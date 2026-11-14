@@ -97,11 +97,21 @@ curl -f http://127.0.0.1:8000/api/health
 docker compose down
 ```
 
-Both host ports publish only on `127.0.0.1`. The UI acts for its visitors using
-the operator token, so keep it local or behind your own authenticated proxy.
+Both host ports publish only on `127.0.0.1`. **Access to the UI is equivalent to
+possession of the operator token:** middleware acts for every visitor without
+a browser login. Keep it local to a trusted operator machine. To expose it to
+a LAN or through a public port/tunnel, first configure a separate authenticated
+proxy covering both UI pages and `/api/*`, including SSE; setting the API token
+alone does not secure an exposed UI.
 Compose passes the same token to both services. The API's internal `0.0.0.0`
 bind still fails closed without a token; the supported entrypoint remains
 `python -m mutiny_api`.
+
+When a token is set at API startup, `/docs`, `/docs/oauth2-redirect`, `/redoc`,
+and `/openapi.json` return 404 even with a valid token. Tokenless loopback demos
+keep these documentation routes. Restart the API after changing token settings.
+`/api/health` and `/api/meta` stay public in both modes. See
+[SECURITY.md](../SECURITY.md#hosted-authentication-m-pr7--p0-1--p0-4).
 
 Dependencies are installed at image build (`uv sync --locked --no-dev
 --no-editable --package mutiny-api`, `npm ci`, `npm run build`). Runtime uses

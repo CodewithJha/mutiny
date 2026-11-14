@@ -43,6 +43,23 @@ Single-tenant shared Bearer token for the Hosted **control plane** (not multi-us
 
 **Protected:** campaigns, SSE/events, projects, policies, candidates, minimize, regressions, tests, ingest.
 
+**API documentation (MUT-010 / #55):** when a non-empty `MUTINY_API_TOKEN` is
+configured at app creation, `/docs`, `/docs/oauth2-redirect`, `/redoc`, and
+`/openapi.json` are disabled (404), including for authenticated requests. They
+remain available in tokenless loopback demos. Restart the API after changing
+the token configuration. `/api/health` and `/api/meta` remain public.
+
+**UI trust boundary (MUT-001 / #55):** the Next.js middleware injects the
+server's token into proxied `/api/*` requests, including EventSource. It does
+not authenticate the browser visitor. Access to this UI is equivalent to
+possession of the operator token, even though the browser never receives the
+token itself. Default Compose publishes both UI and API only on loopback.
+Keep the UI local to a trusted operator machine. Before exposing it through
+a LAN bind, public port, or tunnel, put it behind a separate authenticated
+proxy that covers both pages and `/api/*` (including SSE). Setting
+`MUTINY_API_TOKEN` alone does not protect an exposed UI. This change does not
+add UI login, multi-user authorization, or a CSRF guarantee.
+
 CLI: default `mutiny run` stays local and needs no token. Explicit `mutiny run --hosted` / `--hosted-url` sends `MUTINY_API_TOKEN` when set; if the API requires auth and the token is missing/invalid, the CLI fails closed (no silent local fallback).
 
 **CLI upload destinations:** `--hosted` and `--hosted-url` default to loopback

@@ -117,6 +117,31 @@ def test_c_protected_with_valid_credentials(client: TestClient) -> None:
     assert "campaigns" in r.json()
 
 
+@pytest.mark.parametrize("path", ["/docs", "/docs/oauth2-redirect", "/redoc", "/openapi.json"])
+@pytest.mark.parametrize("token", [None, WRONG_TOKEN, FAKE_TOKEN])
+def test_documentation_disabled_with_auth(
+    client: TestClient, path: str, token: str | None,
+) -> None:
+    headers = _auth_headers(token) if token is not None else {}
+    response = client.get(path, headers=headers)
+    assert response.status_code == 404
+    assert FAKE_TOKEN not in response.text
+
+
+@pytest.mark.parametrize("token_setting", [None, "", "   "])
+def test_documentation_available_without_auth(
+    api_db: Path, monkeypatch: pytest.MonkeyPatch, token_setting: str | None,
+) -> None:
+    if token_setting is None:
+        monkeypatch.delenv(API_TOKEN_ENV, raising=False)
+    else:
+        monkeypatch.setenv(API_TOKEN_ENV, token_setting)
+    with TestClient(create_app(api_db)) as c:
+        for path in ("/docs", "/docs/oauth2-redirect", "/redoc", "/openapi.json"):
+            assert c.get(path).status_code == 200
+        assert "/api/campaigns" in c.get("/openapi.json").json()["paths"]
+
+
 # —— Test D: health public ——
 
 
