@@ -27,6 +27,7 @@ with sandboxed mock tools for demos.
 | CLI flags (`init` / `run` / `test`) | [CLI.md](./CLI.md) |
 | Packaging / PyPI | [PUBLISHING.md](./PUBLISHING.md) |
 | Clean-machine bootstrap | [COLD_START.md](./COLD_START.md) |
+| Hosted rate-limit tuning and 429 responses | [RATE_LIMITS.md](./RATE_LIMITS.md) |
 | Contribute / first PR | [CONTRIBUTING.md](../CONTRIBUTING.md) · [GOOD_FIRST_ISSUES.md](./GOOD_FIRST_ISSUES.md) |
 | Architecture boundaries | [ARCHITECTURE.md](./ARCHITECTURE.md) |
 | How the system runs | [SYSTEM_DESIGN.md](./SYSTEM_DESIGN.md) |
@@ -48,6 +49,7 @@ with sandboxed mock tools for demos.
 | [DEMO_SCRIPT.md](./DEMO_SCRIPT.md) | Live demo scripts, backup, Q&A | System internals |
 | [COLD_START.md](./COLD_START.md) | Clean-machine bootstrap + smoke gate | Product narrative |
 | [API_HEALTH.md](./API_HEALTH.md) | Hosted health response fields and interpretation | External model connectivity or customer adapter validation |
+| [RATE_LIMITS.md](./RATE_LIMITS.md) | Hosted limiter defaults, identities, and Retry-After behavior | Distributed quotas or client retry implementations |
 | [GOOD_FIRST_ISSUES.md](./GOOD_FIRST_ISSUES.md) | Catalog of small contributor tasks | Execution ownership of Core redesigns |
 | [CLI.md](./CLI.md) | `mutiny` commands and flags from `--help` | Hosted UI walkthrough |
 | [../CHANGELOG.md](../CHANGELOG.md) | Unreleased + release notes | Live demo narration |
