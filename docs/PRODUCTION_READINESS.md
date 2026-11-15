@@ -269,7 +269,7 @@ MVP limitations are labeled as such, not “bugs.”
 | Location | What is hardcoded | Impact |
 |---|---|---|
 | `campaign/config.py` `boundary_refund_seeds` / `default_refund_seeds` | `ord_1001`, dollar amounts, `refund_limit` | **Demo/harness pack only** (ADR-020); Core default is `default_policy_seeds` |
-| `fitness/__init__.py` | APR/manager cue strings | Mild; mostly generic |
+| `fitness/__init__.py` | APR/manager premise list **removed (#41)**; cues now derive from policy tools/argument names | Assistant text only; lexical search hint, not a violation oracle |
 | CLI `init` `POLICY_YAML` | Refund + delete templates | OK as **scaffold**, not engine hardcoding |
 | API `schemas.RegressionSaveRequest` | Default name `refund_limit_regression` | UX bias (P3; out of M-PR6) |
 | Supervisor `DEFAULT_SAMPLE_PROJECT` | `examples/openai_support_agent` | Fine for local Hosted default |
