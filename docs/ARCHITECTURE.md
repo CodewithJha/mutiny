@@ -19,7 +19,7 @@ Mutiny is a **behavioral fuzz-testing engine**: a **small trusted kernel** wrapp
 - The **CLI** (`mutiny init` / `mutiny run`) is the primary developer surface for installing Mutiny into a customer agent project.
 - The **Hosted platform** (`apps/api`, `apps/web`) makes campaigns operable and visible (lineage, SSE, persistence).
 - **Adapters** bridge Core to targets. Adapter #1: **OpenAI Agents SDK** → developer’s local agent. Bundled demo agent = example adapter target / harness.
-- **Integrations** (Skills, MCP, CI, future framework adapters) invoke the same kernel or Hosted API. They do not fork logic.
+- **Planned integrations** (Skills, MCP, reusable CI Action) will invoke the same kernel or Hosted API. They must not fork logic. See the [placeholder README](../integrations/README.md).
 
 We optimize for:
 
@@ -72,7 +72,7 @@ These principles are binding. New features must not violate them without an ADR 
 │  Targets          Customer agent project                 │
 │                   Sample / apps/demo_agent (reference)   │
 ├──────────────────────────────────────────────────────────┤
-│  Integrations     Skills / MCP / CI                      │
+│  Integrations     Planned: Skills / MCP / CI              │
 └──────────────────────────────────────────────────────────┘
 ```
 
@@ -87,7 +87,7 @@ Local CLI → mutiny_core → Adapter Layer → OpenAI Agents SDK Adapter → Cu
 Hosted Web/API → SQLite observational data (ingest + trusted in_process_demo only)
                ✗ customer project_path exec / filesystem
 
-integrations/* → api (preferred) or mutiny_core (offline replay)
+Planned integrations/* → api (preferred) or mutiny_core (offline replay)
 ```
 
 Canonical product hierarchy (never reverse):
@@ -230,8 +230,9 @@ remains the engine; optional Hosted sync uploads redacted local results.
 ### Future / secondary integrations
 
 These paths are roadmap placeholders, not shipped adapter locations. Adapter #1
-is in `packages/mutiny_openai_agents`; the empty `integrations/` directory is
-tracked separately in [issue #38](https://github.com/CodewithJha/mutiny/issues/38).
+is in `packages/mutiny_openai_agents`; [integrations/README.md](../integrations/README.md)
+documents the reserved directory. MCP, published Skills, and a reusable CI Action
+are not shipped there; the repository's own CI workflow is separate.
 The additional [PydanticAI adapter](../packages/mutiny_pydantic_ai/README.md)
 lives in `packages/mutiny_pydantic_ai` and is implemented but not yet published.
 
@@ -239,7 +240,7 @@ lives in `packages/mutiny_pydantic_ai` and is implemented but not yet published.
 |---|---|
 | LangGraph / CrewAI / HTTP adapters | Roadmap (Beta/v1) — see [ROADMAP](./ROADMAP.md) |
 | `integrations/mcp` | MCP tool wrappers around API/Core (roadmap) |
-| `integrations/skills` | Instructional Skill markdown |
+| `integrations/skills` | Instructional Skill markdown (roadmap) |
 
 **Must not contain** mutation, policy, or fitness logic.
 
