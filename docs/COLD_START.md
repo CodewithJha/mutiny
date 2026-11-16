@@ -23,6 +23,12 @@ Use this on a clean machine. Competitive claims stay frozen to [COMPETITOR_ANALY
 
 LLM key is **optional**. Demo pin defaults to template mutation fallback (deterministic offline gate).
 
+**Windows / WSL:** see the [README FAQ](../README.md#faq) for uv installation,
+shell/venv choices, and quoted paths. The `uv sync` / `uv run` commands below
+also work from PowerShell or cmd; Bash scripts and `PYTHONPATH=...` assignments
+use a POSIX shell such as WSL. In WSL, install Linux uv/Python and sync a separate
+environment rather than reusing a Windows `.venv`.
+
 ---
 
 ## 2. Install (monorepo — supported)

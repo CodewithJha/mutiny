@@ -511,7 +511,22 @@ policy coercion (#42); see [Unreleased](./CHANGELOG.md#unreleased) before relyin
 on source behavior in a PyPI installation.
 
 **How do I run on Windows?**  
-Create a venv, then activate with PowerShell `.\.venv\Scripts\Activate.ps1` (or cmd `activate.bat`). Prefer WSL for contributor/`uv` workflows. Short FAQ: [SUPPORT.md § Windows](./SUPPORT.md#windows).
+
+- **Install uv on native Windows:** use `winget install --id=astral-sh.uv -e`,
+  or follow [Astral's Windows installer instructions](https://docs.astral.sh/uv/getting-started/installation/#standalone-installer).
+  Open a new terminal if `uv` is not found, then check `uv --version`.
+- **Use WSL for Bash-based contributor scripts:** for example, `scripts/dev.sh`.
+  Install the Linux versions of uv and Python inside WSL and create a separate
+  environment there; do not reuse a Windows `.venv`. Native Windows users can
+  run the workspace CLI commands below from PowerShell or cmd.
+- **Run the workspace entrypoint:** from the clone root, run `uv sync --group dev`,
+  then `uv run mutiny --help`. `uv run python --version` checks that environment's
+  Python (requires 3.11+). `uv run` needs no manual venv activation. If activating
+  manually, use PowerShell `.\.venv\Scripts\Activate.ps1` or cmd
+  `.venv\Scripts\activate.bat`. Quote paths containing spaces, for example
+  `cd "C:\path with spaces\mutiny"`.
+
+More Windows troubleshooting: [SUPPORT.md § Windows](./SUPPORT.md#windows).
 
 **Which agent frameworks work today?**  
 **Adapter #1: OpenAI Agents SDK** only. Others (LangGraph, CrewAI, PydanticAI, AutoGen, HTTP) are roadmap / contribution targets on the same `TargetAdapter` port.
