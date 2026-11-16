@@ -183,7 +183,7 @@ MVP limitations are labeled as such, not “bugs.”
 | P2-4 | `publish.yml` verify step **hardcodes `0.1.0`** — **resolved (M-PR5)**; reads each package `pyproject.toml` | Was fail/misleading on next version |
 | P2-5 | Regressions table has **no `project_id`**; filtering joins via campaigns | `db.py` schema |
 | P2-6 | SQLite backup/export tooling for Hosted data — **resolved (P2-6)** | `mutiny db backup` / `restore`; `mutiny_api.backup` |
-| P2-7 | Empty `integrations/` vs ARCHITECTURE diagram mentioning MCP/skills | placeholder only |
+| P2-7 | Empty `integrations/` vs ARCHITECTURE diagram mentioning MCP/skills — **resolved (#38)** | `integrations/README.md` documents planned scope; diagram labels integrations as planned |
 | P2-8 | No Dependabot/Renovate; no CODEOWNERS | OSS maintainer load |
 | P2-9 | CLI help mentions `--no-attestation` in error text but **flag not defined** | `run_cmd.py` vs `main.py` |
 | P2-10 | ARCHITECTURE “allowed targets localhost-only” not enforced as a filesystem/URL sandbox for Hosted | Constraint remains a **target enum** + observe-only boundary; not a general path/URL allowlist |
