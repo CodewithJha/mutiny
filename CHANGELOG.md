@@ -24,6 +24,10 @@ source checkout for these changes until maintainers publish another release.
   in the sample policy (#7, PR #134), and an email-recipient example policy
   bound to trusted context (#10, PR #132).
 
+### Changed
+
+- Bound `openai-agents` dependency to `>=0.23,<0.25` (tested against 0.24.0).
+
 ### Fixed
 
 - Correct sample/scaffold Hosted copy and system diagrams: Local CLI executes
