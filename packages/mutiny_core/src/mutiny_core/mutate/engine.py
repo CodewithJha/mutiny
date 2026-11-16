@@ -144,9 +144,9 @@ class MutationEngine:
     ) -> AttackGenome:
         # Map AI operator names onto template implementations
         template_op = {
-            "semantic_rephrase": "authority_escalation",
+            "semantic_rephrase": "semantic_rephrase",
             "argument_nudging": "argument_nudge_template",
-            "indirect_request": "confirmation_bypass",
+            "indirect_request": "indirect_request",
             "authority_escalation": "authority_escalation",
             "confirmation_bypass": "confirmation_bypass",
             "multi_turn_setup": "multi_turn_setup",
