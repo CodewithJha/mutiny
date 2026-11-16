@@ -93,7 +93,7 @@ In-process token-bucket limits on the Hosted API request boundary only. **Not di
 
 **Default enablement:** on when `MUTINY_API_TOKEN` is set; off for tokenless loopback demo. Override with `MUTINY_RATE_LIMIT_ENABLED=0|1`.
 
-**Other env knobs:** `MUTINY_RATE_LIMIT_{HEALTH,NORMAL,EXPENSIVE,INGEST}_{RPM,BURST}`, `MUTINY_RATE_LIMIT_MAX_KEYS` (default 4096), `MUTINY_RATE_LIMIT_IDLE_SECONDS` (stale bucket cleanup). Values `≤ 0` or non-integers **fail closed** at app start (do not mean “unlimited”).
+**Other env knobs:** `MUTINY_RATE_LIMIT_{HEALTH,NORMAL,EXPENSIVE,INGEST}_{RPM,BURST}`, `MUTINY_RATE_LIMIT_MAX_KEYS` (default 4096), `MUTINY_RATE_LIMIT_IDLE_SECONDS` (default 300 seconds, stale bucket cleanup). RPM, burst, and key-count values require positive integers; idle seconds accepts positive fractional values. Non-positive or unparsable values **fail closed** at app start (do not mean “unlimited”). See the [rate-limit field guide](./docs/RATE_LIMITS.md) for all defaults, identity/category buckets, and Retry-After handling.
 
 **Identity:** valid Bearer → single-tenant key `tenant` (token never logged). Otherwise → `request.client.host` only; `X-Forwarded-For` is **not** trusted.
 
