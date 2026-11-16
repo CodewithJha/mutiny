@@ -758,7 +758,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "mutiny-core", editable = "packages/mutiny_core" },
-    { name = "openai-agents", specifier = ">=0.19" },
+    { name = "openai-agents", specifier = ">=0.23,<0.25" },
 ]
 
 [[package]]
