@@ -47,6 +47,13 @@ API runs elsewhere. When the API uses `MUTINY_API_TOKEN`, set the same token on
 the web process; middleware adds the bearer header for API requests. Keep this
 token server-side. Non-loopback API binds require a token.
 
+The middleware does not authenticate browser visitors: access to this UI is
+equivalent to possession of the operator token. Keep it on a trusted local
+machine. Before exposing it to a LAN or public network, add a separate
+authenticated proxy covering pages and `/api/*`, including SSE. Compose binds
+both host ports to loopback by default. Setting the API token alone does not
+protect an exposed UI; see [SECURITY.md](../../SECURITY.md#hosted-authentication-m-pr7--p0-1--p0-4).
+
 The Hosted API is **unreleased**. Its internal `mutiny-api` metadata version is
 independent of the published CLI/Core version. Source checkout or workspace
 installation supplies the API; `pip install mutiny-ai` supplies the customer CLI.
