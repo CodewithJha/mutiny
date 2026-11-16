@@ -250,7 +250,7 @@ CLI still reports local success/failure as today
         ↓
 warn on stderr; write .mutiny/hosted-pending/<campaign_id>.json (sanitized)
         ↓
-retry manually; `mutiny sync` does not exist — no automatic retry in M-PR8C
+manual recovery after bounded 429 retries; `mutiny sync` does not exist
 ```
 
 **Rules:**
@@ -260,6 +260,27 @@ retry manually; `mutiny sync` does not exist — no automatic retry in M-PR8C
 3. When sync fails **after** local success: warn on stderr and exit **`3`** (`SYNC_FAILED_EXIT`) so automation can distinguish sync failure from local campaign failure (`1`). Local failure still returns `1` even if sync also fails/succeeds.
 4. No Hosted round-trip inside Core evaluation loops.
 5. `MUTINY_DISABLE_SECRET_REDACTION=1` refuses Hosted upload (sync exit 3 after local success); local persistence still allowed.
+
+### Bounded rate-limit retries (#43)
+
+The CLI retries each idempotent ingest POST only on HTTP `429`: at most **two
+retries** after the initial attempt (**three attempts total**). Campaign open,
+event/artifact batches, completion, regressions, and the test-run client method
+share this behavior. The request's already-redacted payload and identifiers are
+reused unchanged; payloads and timestamps are not regenerated between attempts.
+
+`Retry-After` accepts integer seconds or an HTTP date. Each delay is clamped to
+**0–5 seconds**; past dates and negative delays wait zero seconds. Missing or
+malformed headers use **one second**. Scheduled waiting is at most **10 seconds
+per POST**, in addition to the existing HTTP timeout for each attempt. No sleep
+occurs after the last failed attempt.
+
+Non-429 responses and transport errors are not retried. Exhausted 429s use the
+existing failure path: local results remain authoritative, local success plus
+sync failure exits `3`, and sanitized pending JSON is saved when enabled.
+Replaying pending files and a `mutiny sync` command remain future work; these
+immediate retries do not add a background sync queue. Redaction, destination
+validation, bearer authentication, and redirect refusal remain required.
 
 ---
 
@@ -471,5 +492,5 @@ Preserved by M-PR8E (customer Hosted exec retired; demo + ingest retained):
 ### Current limitations (post M-PR8E)
 
 - `mutiny test --hosted` not wired (payload builder only) — remaining CLI sync work / later
-- Automatic retry / `mutiny sync` command deferred (pending JSON written on sync failure)
+- Pending-file replay / `mutiny sync` command deferred; immediate HTTP 429 retries are bounded as described above (pending JSON written on final sync failure)
 - Web cannot distinguish local-success + sync-failure from a missing Hosted row: sync failures do not fully ingest, so Hosted never claims those runs were received. A terminal `failed` status on an ingested `execution_mode=local_cli` campaign means the CLI reported campaign failure, not Hosted sync failure.
