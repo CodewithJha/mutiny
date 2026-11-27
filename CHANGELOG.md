@@ -48,6 +48,10 @@ source checkout for these changes until maintainers publish another release.
   after interruption (PR #98).
 - Require explicit opt-in for remote Hosted uploads (PR #94), reject mismatched
   ingest hashes (PR #93), and fix SSE/SQLite concurrency gaps (PR #92).
+- Default seed candidates get a per-run id suffix. Seed ids were stable per
+  policy, and Hosted keys candidates by id, so every campaign after the first
+  over the same policy (a repeated demo run, or `mutiny run --hosted` twice)
+  showed no seed candidates and overwrote the first campaign's evidence.
 
 - Use an unversioned workspace root and dependency groups (`uv sync --group dev`,
   replacing `--extra dev`) instead of advertising a separate product version or

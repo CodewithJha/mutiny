@@ -403,3 +403,45 @@ def test_event_handler_raise_during_seed_emit_handled_as_status_error():
     assert result.status == "error"
     assert "event sink disconnected during seed emit" in result.reason
     assert result.generations_completed == 0
+
+
+def _generation_zero_ids(seeds: list[AttackGenome] | None = None) -> list[str]:
+    result = CampaignEngine(
+        adapter=FakeRefundAdapter(),
+        policy_set=_policy(),
+        config=CampaignConfig(
+            population_size=3,
+            max_generations=1,
+            elite_count=1,
+            stop_on_first_violation=False,
+        ),
+        seeds=seeds,
+        rng_seed=5,
+    ).run()
+    return [c.genome.id for c in result.candidates]
+
+
+def test_default_seed_ids_are_unique_per_campaign_run():
+    """Two campaigns over one policy must not share candidate ids.
+
+    Stores keyed by candidate id (Hosted SQLite) otherwise attach the second
+    campaign's seeds to the first campaign and overwrite its evidence.
+    """
+    from mutiny_core.campaign import default_policy_seeds
+
+    stable = [seed.id for seed in default_policy_seeds(_policy())[:3]]
+    first = _generation_zero_ids()
+    second = _generation_zero_ids()
+
+    assert len(set(first)) == len(first) == 3
+    assert not set(first) & set(second)
+    for run in (first, second):
+        assert [cid.rsplit("-", 1)[0] for cid in run] == stable
+
+
+def test_explicit_seed_ids_are_kept():
+    seeds = [
+        AttackGenome(id=f"my-seed-{i}", messages=[AttackMessage(content=f"hello {i}")])
+        for i in range(3)
+    ]
+    assert _generation_zero_ids(seeds) == ["my-seed-0", "my-seed-1", "my-seed-2"]
