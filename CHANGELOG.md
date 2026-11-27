@@ -19,6 +19,9 @@ source checkout for these changes until maintainers publish another release.
 - Clear PASS/FAIL/SKIPPED replay summary (#39, PR #53).
 - `mutiny-pydantic-ai` source package: a local PydanticAI `TargetAdapter` with
   fail-closed tool observation (#45, PR #139). Not yet published to PyPI.
+- `mutiny run` prints each finding (rule, evidence, offending tool call with
+  credentials redacted, and the attacker turns), including findings that do not
+  reproduce on re-run and are therefore not saved as regressions.
 - Hosted health field guide (`docs/API_HEALTH.md`, #8, PR #136), OpenAPI
   descriptions for health and ingest routes (#44, PR #138), per-rule comments
   in the sample policy (#7, PR #134), and an email-recipient example policy
