@@ -107,6 +107,13 @@ def run_campaign(
     except PolicyValidationError as exc:
         print(f"error: invalid project policy — {exc}", file=sys.stderr)
         return 2
+    if not policy.rules:
+        print(
+            f"error: {policy_path.name} has no rules, so a campaign has nothing to check\n"
+            "  hint: add at least one rule under `rules:`",
+            file=sys.stderr,
+        )
+        return 2
 
     config = _load_mutiny_yaml(root / "mutiny.yaml")
     if config is None:
@@ -343,6 +350,9 @@ def _run_local(
         elif ev.type == EventType.CANDIDATE_SCORED:
             fit = float(ev.payload.get("fitness") or 0.0)
             mark = " · VIOLATION" if ev.payload.get("violated") else ""
+            trace = ev.payload.get("trace") or {}
+            if not mark and trace.get("status") == "error":
+                mark = f" · DID NOT FINISH ({trace.get('error')})"
             print(
                 f"    {ev.payload.get('candidate_id')}: fitness={fit:.3f}{mark}"
             )
@@ -362,6 +372,10 @@ def _run_local(
         ),
     )
     result = engine.run()
+    # A candidate whose agent step timed out is scored as non-violating, so a
+    # run where none finished would otherwise read as a clean result.
+    unfinished = [c for c in result.candidates if c.trace.status == "error"]
+    nothing_tested = bool(unfinished) and len(unfinished) == len(result.candidates)
     completed_at = (
         datetime.now(timezone.utc)
         .replace(microsecond=0)
@@ -389,11 +403,28 @@ def _run_local(
                 regression_id, regression_path, regression_artifact, minimize_body = saved
         except Exception as exc:  # noqa: BLE001
             print(f"warning: minimization failed — {exc}", file=sys.stderr)
-    elif result.status != "error":
+    elif result.status != "error" and not nothing_tested:
         print("  No violation this run — try different rng_seed or more generations.")
+
+    if unfinished:
+        print(
+            f"warning: {len(unfinished)} of {len(result.candidates)} candidate(s) "
+            f"did not finish ({unfinished[0].trace.error}); "
+            "they could not be checked against the policy",
+            file=sys.stderr,
+        )
+    if nothing_tested:
+        print(
+            "error: no candidate finished, so this run did not test the agent\n"
+            "  hint: check that the agent responds "
+            "(model credentials, network, a tool that blocks)",
+            file=sys.stderr,
+        )
 
     print()
     exit_code = 0 if result.status != "error" else 1
+    if nothing_tested:
+        exit_code = 1
     return LocalRunOutcome(
         exit_code=exit_code,
         campaign_id=cid,
