@@ -40,12 +40,17 @@ def _trace_with_secret() -> dict:
                             "approved": False,
                             "api_key": FAKE_SECRET,
                             "password": FAKE_SECRET,
+                            "openai_api_key": FAKE_SECRET,
+                            "client_secret": FAKE_SECRET,
+                            "private_key": FAKE_SECRET,
+                            "x-api-key": FAKE_SECRET,
                         },
                     }
                 ],
                 "tool_results": [
                     {
                         "meta": f"Authorization: Bearer {FAKE_SECRET}",
+                        "log": f"calling the model with key sk-proj-{FAKE_SECRET}",
                     }
                 ],
                 "raw": None,

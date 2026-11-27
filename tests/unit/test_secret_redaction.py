@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from mutiny_core import PolicyEvaluator, PolicySet, RuleKind
 from mutiny_core.policy.models import PolicyRule
 from mutiny_core.redact import REDACTED, redact_secrets
@@ -180,3 +182,80 @@ def test_policy_evaluator_still_sees_raw_runtime_data() -> None:
     assert trace.all_tool_calls[0].arguments["api_key"] == secret
     sanitized = redact_secrets(trace.model_dump(mode="json"))
     assert secret not in json.dumps(sanitized)
+
+
+# ---------------------------------------------------------------------------
+# Wider key coverage and inline API keys (#16)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "key",
+    [
+        "openai_api_key",
+        "OPENAI_API_KEY",
+        "openaiApiKey",
+        "anthropic_api_key",
+        "client_secret",
+        "clientSecret",
+        "private_key",
+        "privateKey",
+        "x_api_key",
+        "x-api-key",
+        "X-API-Key",
+        "apikey",
+        "APIKey",
+        "stripe_secret_key",
+        "github_token",
+        "sessionToken",
+        "db_password",
+        "api key",
+    ],
+)
+def test_credential_key_variants_redacted(key: str) -> None:
+    out = redact_secrets({"arguments": {key: FAKE_KEY, "amount": 500}})
+    assert out["arguments"] == {key: REDACTED, "amount": 500}
+    assert FAKE_KEY not in json.dumps(out)
+
+
+@pytest.mark.parametrize(
+    "key",
+    [
+        "max_tokens",
+        "total_tokens",
+        "token_count",
+        "tokenizer",
+        "secret_question",
+        "password_hint",
+        "public_key",
+        "idempotency_key",
+        "keyboard",
+        "author",
+    ],
+)
+def test_lookalike_keys_preserved(key: str) -> None:
+    assert redact_secrets({key: "kept"}) == {key: "kept"}
+
+
+@pytest.mark.parametrize("prefix", ["sk-", "sk-proj-", "sk-svcacct-"])
+def test_inline_sk_api_key_redacted(prefix: str) -> None:
+    secret = prefix + "Ab3dEf6hIj9kLm2nOp5qRs8tUv1wXy4z"
+    out = redact_secrets({"log": f"calling the model with {secret} now", "items": [secret]})
+    assert out == {
+        "log": f"calling the model with {REDACTED} now",
+        "items": [REDACTED],
+    }
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "use sk-learn-compatible-estimators here",
+        "ticket sk-42",
+        "task-1234567890123456789012345 is done",
+        "risk-0000000000000000000000000",
+        "Please rotate the token if the secret password looks stale.",
+    ],
+)
+def test_inline_sk_pattern_leaves_prose_alone(text: str) -> None:
+    assert redact_secrets(text) == text

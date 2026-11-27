@@ -107,8 +107,10 @@ Mutiny applies a **small, deterministic, local** redactor (`mutiny_core.redact.r
 
 | Covered | Examples |
 |---|---|
-| Credential field values (case-insensitive keys) | `api_key` / `apiKey`, `token`, `password` / `passwd`, `secret`, `access_token`, `refresh_token`, `authorization` |
+| Credential field values (case-insensitive keys) | `api_key` / `apiKey` / `apikey`, `token`, `password` / `passwd`, `secret`, `secret_key`, `private_key`, `access_token`, `refresh_token`, `authorization` |
+| Keys ending in one of those names | `openai_api_key`, `x-api-key`, `client_secret`, `github_token`, `db_password` (not `max_tokens`, `public_key`, `secret_question`) |
 | Inline Authorization headers | `Authorization: Bearer …` inside strings |
+| Inline OpenAI-style API keys | `sk-…` / `sk-proj-…` inside strings (20+ key characters including a digit, so prose like `sk-learn` is kept) |
 
 **Where:** campaign event dumps (trace/hits), Hosted SQLite persistence (traces, hits, event payloads, test-run evidence), Hosted API responses fed from those stores, CLI `mutiny test` evidence / reports.
 
