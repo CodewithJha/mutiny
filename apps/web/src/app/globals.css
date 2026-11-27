@@ -3147,3 +3147,21 @@ select {
   font-weight: 600;
   color: var(--text);
 }
+
+/* ========== Reduced motion ========== */
+@media (prefers-reduced-motion: reduce) {
+  html,
+  .landing {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+  }
+}
