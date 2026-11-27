@@ -78,6 +78,12 @@ To deliberately replace an old regression, back up that file, remove it from
 the freed name; if no finding reproduces, restore the backup. `mutiny run` has no
 `--force` flag (the `init --force` flag only controls scaffolding).
 
+When a candidate violates a rule, `mutiny run` prints the finding before
+minimizing: the rule id and description, the evaluator's evidence, the offending
+tool call (credential-named arguments are redacted), and the attacker turns as
+executed. A finding that does not reproduce when re-run is not saved as a
+regression, so the printed finding is the only record of it.
+
 | Flag | Default | Meaning |
 |---|---|---|
 | `--path PATH` | cwd | Project root |

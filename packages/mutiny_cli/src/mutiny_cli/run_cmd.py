@@ -28,7 +28,8 @@ from mutiny_core import (
     save_regression,
     try_featherless_from_env,
 )
-from mutiny_core.campaign.engine import CampaignResult
+from mutiny_core.campaign.engine import CampaignResult, ScoredCandidate
+from mutiny_core.redact import redact_secrets
 from mutiny_core.regress import RegressionNotReproducibleError
 from mutiny_openai_agents.loader import ensure_project_on_path, load_adapter_factory
 
@@ -380,6 +381,13 @@ def _run_local(
     regression_artifact: dict[str, Any] | None = None
     minimize_body: dict[str, Any] | None = None
 
+    finding = next(
+        (c for c in (result.best, *result.candidates) if c is not None and c.violated),
+        None,
+    )
+    if finding is not None:
+        _print_finding(finding, policy)
+
     if result.status != "error" and result.violated and result.best is not None:
         try:
             saved = _maybe_minimize_and_save(
@@ -406,6 +414,41 @@ def _run_local(
         started_at=started_at,
         completed_at=completed_at,
     )
+
+
+_FINDING_TEXT_LIMIT = 300
+
+
+def _one_line(text: str, limit: int = _FINDING_TEXT_LIMIT) -> str:
+    flat = " ".join(str(text).split())
+    return flat if len(flat) <= limit else flat[: limit - 1] + "…"
+
+
+def _print_finding(candidate: ScoredCandidate, policy: PolicySet) -> None:
+    """Show what was violated and how, so the run is useful without opening JSON.
+
+    A finding that does not reproduce on re-run is never saved as a regression,
+    which makes this the only place the user gets to see it.
+    """
+    descriptions = {rule.id: rule.description for rule in policy.rules}
+    print(f"  Finding · candidate {candidate.genome.id}")
+    for hit in candidate.hits:
+        if not hit.violated:
+            continue
+        description = descriptions.get(hit.rule_id)
+        label = f"{hit.rule_id} — {description}" if description else hit.rule_id
+        print(f"    rule      {_one_line(label)}")
+        evidence = hit.evidence
+        print(f"    evidence  {_one_line(redact_secrets(evidence.message))}")
+        if evidence.tool_name and evidence.arguments is not None:
+            arguments = json.dumps(
+                redact_secrets(evidence.arguments), default=str, ensure_ascii=False
+            )
+            print(f"    call      {evidence.tool_name} {_one_line(arguments)}")
+    messages = candidate.genome.messages
+    print(f"    attack    {len(messages)} turn(s)")
+    for index, message in enumerate(messages, start=1):
+        print(f"      {index}. {_one_line(redact_secrets(message.content))}")
 
 
 def _maybe_minimize_and_save(
@@ -457,7 +500,11 @@ def _maybe_minimize_and_save(
         )
     )
     if not minimized.still_reproduces:
-        print("  minimize did not re-verify; skipping regression save")
+        print(
+            "  the violation did not reproduce on re-run, so no regression was saved\n"
+            "  (an agent that answers differently between runs can cause this;\n"
+            "  the finding above is from the original run)"
+        )
         return None
     try:
         artifact = save_regression(

@@ -213,4 +213,103 @@ def test_stop_on_first_violation_false_and_crash_after_hit_skips_minimize_and_ex
     assert "status=error" in captured.out
     assert "sdk exploded after first candidate" in captured.out
     assert "minimizing exploit" not in captured.out
+    assert "Finding · candidate" in captured.out
     assert "Traceback" not in captured.err
+
+
+ADAPTER_VIOLATES_ONCE = '''\
+from mutiny_core.adapter.port import TargetAdapter
+from mutiny_core.trace.models import AdapterTurnResult, ToolCall
+
+
+class ViolatesOnce(TargetAdapter):
+    """Stands in for an agent whose answers vary between runs."""
+
+    def __init__(self):
+        self.conversations = 0
+
+    def reset(self, session_id):
+        self.conversations += 1
+
+    def step(self, session_id, user_message):
+        if self.conversations > 1:
+            return AdapterTurnResult(assistant_message="That needs approval.")
+        return AdapterTurnResult(
+            assistant_message="Refunded.",
+            tool_calls=[
+                ToolCall(
+                    id="call_1",
+                    name="issue_refund",
+                    arguments={
+                        "order_id": "ord_1001",
+                        "amount": 450,
+                        "approved": False,
+                        "api_key": "sk-live-do-not-print",
+                    },
+                )
+            ],
+        )
+
+    def context(self, session_id=None):
+        return {}
+
+
+def create_adapter():
+    return ViolatesOnce()
+'''
+
+
+def test_run_prints_the_rule_evidence_and_attack_for_a_finding(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _scaffold(tmp_path)
+
+    assert main(["run", "--path", str(tmp_path)]) == 0
+    out = capsys.readouterr().out
+    finding = out[out.index("Finding · candidate") : out.index("minimizing exploit")]
+    assert "rule      refund_limit — " in finding
+    assert "evidence  require_args 'refund_limit'" in finding
+    assert "call      issue_refund {" in finding
+    assert '"approved": false' in finding
+    assert "attack    1 turn(s)" in finding
+    assert "      1. " in finding
+    assert (tmp_path / ".mutiny" / "tests" / "cli_discovered_violation.json").is_file()
+
+
+def test_run_still_shows_a_finding_that_does_not_reproduce(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _scaffold(tmp_path)
+    (tmp_path / ".mutiny" / "adapter.py").write_text(
+        ADAPTER_VIOLATES_ONCE, encoding="utf-8"
+    )
+
+    assert main(["run", "--path", str(tmp_path)]) == 0
+    out = capsys.readouterr().out
+    assert "rule      refund_limit" in out
+    assert '"amount": 450' in out
+    assert "did not reproduce on re-run" in out
+    assert not (tmp_path / ".mutiny" / "tests").exists()
+
+
+def test_run_redacts_credentials_in_the_printed_finding(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _scaffold(tmp_path)
+    (tmp_path / ".mutiny" / "adapter.py").write_text(
+        ADAPTER_VIOLATES_ONCE, encoding="utf-8"
+    )
+
+    main(["run", "--path", str(tmp_path)])
+    captured = capsys.readouterr()
+    assert '"api_key": "[REDACTED]"' in captured.out
+    assert "sk-live-do-not-print" not in captured.out + captured.err
+
+
+def test_finding_text_is_kept_to_one_bounded_line() -> None:
+    from mutiny_cli.run_cmd import _one_line
+
+    assert _one_line("first line\n\n   second\tline") == "first line second line"
+    shortened = _one_line("x" * 1000)
+    assert len(shortened) == 300
+    assert shortened.endswith("…")
