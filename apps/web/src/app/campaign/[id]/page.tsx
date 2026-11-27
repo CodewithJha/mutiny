@@ -328,6 +328,13 @@ export default function CampaignPage() {
     );
   }
 
+  const liveStatus =
+    searching && !violated
+      ? "Campaign running: searching for a break."
+      : violated
+        ? "Campaign finished: break found, verified violation."
+        : `Campaign status: ${campaignStatusLabel(status)}.`;
+
   const storyStep = violated
     ? minimizeResult || savedId
       ? "regression"
@@ -360,6 +367,9 @@ export default function CampaignPage() {
                 ? "Break found"
                 : "Campaign"}
           </h1>
+          <p className="sr-only" role="status" aria-live="polite">
+            {liveStatus}
+          </p>
           <div className="campaign-status-row">
             <Chip tone={statusTone}>
               {searching && !violated ? (
