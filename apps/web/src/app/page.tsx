@@ -119,6 +119,9 @@ export default function HomePage() {
 
   return (
     <div className="landing">
+      <a href="#top" className="skip-link">
+        Skip to content
+      </a>
       <div className="landing-atmosphere" aria-hidden>
         <div className="landing-orb landing-orb-a" />
         <div className="landing-orb landing-orb-b" />
@@ -148,7 +151,7 @@ export default function HomePage() {
         </div>
       </header>
 
-      <main id="top">
+      <main id="top" tabIndex={-1}>
         <section className="landing-hero landing-hero-split">
           <div className="landing-hero-copy">
             <p className="landing-brand-mark reveal">Mutiny</p>

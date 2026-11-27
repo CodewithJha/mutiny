@@ -192,6 +192,29 @@ select {
   outline-offset: 2px;
 }
 
+/* First focusable element on the landing; hidden until it receives focus. */
+.skip-link {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 1000;
+  padding: 0.5rem 0.875rem;
+  border-radius: 0.5rem;
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+  transform: translateY(-200%);
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+/* The skip link focuses <main>; a whole-page outline carries no information. */
+main[tabindex="-1"]:focus {
+  outline: none;
+}
+
 .font-mono {
   font-family: var(--font-mono);
 }
