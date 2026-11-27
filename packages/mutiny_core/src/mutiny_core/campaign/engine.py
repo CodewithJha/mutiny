@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+import uuid
 from collections.abc import Callable
 from typing import Any, Literal
 
@@ -72,6 +73,7 @@ class CampaignEngine:
         )
         self._focus = derive_attack_focus(policy_set)
         self._seeds = seeds
+        self._run_id = uuid.uuid4().hex[:8]
         self._events_emitted = 0
 
     def run(self) -> CampaignResult:
@@ -195,7 +197,15 @@ class CampaignEngine:
             )
 
     def _initial_population(self) -> list[AttackGenome]:
-        seeds = self._seeds or default_policy_seeds(self.policy_set)
+        seeds = self._seeds
+        if not seeds:
+            # Default seed ids are stable per policy. Suffix them per run so two
+            # campaigns over the same policy never share candidate ids; stores
+            # keyed by candidate id (Hosted) would otherwise merge them.
+            seeds = [
+                seed.model_copy(update={"id": f"{seed.id}-{self._run_id}"})
+                for seed in default_policy_seeds(self.policy_set)
+            ]
         n = self.config.population_size
         pop: list[AttackGenome] = []
         i = 0

@@ -399,6 +399,42 @@ def test_full_campaign_minimize_regression_flow(client: TestClient):
     assert passed.json()["status"] == "PASS"
 
 
+def test_repeated_campaigns_over_one_policy_keep_their_own_candidates(
+    client: TestClient,
+):
+    """A second run of the same policy must not reuse the first run's candidate ids."""
+    config = {
+        "population_size": 8,
+        "max_generations": 3,
+        "elite_count": 2,
+        "stop_on_first_violation": True,
+        "max_turns": 3,
+        "rng_seed": 5,
+        "target": "in_process_demo",
+    }
+    runs: list[tuple[str, list[dict]]] = []
+    for _ in range(2):
+        cid = client.post("/api/campaigns", json=config).json()["id"]
+        started = client.post(f"/api/campaigns/{cid}/start", json={"attestation": True})
+        assert started.status_code == 200
+        assert _wait_campaign(client, cid)["status"] == "violation"
+        runs.append((cid, client.get(f"/api/campaigns/{cid}/candidates").json()["candidates"]))
+
+    (first_id, first), (second_id, second) = runs
+    assert first and second
+    assert any(c["violated"] for c in second)
+    assert not {c["id"] for c in first} & {c["id"] for c in second}
+
+    # The first campaign still owns its candidates and their evidence.
+    again = client.get(f"/api/campaigns/{first_id}/candidates").json()["candidates"]
+    assert [c["id"] for c in again] == [c["id"] for c in first]
+    for campaign_id, candidates in ((first_id, first), (second_id, second)):
+        for candidate in candidates:
+            detail = client.get(f"/api/candidates/{candidate['id']}").json()
+            assert detail["campaign_id"] == campaign_id
+            assert detail["trace"]["candidate_id"] == candidate["id"]
+
+
 def test_concurrency_guard(client: TestClient):
     a = client.post(
         "/api/campaigns",
