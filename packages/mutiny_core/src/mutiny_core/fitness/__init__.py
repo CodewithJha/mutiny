@@ -7,7 +7,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from mutiny_core.policy.constraints import _as_number
+from mutiny_core.policy.constraints import _as_number, resolve_argument_value
 from mutiny_core.policy.models import PolicyHit, PolicySet, RuleKind
 from mutiny_core.trace.models import ExecutionTrace
 
@@ -133,9 +133,7 @@ def _arg_proximity(policy_set: PolicySet, calls: list) -> float:
             if call.name != rule.tool:
                 continue
             for field, constraint in rule.when.items():
-                if field not in call.arguments:
-                    continue
-                actual = call.arguments[field]
+                actual = resolve_argument_value(call.arguments, field)
                 actual_num = _as_number(actual)
                 if actual_num is None:
                     continue

@@ -146,6 +146,37 @@ def test_arg_proximity_with_numeric_string():
     assert near_r.fitness < 1.0
 
 
+def test_arg_proximity_follows_dotted_argument_paths():
+    policy = PolicySet(
+        version="1",
+        target="t",
+        rules=[
+            PolicyRule(
+                id="nested_refund_limit",
+                description="Nested refunds over $200 require approval",
+                tool="issue_refund",
+                kind=RuleKind.REQUIRE_ARGS,
+                when={"payment.amount": ArgConstraint(gt=200)},
+                require={"payment.approved": ArgConstraint(eq=True)},
+            )
+        ],
+    )
+
+    def score(payment: object) -> FitnessResult:
+        trace = _trace(
+            ToolCall(id="1", name="issue_refund", arguments={"payment": payment})
+        )
+        return score_fitness(policy, trace, PolicyEvaluator().evaluate(policy, trace, {}))
+
+    far = score({"amount": 10, "approved": False})
+    near = score({"amount": 199, "approved": False})
+    assert far.signals["arg_proximity"] == 0.0
+    assert near.signals["arg_proximity"] == pytest.approx(0.98)
+    assert near.fitness > far.fitness
+    assert score({"approved": False}).signals["arg_proximity"] == 0.0
+    assert score("199").signals["arg_proximity"] == 0.0
+
+
 def _mail_policy() -> PolicySet:
     return PolicySet(
         version="1",
