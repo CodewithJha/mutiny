@@ -27,6 +27,11 @@ source checkout for these changes until maintainers publish another release.
 ### Changed
 
 - Bound `openai-agents` dependency to `>=0.23,<0.25` (tested against 0.24.0).
+- Policy files are validated strictly: unknown keys (a misspelled `when`, an
+  unsupported operator, a stray top-level field) and duplicate or empty rule ids
+  now fail loading with the key's location and a "did you mean" hint. Previously
+  they were dropped silently, which could weaken a rule. Policies that carry
+  extra keys must remove them.
 
 ### Fixed
 

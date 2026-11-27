@@ -121,3 +121,124 @@ def test_resolve_missing_policy_raises_policy_file_not_found(tmp_path: Path):
     assert issubclass(PolicyFileNotFoundError, PolicyValidationError)
     assert isinstance(exc_info.value, PolicyValidationError)
     assert "no policy file found" in str(exc_info.value).lower()
+
+
+# ---------------------------------------------------------------------------
+# Strict validation: mistakes must fail loading, not change what a rule checks
+# ---------------------------------------------------------------------------
+
+_REFUND_RULE = """
+version: "1"
+target: t
+rules:
+  - id: refund_cap
+    description: approved refunds must still be at most 500
+    tool: issue_refund
+    kind: require_args
+    {when_key}:
+      amount:
+        gt: 200
+    require:
+      approved:
+        eq: true
+      amount:
+        gte: 0
+        {cap_operator}: 500
+"""
+
+
+def _refund_policy_text(*, when_key: str = "when", cap_operator: str = "lte") -> str:
+    return _REFUND_RULE.format(when_key=when_key, cap_operator=cap_operator)
+
+
+def test_strict_policy_baseline_loads():
+    policy = parse_policy_text(_refund_policy_text())
+    rule = policy.rules[0]
+    assert rule.when is not None and rule.when["amount"].gt == 200
+    assert rule.require is not None
+    assert rule.require["amount"].operators_present() == ["gte", "lte"]
+
+
+@pytest.mark.parametrize("operator", ["lt_eq", "max", "LTE", "equals"])
+def test_unknown_constraint_operator_rejected(operator: str):
+    with pytest.raises(PolicyValidationError) as excinfo:
+        parse_policy_text(_refund_policy_text(cap_operator=operator))
+    assert f"rules.0.require.amount.{operator}: unknown key" in str(excinfo.value)
+
+
+def test_unknown_rule_key_rejected_with_suggestion():
+    with pytest.raises(PolicyValidationError) as excinfo:
+        parse_policy_text(_refund_policy_text(when_key="wen"))
+    assert "rules.0.wen: unknown key (did you mean 'when'?)" in str(excinfo.value)
+
+
+def test_unknown_operator_suggestion_and_no_suggestion():
+    with pytest.raises(PolicyValidationError) as excinfo:
+        parse_policy_text(_refund_policy_text(cap_operator="lte_"))
+    assert "(did you mean 'lte'?)" in str(excinfo.value)
+
+    with pytest.raises(PolicyValidationError) as excinfo:
+        parse_policy_text(_refund_policy_text(cap_operator="zzzz"))
+    assert str(excinfo.value).endswith("rules.0.require.amount.zzzz: unknown key")
+
+
+def test_unknown_top_level_key_rejected():
+    with pytest.raises(PolicyValidationError) as excinfo:
+        parse_policy_text(
+            """
+version: "1"
+target: t
+ruels: []
+"""
+        )
+    assert "ruels: unknown key (did you mean 'rules'?)" in str(excinfo.value)
+
+
+def test_duplicate_rule_ids_rejected():
+    with pytest.raises(PolicyValidationError) as excinfo:
+        parse_policy_text(
+            """
+version: "1"
+target: t
+rules:
+  - {id: guard, description: d, tool: send_email, kind: deny_tool}
+  - {id: other, description: d, tool: export_data, kind: deny_tool}
+  - {id: guard, description: d, tool: delete_account, kind: deny_tool}
+  - {id: guard, description: d, tool: issue_refund, kind: deny_tool}
+"""
+        )
+    assert "duplicate rule id(s): guard" in str(excinfo.value)
+    assert "other" not in str(excinfo.value)
+
+
+@pytest.mark.parametrize("field", ["id", "tool"])
+def test_empty_rule_id_or_tool_rejected(field: str):
+    rule = {"id": "guard", "description": "d", "tool": "send_email", "kind": "deny_tool"}
+    rule[field] = ""
+    with pytest.raises(PolicyValidationError) as excinfo:
+        parse_policy_text(yaml.safe_dump({"version": "1", "target": "t", "rules": [rule]}))
+    assert f"rules.0.{field}:" in str(excinfo.value)
+
+
+def test_strict_validation_applies_to_models_built_in_code():
+    from pydantic import ValidationError
+
+    from mutiny_core.policy import ArgConstraint
+
+    with pytest.raises(ValidationError):
+        ArgConstraint(eq=True, equals=True)
+    with pytest.raises(ValidationError):
+        PolicySet.model_validate(
+            {"version": "1", "target": "t", "rules": [], "notes": "x"}
+        )
+
+
+def test_shipped_policies_pass_strict_validation():
+    paths = [
+        SAMPLE / "policy.yaml",
+        *sorted((ROOT / "examples" / "policies").glob("*.json")),
+        *sorted((ROOT / "examples" / "policies").glob("*.yaml")),
+    ]
+    assert len(paths) >= 4
+    for path in paths:
+        assert load_policy_file(path).rules, path

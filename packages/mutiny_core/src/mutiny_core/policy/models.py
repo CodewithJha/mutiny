@@ -5,7 +5,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from mutiny_core.policy.constraints import ArgConstraint
 
@@ -19,9 +19,12 @@ class RuleKind(str, Enum):
 class PolicyRule(BaseModel):
     """Machine-checkable tool-use invariant."""
 
-    id: str
+    # A misspelled key (e.g. ``wen``) must fail loading, not change the rule.
+    model_config = ConfigDict(extra="forbid")
+
+    id: str = Field(min_length=1)
     description: str
-    tool: str
+    tool: str = Field(min_length=1)
     kind: RuleKind
     when: dict[str, ArgConstraint] | None = None
     require: dict[str, ArgConstraint] | None = None
@@ -57,9 +60,24 @@ class PolicyRule(BaseModel):
 
 
 class PolicySet(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     version: str
     target: str
     rules: list[PolicyRule] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def _unique_rule_ids(self) -> PolicySet:
+        seen: set[str] = set()
+        duplicates: list[str] = []
+        for rule in self.rules:
+            if rule.id in seen and rule.id not in duplicates:
+                duplicates.append(rule.id)
+            seen.add(rule.id)
+        if duplicates:
+            # Hits, regressions and reports are keyed by rule id.
+            raise ValueError(f"duplicate rule id(s): {', '.join(duplicates)}")
+        return self
 
 
 class PolicyEvidence(BaseModel):

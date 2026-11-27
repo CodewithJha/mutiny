@@ -2,15 +2,23 @@
 
 from __future__ import annotations
 
+import difflib
 import json
 from pathlib import Path
 from typing import Any
 
 from pydantic import ValidationError
 
+from mutiny_core.policy.constraints import CONSTRAINT_OPERATORS
 from mutiny_core.policy.models import PolicyRule, PolicySet, RuleKind
 
 POLICY_FILENAMES = ("policy.yaml", "policy.yml", "policy.json")
+
+_KNOWN_POLICY_KEYS = (
+    *PolicySet.model_fields,
+    *PolicyRule.model_fields,
+    *CONSTRAINT_OPERATORS,
+)
 
 
 class PolicyValidationError(ValueError):
@@ -102,15 +110,22 @@ def validate_policy_data(
     try:
         return PolicySet.model_validate(data)
     except ValidationError as exc:
-        details = [
-            f"{'.'.join(str(p) for p in err.get('loc', ()))}: {err.get('msg')}"
-            for err in exc.errors()
-        ]
+        details = [_describe_schema_error(err) for err in exc.errors()]
         raise PolicyValidationError(
             "policy failed schema validation",
             path=path,
             details=details,
         ) from exc
+
+
+def _describe_schema_error(err: Any) -> str:
+    loc = err.get("loc", ())
+    where = ".".join(str(p) for p in loc)
+    if err.get("type") == "extra_forbidden" and loc:
+        close = difflib.get_close_matches(str(loc[-1]), _KNOWN_POLICY_KEYS, n=1)
+        hint = f" (did you mean '{close[0]}'?)" if close else ""
+        return f"{where}: unknown key{hint}"
+    return f"{where}: {err.get('msg')}"
 
 
 def load_policy_file(path: Path | str) -> PolicySet:

@@ -281,6 +281,8 @@ PolicyRule { id, description, tool, kind, when?, require?, forbid?, deny? }
 PolicyHit { rule_id, violated, evidence, proximity }
 ```
 
+Policy files are validated strictly on load. Unknown keys at any level (for example `wen:` instead of `when:`, or a misspelled operator such as `lt_eq`) are rejected instead of being dropped, because a dropped key silently changes what the rule checks. Rule ids must be unique and non-empty, and `tool` must be non-empty.
+
 Evaluation is **pure**: `(PolicySet, ExecutionTrace, context) → list[PolicyHit]`.
 
 Context supplies deterministic facts (e.g. `customer.email`). No LLM calls.

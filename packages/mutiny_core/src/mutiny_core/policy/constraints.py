@@ -18,7 +18,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, ConfigDict, model_validator
 
 
 CONTEXT_PREFIX = "$context."
@@ -38,6 +38,9 @@ CONSTRAINT_OPERATORS = (
 
 class ArgConstraint(BaseModel):
     """Constraint over a single tool argument (or context-resolved value)."""
+
+    # A misspelled operator must fail loading, not silently weaken the rule.
+    model_config = ConfigDict(extra="forbid")
 
     eq: Any | None = None
     ne: Any | None = None
