@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import threading
 import time
 import uuid
@@ -31,6 +32,8 @@ from mutiny_core.regress import RegressionNotReproducibleError, RegressionTest
 from demo_agent import DemoSupportAgent, InProcessDemoAdapter
 
 from mutiny_api.repository import Repository
+
+log = logging.getLogger("mutiny_api")
 
 # Customer openai_agents + project_path execution and filesystem access are
 # retired on Hosted (M-PR8E / P0-3 / ADR-019). Trusted in_process_demo remains.
@@ -237,12 +240,22 @@ class EventHub:
             await q.put(event)
 
 
+INTERRUPTED_REASON = "Hosted stopped while this campaign was running"
+SHUTDOWN_GRACE_SECONDS = 5.0
+
+
+class CampaignInterrupted(RuntimeError):
+    """Raised into a running campaign so it stops at its next event."""
+
+
 class CampaignSupervisor:
     def __init__(self, repo: Repository, hub: EventHub) -> None:
         self.repo = repo
         self.hub = hub
         self._loop: asyncio.AbstractEventLoop | None = None
         self._thread_lock = threading.Lock()
+        self._tasks: set[asyncio.Task[None]] = set()
+        self._stopping = threading.Event()
 
     def set_loop(self, loop: asyncio.AbstractEventLoop) -> None:
         self._loop = loop
@@ -354,8 +367,29 @@ class CampaignSupervisor:
             },
         )
         assert self._loop is not None
-        self._loop.create_task(self._run_campaign_async(campaign_id))
+        task = self._loop.create_task(self._run_campaign_async(campaign_id))
+        self._tasks.add(task)
+        task.add_done_callback(self._campaign_task_done)
         return self.repo.get_campaign(campaign_id)  # type: ignore[return-value]
+
+    def _campaign_task_done(self, task: asyncio.Task[None]) -> None:
+        self._tasks.discard(task)
+        if not task.cancelled() and task.exception() is not None:
+            log.warning("campaign worker ended with %r", task.exception())
+
+    async def shutdown(self, timeout: float | None = None) -> bool:
+        """Ask running campaigns to stop and wait for them; True if all did.
+
+        A campaign notices at its next event, so one stuck inside an adapter
+        step can outlive the wait. Its row stays ``running`` and is failed by
+        ``Repository.fail_interrupted_campaigns`` on the next start.
+        """
+        self._stopping.set()
+        if not self._tasks:
+            return True
+        grace = SHUTDOWN_GRACE_SECONDS if timeout is None else timeout
+        _, pending = await asyncio.wait(set(self._tasks), timeout=grace)
+        return not pending
 
     def _mutator_mode(self) -> str:
         from mutiny_core import try_featherless_from_env
@@ -407,6 +441,11 @@ class CampaignSupervisor:
         scored = {"n": 0, "best": 0.0, "violated": False}
 
         def on_event(ev: MutinyEvent) -> None:
+            if self._stopping.is_set() and ev.type not in (
+                EventType.CAMPAIGN_COMPLETED,
+                EventType.CAMPAIGN_ERROR,
+            ):
+                raise CampaignInterrupted(INTERRUPTED_REASON)
             self._handle_event(campaign_id, ev)
             if ev.type == EventType.CANDIDATE_SCORED:
                 scored["n"] += 1

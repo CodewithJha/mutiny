@@ -72,6 +72,11 @@ source checkout for these changes until maintainers publish another release.
   starts and ingested campaigns (stable across idempotent retries; no token
   stored). Attestation remains an acknowledgment, not authorization (#32,
   PR #133).
+- Stopping Hosted while a campaign is running no longer closes SQLite under
+  the campaign worker (a segmentation fault, also seen as an intermittent test
+  suite crash): the campaign is stopped and marked `failed` first. A campaign
+  left `running` by a killed process is marked `failed` on the next start
+  instead of blocking every later campaign with `409 campaign_conflict`.
 - Dependencies: Next.js 15.5.28 / React 19.3.1 (Next security release, PR #130);
   locked fastapi 0.162, openai 3.37, openai-agents 0.24, pydantic 2.14 (PR #131);
   setup-uv 10.3.0 in CI (PR #129).

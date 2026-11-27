@@ -277,6 +277,36 @@ class Repository:
         if commit:
             self.conn.commit()
 
+    def fail_interrupted_campaigns(self, reason: str) -> list[str]:
+        """Fail campaigns a previous process left ``running``; return their ids.
+
+        Only the in-process supervisor sets ``running`` and it runs one campaign
+        per API process, so at startup such a row has no worker behind it.
+        """
+        rows = self.conn.execute(
+            "SELECT id, metrics_json FROM campaigns WHERE status = 'running'"
+        ).fetchall()
+        for row in rows:
+            metrics = json.loads(row["metrics_json"]) if row["metrics_json"] else {}
+            if not isinstance(metrics, dict):
+                metrics = {}
+            metrics.update({"phase": "failed", "error": reason, "reason": reason})
+            self.update_campaign_status(
+                row["id"], "failed", metrics=metrics, completed=True, commit=False
+            )
+            self.append_event(row["id"], "campaign.error", {"error": reason}, commit=False)
+        if rows:
+            self.conn.commit()
+        return [row["id"] for row in rows]
+
+    def close(self) -> None:
+        """Close the connection once no repository call is using it.
+
+        Closing a SQLite connection while another thread is inside a statement
+        crashes the interpreter, so this takes the same lock as every query.
+        """
+        self.conn.close()
+
     def _campaign_row(self, row: sqlite3.Row) -> dict[str, Any]:
         # sqlite3.Row supports key access; older rows may lack project_id key
         keys = row.keys()

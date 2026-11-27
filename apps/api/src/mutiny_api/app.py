@@ -62,6 +62,7 @@ from mutiny_api.schemas import (
 )
 from mutiny_api.supervisor import (
     HARNESS_POLICY_PATH,
+    INTERRUPTED_REASON,
     CampaignSupervisor,
     CandidateTargetRulesRequired,
     EventHub,
@@ -136,6 +137,12 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         conn = connect(resolved_db)
         repo = Repository(conn)
+        interrupted = repo.fail_interrupted_campaigns(INTERRUPTED_REASON)
+        if interrupted:
+            log.warning(
+                "mutiny_api.startup marked interrupted campaigns failed: %s",
+                ", ".join(interrupted),
+            )
         supervisor = CampaignSupervisor(repo, hub)
         ingest = IngestService(repo, hub)
         loop = asyncio.get_running_loop()
@@ -148,7 +155,9 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
         app.state.db_path = str(resolved_db)
         log.info("mutiny_api.startup db=%s version=%s", resolved_db, __version__)
         yield
-        conn.close()
+        if not await supervisor.shutdown():
+            log.warning("mutiny_api.shutdown a campaign did not stop in time")
+        repo.close()
         log.info("mutiny_api.shutdown")
 
     # FastAPI's built-in documentation routes do not run app dependencies.
