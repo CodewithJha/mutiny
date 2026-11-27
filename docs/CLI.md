@@ -87,6 +87,11 @@ the freed name; if no finding reproduces, restore the backup. `mutiny run` has n
 | `--no-hosted` | off | Force local (default behavior; kept for compatibility; conflicts with `--hosted` / `--hosted-url`) |
 | `--attestation` / `--no-attestation` | attestation on | Confirm authorized testing (`--no-attestation` fails closed) |
 
+**Untested runs:** A policy with no rules exits **2** before the adapter runs.
+A candidate whose agent step times out is marked `DID NOT FINISH` and reported
+in a warning, because it could not be checked against the policy. When no
+candidate finishes, the run exits **1** instead of reporting no violation.
+
 **Hosted sync (M-PR8C):** After local campaign completion, CLI POSTs to `/api/ingest/v1/*` with `schema_version=1` and `redaction.applied=true`. Bearer from `MUTINY_API_TOKEN` when set. Local success + sync failure → exit **3** (local result remains authoritative). Missing `api_url` with `--hosted` → exit 2. Config URL alone never selects Hosted.
 
 **Rate limits:** Each ingest POST retries HTTP `429` up to twice (three attempts

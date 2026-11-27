@@ -59,6 +59,9 @@ source checkout for these changes until maintainers publish another release.
 
 - Reject `elite_count >= population_size` so every next generation has room
   for mutations. Small populations must specify a smaller elite count.
+- `mutiny run` no longer reads as a clean result when nothing was tested: a
+  policy with no rules exits 2, timed-out candidates are marked and reported,
+  and a run in which no candidate finished exits 1.
 
 - Hosted images are built with a root Dockerfile: dependencies installed at
   build time, non-root API and UI, a named data volume instead of a repo
