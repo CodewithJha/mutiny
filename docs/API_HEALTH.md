@@ -74,6 +74,10 @@ can differ between installations or requests.
 - A full campaign slot produces `status=degraded` even while `api` and `db` are
   `true`. A local fixture with one `running` row returned this state with HTTP
   **200**. Check the JSON `status` and counts as well as the HTTP status.
+- A campaign cannot stay `running` across a restart. Stopping the API asks a
+  running campaign to stop at its next event and marks it `failed`; on startup,
+  any row a killed process left `running` is marked `failed` with a
+  `campaign.error` event, which frees the slot.
 - The handler can report `db=false` after a failed ping, but database failures
   during its subsequent campaign query can fail the request altogether. Do not
   assume every database outage returns a structured `degraded` response; inspect
