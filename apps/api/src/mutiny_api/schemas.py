@@ -55,7 +55,7 @@ class MinimizeRequest(BaseModel):
 
 
 class RegressionSaveRequest(BaseModel):
-    name: str = "refund_limit_regression"
+    name: str = "discovered_violation"
     target_rule_ids: list[str] | None = None
 
 

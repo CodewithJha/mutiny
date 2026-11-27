@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ReactFlowProvider } from "@xyflow/react";
 import {
+  defaultRegressionName,
   mutinyApi,
   subscribeCampaignEvents,
   type Campaign,
@@ -267,7 +268,7 @@ export default function CampaignPage() {
     try {
       const saved = await mutinyApi.saveRegression(
         selectedId,
-        "refund_limit_regression"
+        defaultRegressionName(selectedDetail)
       );
       setSavedId(saved.id);
     } catch (e) {

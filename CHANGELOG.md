@@ -26,6 +26,9 @@ source checkout for these changes until maintainers publish another release.
 
 ### Changed
 
+- Hosted regressions no longer default to the refund demo's name: the API
+  default is `discovered_violation` and the UI suggests `<rule id>_regression`
+  for the violated rule (#36).
 - Bound `openai-agents` dependency to `>=0.23,<0.25` (tested against 0.24.0).
 
 ### Fixed
