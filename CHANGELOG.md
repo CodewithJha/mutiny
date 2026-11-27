@@ -43,6 +43,11 @@ source checkout for these changes until maintainers publish another release.
   `75dfbdd`, PR #48).
 - Preserve matched condition evidence (PR #84), successive saved regressions
   (PR #89), and nonzero exit status for unexpected skipped replay cases (PR #88).
+- Regression replay no longer reports PASS when it could not check the guarded
+  rule: a rule renamed or removed from the policy, an artifact with no rules or
+  no conversation, or a target that errors or times out before the conversation
+  finishes. These cases are SKIPPED with the reason, and `mutiny test` now
+  prints why each case was skipped.
 - Bound adapter steps and campaign wall time (PR #96), preserve correct agent
   imports across project loads (PR #119), and free the ingest execution slot
   after interruption (PR #98).

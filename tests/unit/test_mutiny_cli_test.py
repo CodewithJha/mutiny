@@ -186,3 +186,40 @@ def test_mutiny_test_skip_only_fails_even_with_allow_skip(tmp_path: Path):
     assert run_tests(project_root=tmp_path, allow_skip=True) == 1
 
 
+
+
+def _rename_policy_rule(project: Path, old: str, new: str) -> None:
+    policy_path = project / "policy.json"
+    policy = json.loads(policy_path.read_text(encoding="utf-8"))
+    for rule in policy["rules"]:
+        if rule["id"] == old:
+            rule["id"] = new
+    policy_path.write_text(json.dumps(policy), encoding="utf-8")
+
+
+@pytest.mark.parametrize("fixed", [False, True])
+def test_mutiny_test_skips_regression_whose_rule_left_the_policy(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], fixed: bool
+):
+    _scaffold(tmp_path, fixed=fixed)
+    _rename_policy_rule(tmp_path, "refund_limit", "refund_cap")
+
+    assert run_tests(project_root=tmp_path) == 1
+
+    out = capsys.readouterr().out
+    assert "Summary: 0 passed, 0 failed, 1 skipped" in out
+    assert "SKIPPED refund_limit_over_200_unapproved: replay error:" in out
+    assert "refund_limit (renamed or removed?)" in out
+    report = json.loads((tmp_path / ".mutiny" / "test-report.json").read_text())
+    assert report["results"][0]["status"] == "SKIPPED"
+    assert "refund_limit" in report["results"][0]["error"]
+
+
+def test_mutiny_test_prints_reason_for_corrupt_regression(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    _scaffold(tmp_path, fixed=True)
+    (tmp_path / ".mutiny" / "tests" / "corrupt.json").write_text("{", encoding="utf-8")
+
+    assert run_tests(project_root=tmp_path) == 1
+    assert "SKIPPED corrupt: invalid regression JSON: corrupt.json" in capsys.readouterr().out
