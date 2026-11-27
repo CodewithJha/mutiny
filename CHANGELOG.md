@@ -17,6 +17,9 @@ source checkout for these changes until maintainers publish another release.
 - `mutiny --version` / `-V` from installed metadata (#26, PR #52).
 - String `contains`, `startswith`, and `endswith` policy constraints (#23, PR #51).
 - Clear PASS/FAIL/SKIPPED replay summary (#39, PR #53).
+- Dotted paths for nested tool arguments in `when` / `require` / `forbid`
+  (for example `recipient.domain`); top-level fields are unchanged and missing
+  paths resolve to `None` (#22).
 - `mutiny-pydantic-ai` source package: a local PydanticAI `TargetAdapter` with
   fail-closed tool observation (#45, PR #139). Not yet published to PyPI.
 - Hosted health field guide (`docs/API_HEALTH.md`, #8, PR #136), OpenAPI

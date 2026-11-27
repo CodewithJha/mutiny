@@ -3,6 +3,7 @@
 from mutiny_core.policy.constraints import (
     ArgConstraint,
     matches_constraint,
+    resolve_argument_value,
     resolve_context_value,
 )
 from mutiny_core.policy.evaluator import PolicyEvaluator
@@ -42,6 +43,7 @@ __all__ = [
     "matches_constraint",
     "parse_policy_text",
     "policy_set_to_public",
+    "resolve_argument_value",
     "resolve_context_value",
     "resolve_policy_path",
     "rule_to_public",

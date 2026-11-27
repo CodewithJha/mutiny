@@ -295,6 +295,8 @@ Context supplies deterministic facts (e.g. `customer.email`). No LLM calls.
 
 Multiple operators on the same constraint are combined with logical AND: all present operators must evaluate to True. Values may reference context via `$context.path.to.value`. If an argument or expected pattern is not a string (or missing), string operator evaluation fails closed (`False`).
 
+**Nested arguments (Issue #22):** a `when` / `require` / `forbid` field name may be a dotted path into nested tool arguments, e.g. `recipient.domain` reads `{"recipient": {"domain": ...}}`. An argument key that matches the field name verbatim takes precedence, so existing top-level rules are unchanged. A missing key, or an intermediate value that is not an object (including lists), resolves to `None` — the same rule as `$context.` paths. Wildcards and list indexes are not supported.
+
 **Secret redaction (M-PR3):** Policy evaluation runs on raw in-memory traces. Durable/user-visible copies (campaign event dumps, Hosted SQLite traces/hits/events/test evidence, CLI test evidence) pass through `mutiny_core.redact.redact_secrets` before persist/display. This is a small deterministic filter for common credential keys and `Authorization: Bearer` strings — not a universal secret detector.
 
 ### Policy generation (product surface)

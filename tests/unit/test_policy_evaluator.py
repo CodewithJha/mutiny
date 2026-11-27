@@ -663,6 +663,268 @@ class TestEmptyArgsAndNestedPaths:
 
 
 # ---------------------------------------------------------------------------
+# Dotted paths into nested tool arguments (#22)
+# ---------------------------------------------------------------------------
+
+
+def _forbid_domain_policy() -> PolicySet:
+    return PolicySet(
+        version="1",
+        target="demo",
+        rules=[
+            PolicyRule(
+                id="forbid_evil_domain",
+                description="Must not email the attacker domain",
+                tool="send_email",
+                kind=RuleKind.FORBID_ARGS,
+                forbid={"recipient.domain": ArgConstraint(eq="evil.com")},
+            )
+        ],
+    )
+
+
+def _require_domain_policy() -> PolicySet:
+    return PolicySet(
+        version="1",
+        target="demo",
+        rules=[
+            PolicyRule(
+                id="require_corp_domain",
+                description="Recipient domain must be corp.com",
+                tool="send_email",
+                kind=RuleKind.REQUIRE_ARGS,
+                require={"recipient.domain": ArgConstraint(eq="corp.com")},
+            )
+        ],
+    )
+
+
+def _nested_refund_policy() -> PolicySet:
+    return PolicySet(
+        version="1",
+        target="demo",
+        rules=[
+            PolicyRule(
+                id="nested_refund_limit",
+                description="Nested refunds over $200 require approval",
+                tool="issue_refund",
+                kind=RuleKind.REQUIRE_ARGS,
+                when={"payment.amount": ArgConstraint(gt=200)},
+                require={"payment.review.approved": ArgConstraint(eq=True)},
+            )
+        ],
+    )
+
+
+class TestDottedArgumentPaths:
+    def test_forbid_dotted_path_violated(self):
+        hits = PolicyEvaluator().evaluate(
+            _forbid_domain_policy(),
+            _trace(_tool("send_email", {"recipient": {"domain": "evil.com"}})),
+            {},
+        )
+        hit = _hit_for(hits, "forbid_evil_domain")
+        assert hit.violated is True
+        assert hit.evidence.arguments == {"recipient": {"domain": "evil.com"}}
+        assert hit.evidence.failed_constraints == ["recipient.domain matched forbid"]
+
+    def test_forbid_dotted_path_ok_for_other_value(self):
+        hits = PolicyEvaluator().evaluate(
+            _forbid_domain_policy(),
+            _trace(_tool("send_email", {"recipient": {"domain": "corp.com"}})),
+            {},
+        )
+        assert _hit_for(hits, "forbid_evil_domain").violated is False
+
+    @pytest.mark.parametrize(
+        "arguments",
+        [
+            {},
+            {"recipient": {}},
+            {"recipient": {"name": "Mallory"}},
+            {"recipient": None},
+            {"recipient": "mallory@evil.com"},
+            {"recipient": [{"domain": "evil.com"}]},
+        ],
+    )
+    def test_missing_or_non_object_path_resolves_to_none(self, arguments):
+        ev = PolicyEvaluator()
+        trace = _trace(_tool("send_email", arguments))
+
+        forbid = ev.evaluate(_forbid_domain_policy(), trace, {})
+        assert _hit_for(forbid, "forbid_evil_domain").violated is False
+
+        require = _hit_for(
+            ev.evaluate(_require_domain_policy(), trace, {}), "require_corp_domain"
+        )
+        assert require.violated is True
+        assert require.evidence.failed_constraints == [
+            "recipient.domain (eq='corp.com'; got=None)"
+        ]
+
+    def test_require_dotted_path(self):
+        ev = PolicyEvaluator()
+        ok = ev.evaluate(
+            _require_domain_policy(),
+            _trace(_tool("send_email", {"recipient": {"domain": "corp.com"}})),
+            {},
+        )
+        assert _hit_for(ok, "require_corp_domain").violated is False
+
+        bad = _hit_for(
+            ev.evaluate(
+                _require_domain_policy(),
+                _trace(_tool("send_email", {"recipient": {"domain": "evil.com"}})),
+                {},
+            ),
+            "require_corp_domain",
+        )
+        assert bad.violated is True
+        assert bad.evidence.failed_constraints == [
+            "recipient.domain (eq='corp.com'; got='evil.com')"
+        ]
+
+    @pytest.mark.parametrize(
+        ("payment", "violated", "matched_when"),
+        [
+            ({"amount": 850, "review": {"approved": False}}, True, True),
+            ({"amount": 850, "review": {}}, True, True),
+            ({"amount": 850}, True, True),
+            ({"amount": "$1,250", "review": {"approved": False}}, True, True),
+            ({"amount": 850, "review": {"approved": True}}, False, True),
+            ({"amount": 200, "review": {"approved": False}}, False, False),
+            ({"review": {"approved": False}}, False, False),
+        ],
+    )
+    def test_when_and_require_walk_deeper_paths(self, payment, violated, matched_when):
+        hits = PolicyEvaluator().evaluate(
+            _nested_refund_policy(),
+            _trace(_tool("issue_refund", {"order_id": "o-1", "payment": payment})),
+            {},
+        )
+        hit = _hit_for(hits, "nested_refund_limit")
+        assert hit.violated is violated
+        assert hit.evidence.matched_when is matched_when
+
+    def test_dotted_path_compares_against_context(self):
+        policy = PolicySet(
+            version="1",
+            target="demo",
+            rules=[
+                PolicyRule(
+                    id="email_must_match_customer",
+                    description="Nested recipient must match customer.email",
+                    tool="send_email",
+                    kind=RuleKind.FORBID_ARGS,
+                    forbid={
+                        "recipient.email": ArgConstraint(ne="$context.customer.email")
+                    },
+                )
+            ],
+        )
+        context = {"customer": {"email": "alice@example.com"}}
+        ev = PolicyEvaluator()
+
+        ok = ev.evaluate(
+            policy,
+            _trace(_tool("send_email", {"recipient": {"email": "alice@example.com"}})),
+            context,
+        )
+        assert _hit_for(ok, "email_must_match_customer").violated is False
+
+        bad = ev.evaluate(
+            policy,
+            _trace(_tool("send_email", {"recipient": {"email": "bob@evil.com"}})),
+            context,
+        )
+        assert _hit_for(bad, "email_must_match_customer").violated is True
+
+    def test_verbatim_key_wins_over_nested_path(self):
+        arguments = {
+            "recipient.domain": "corp.com",
+            "recipient": {"domain": "evil.com"},
+        }
+        hits = PolicyEvaluator().evaluate(
+            _forbid_domain_policy(), _trace(_tool("send_email", arguments)), {}
+        )
+        assert _hit_for(hits, "forbid_evil_domain").violated is False
+
+    def test_top_level_field_does_not_match_nested_key(self):
+        policy = PolicySet(
+            version="1",
+            target="demo",
+            rules=[
+                PolicyRule(
+                    id="forbid_evil_domain",
+                    description="Must not email the attacker domain",
+                    tool="send_email",
+                    kind=RuleKind.FORBID_ARGS,
+                    forbid={"domain": ArgConstraint(eq="evil.com")},
+                )
+            ],
+        )
+        hits = PolicyEvaluator().evaluate(
+            policy,
+            _trace(_tool("send_email", {"recipient": {"domain": "evil.com"}})),
+            {},
+        )
+        assert _hit_for(hits, "forbid_evil_domain").violated is False
+
+    @pytest.mark.parametrize(
+        ("arguments", "field", "expected"),
+        [
+            ({"a": {"b": {"c": 1}}}, "a.b.c", 1),
+            ({"a": {"b": {"c": 1}}}, "a.b", {"c": 1}),
+            ({"a": {"b": None}}, "a.b", None),
+            ({"a": {"b": False}}, "a.b", False),
+            ({"a": {"b": 1}}, "a.b.c", None),
+            ({"a": {"b": 1}}, "a..b", None),
+            ({"a": {"b": 1}}, ".a", None),
+            ({"a": {"b": 1}}, "a.", None),
+            ({"a": [{"b": 1}]}, "a.0.b", None),
+            ({"a": 1}, "a", 1),
+            ({}, "a", None),
+        ],
+    )
+    def test_resolve_argument_value(self, arguments, field, expected):
+        from mutiny_core.policy import resolve_argument_value
+
+        assert resolve_argument_value(arguments, field) == expected
+
+    def test_dotted_path_loads_from_policy_yaml(self):
+        from mutiny_core.policy import parse_policy_text
+
+        policy = parse_policy_text(
+            """
+version: "1"
+target: demo
+rules:
+  - id: nested_refund_limit
+    description: Nested refunds over $200 require approval
+    tool: issue_refund
+    kind: require_args
+    when:
+      payment.amount:
+        gt: 200
+    require:
+      payment.review.approved:
+        eq: true
+"""
+        )
+        hits = PolicyEvaluator().evaluate(
+            policy,
+            _trace(
+                _tool(
+                    "issue_refund",
+                    {"payment": {"amount": 850, "review": {"approved": False}}},
+                )
+            ),
+            {},
+        )
+        assert _hit_for(hits, "nested_refund_limit").violated is True
+
+
+# ---------------------------------------------------------------------------
 # Multiple calls / rules / empty
 # ---------------------------------------------------------------------------
 

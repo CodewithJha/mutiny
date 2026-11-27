@@ -9,6 +9,9 @@ Context references use the form ``$context.path.to.value`` (e.g.
 ``$context.customer.email``). Context is supplied by the adapter; evaluation
 never calls an LLM.
 
+Constraint field names may be dotted paths into nested tool arguments (e.g.
+``recipient.domain``); see ``resolve_argument_value``.
+
 Multiple operators on the same ``ArgConstraint`` are combined with logical AND:
 all present operators must evaluate to True for the constraint to match.
 """
@@ -72,6 +75,26 @@ def resolve_context_value(ref: Any, context: dict[str, Any]) -> Any:
         return None
     cur: Any = context
     for part in path.split("."):
+        if not isinstance(cur, dict) or part not in cur:
+            return None
+        cur = cur[part]
+    return cur
+
+
+def resolve_argument_value(arguments: dict[str, Any], field: str) -> Any:
+    """Read a constraint field from tool-call arguments.
+
+    A key that exists verbatim wins, so top-level arguments (including names
+    that themselves contain ``.``) are read as before. Otherwise a dotted field
+    such as ``recipient.domain`` walks nested objects. Missing keys and
+    non-object intermediates resolve to ``None``, like context paths.
+    """
+    if field in arguments:
+        return arguments[field]
+    if "." not in field:
+        return None
+    cur: Any = arguments
+    for part in field.split("."):
         if not isinstance(cur, dict) or part not in cur:
             return None
         cur = cur[part]
@@ -177,10 +200,8 @@ def matches_constraint_map(
     """All fields in *constraints* must match. Returns (ok, failed field descs)."""
     failed: list[str] = []
     for field, constraint in constraints.items():
-        actual = arguments.get(field) if field in arguments else None
-        # Missing key → treat as None for matching
-        if field not in arguments:
-            actual = None
+        # Missing key or path → treat as None for matching
+        actual = resolve_argument_value(arguments, field)
         if not matches_constraint(actual, constraint, context=context):
             failed.append(f"{field} ({describe_constraint(constraint)}; got={actual!r})")
     return (len(failed) == 0, failed)
