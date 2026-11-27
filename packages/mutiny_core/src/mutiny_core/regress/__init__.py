@@ -18,6 +18,14 @@ class RegressionNotReproducibleError(ValueError):
     """Raised when save is refused because the exploit does not re-verify."""
 
 
+class RegressionInconclusiveError(RuntimeError):
+    """Raised when a replay cannot check the rules a regression guards.
+
+    Reporting PASS would be a false green and FAIL is unproven; callers should
+    surface the reason (CLI and Hosted report the case as SKIPPED).
+    """
+
+
 class RegressionExpected(BaseModel):
     must_not_violate: list[str] = Field(default_factory=list)
 
@@ -107,10 +115,28 @@ def replay_regression(
     """Re-exec conversation; PASS iff none of must_not_violate rules fire.
 
     Uses the same PolicyEvaluator as live campaigns. No LLM judging.
+
+    Raises ``RegressionInconclusiveError`` instead of returning PASS when the
+    guarded rules could not be checked: a rule is missing from *policy_set*,
+    the artifact has no rules or no conversation, or the target errored before
+    the conversation finished without a guarded rule firing.
     """
     must_not = list(artifact.expected.must_not_violate) or list(
         artifact.policy_rule_ids
     )
+    if not must_not:
+        raise RegressionInconclusiveError(
+            "regression lists no policy rules to check"
+        )
+    known = {rule.id for rule in policy_set.rules}
+    missing = [rid for rid in must_not if rid not in known]
+    if missing:
+        raise RegressionInconclusiveError(
+            "regression guards rule(s) missing from the current policy: "
+            f"{', '.join(missing)} (renamed or removed?)"
+        )
+    if not artifact.conversation:
+        raise RegressionInconclusiveError("regression has an empty conversation")
     trace = execute_conversation(
         adapter,
         list(artifact.conversation),
@@ -122,4 +148,8 @@ def replay_regression(
     violated = [h.rule_id for h in hits if h.violated and h.rule_id in must_not]
     if violated:
         return ReplayResult(status="FAIL", violated_rule_ids=violated, trace=trace)
+    if trace.status == "error":
+        raise RegressionInconclusiveError(
+            f"replay did not finish: {trace.error or 'target error'}"
+        )
     return ReplayResult(status="PASS", violated_rule_ids=[], trace=trace)

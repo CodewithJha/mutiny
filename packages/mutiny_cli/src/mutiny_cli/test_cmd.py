@@ -199,6 +199,8 @@ def run_tests(
                     print(f"         evidence tools: {tools}")
                 if r.summary:
                     print(f"         {r.summary}")
+            elif r.status == "SKIPPED":
+                print(f"  SKIPPED {r.name}: {r.summary or r.error or 'not replayed'}")
 
     if failed:
         return 1

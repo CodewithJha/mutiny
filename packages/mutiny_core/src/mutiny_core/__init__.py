@@ -57,6 +57,7 @@ from mutiny_core.policy import (
     validate_policy_data,
 )
 from mutiny_core.regress import (
+    RegressionInconclusiveError,
     RegressionNotReproducibleError,
     RegressionTest,
     ReplayResult,
@@ -102,6 +103,7 @@ __all__ = [
     "PolicySet",
     "PolicyValidationError",
     "REDACTED",
+    "RegressionInconclusiveError",
     "RegressionNotReproducibleError",
     "RegressionTest",
     "ReplayResult",

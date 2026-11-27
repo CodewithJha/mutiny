@@ -135,6 +135,13 @@ Any failed or unexpected skipped case exits `1`, even if other cases pass
 (corrupt JSON, invalid schema, replay errors). Use `--allow-skip` to exit `0`
 when at least one case passed and the rest were skipped. Skip-only still exits `1`.
 
+PASS means the conversation ran to the end and none of the regression's rules
+fired. A case is SKIPPED, with the reason printed under the summary, when that
+cannot be established: a guarded rule id is no longer in the policy (renamed or
+removed), the artifact lists no rules or no conversation, or the target errored
+or timed out before a guarded rule fired. Restore or rename the rule in the
+regression file, or delete the regression if it is obsolete.
+
 | Arg / flag | Default | Meaning |
 |---|---|---|
 | `regression_id` | (all) | Optional id or name to run one case |
