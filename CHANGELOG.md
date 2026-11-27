@@ -23,6 +23,10 @@ source checkout for these changes until maintainers publish another release.
   descriptions for health and ingest routes (#44, PR #138), per-rule comments
   in the sample policy (#7, PR #134), and an email-recipient example policy
   bound to trusted context (#10, PR #132).
+- Hosted UI accessibility: animations and smooth scrolling stop under
+  `prefers-reduced-motion` (#35), the landing gets a skip-to-content link (#4),
+  and the campaign page announces status changes through an `aria-live` region
+  (#33).
 
 ### Changed
 
