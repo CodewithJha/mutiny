@@ -39,6 +39,10 @@ source checkout for these changes until maintainers publish another release.
   constraints and numeric boundary fitness (#42, commit `bd6a37b`, PR #50).
   Currency-formatted numeric arguments are also recognized (PR #83). These
   behaviors are git-only relative to PyPI 0.2.0.
+- Secret redaction covers more credential keys: `apikey`, `secret_key`,
+  `private_key`, and any key ending in a covered name (`openai_api_key`,
+  `x-api-key`, `client_secret`, `github_token`, `db_password`). Inline
+  OpenAI-style `sk-…` / `sk-proj-…` keys in strings are redacted too (#16).
 - Pass Hosted token and API URL through the compose web service (commit
   `75dfbdd`, PR #48).
 - Preserve matched condition evidence (PR #84), successive saved regressions
