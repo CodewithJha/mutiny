@@ -189,6 +189,16 @@ export type Health = {
   adapter_loading?: string;
 };
 
+export const DEFAULT_REGRESSION_NAME = "discovered_violation";
+
+/** `<rule id>_regression` for the candidate's first violated rule. */
+export function defaultRegressionName(
+  candidate: Pick<Candidate, "hits"> | null | undefined
+): string {
+  const ruleId = candidate?.hits?.find((h) => h.violated)?.rule_id?.trim();
+  return ruleId ? `${ruleId}_regression` : DEFAULT_REGRESSION_NAME;
+}
+
 export const mutinyApi = {
   health: () => api<Health>("/api/health"),
   listProjects: () => api<{ projects: Project[] }>("/api/projects"),

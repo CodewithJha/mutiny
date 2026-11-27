@@ -802,7 +802,7 @@ def test_21_regression_ingestion(client: TestClient) -> None:
             path=".mutiny/tests/foo.json",
             artifact={
                 "version": "1",
-                "name": "refund_limit_regression",
+                "name": "discovered_violation",
                 "target_rule_ids": ["refund_limit"],
             },
         ),

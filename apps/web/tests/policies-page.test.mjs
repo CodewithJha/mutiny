@@ -63,3 +63,21 @@ test("Hosted client no longer exposes retired policy file operations", () => {
     assert.equal(method in mutinyApi, false, `${method} must stay removed`);
   }
 });
+
+test("Regression names default to the violated rule, not the refund demo", () => {
+  const { defaultRegressionName, DEFAULT_REGRESSION_NAME } = loadTypeScript("src/lib/api.ts");
+  const hits = [
+    { rule_id: "deny_send_email", violated: false },
+    { rule_id: "delete_requires_confirm", violated: true },
+    { rule_id: "refund_limit", violated: true },
+  ];
+  assert.equal(defaultRegressionName({ hits }), "delete_requires_confirm_regression");
+  assert.equal(DEFAULT_REGRESSION_NAME, "discovered_violation");
+  for (const candidate of [null, undefined, {}, { hits: [] }, { hits: [hits[0]] }]) {
+    assert.equal(defaultRegressionName(candidate), DEFAULT_REGRESSION_NAME);
+  }
+  assert.equal(
+    defaultRegressionName({ hits: [{ rule_id: "  ", violated: true }] }),
+    DEFAULT_REGRESSION_NAME
+  );
+});

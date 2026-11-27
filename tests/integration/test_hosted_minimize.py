@@ -178,6 +178,7 @@ def test_minimized_child_preserves_original_and_can_be_reloaded(client, rule):
     saved = client.post(f"/api/candidates/{child_ids[0]}/regression", json={})
     assert saved.status_code == 201
     assert saved.json()["artifact"]["expected"]["must_not_violate"] == [rule]
+    assert saved.json()["artifact"]["name"] == "discovered_violation"
     events = client.app.state.repo.list_events("campaign")
     minimized_events = [e for e in events if e["type"] == "exploit.minimized"]
     assert [

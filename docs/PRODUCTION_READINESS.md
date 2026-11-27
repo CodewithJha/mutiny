@@ -193,7 +193,7 @@ MVP limitations are labeled as such, not “bugs.”
 | ID | Finding |
 |---|---|
 | P3-1 | Demo pin / Iris narrative still prominent in Hosted meta (`demo_pin`, `iris-demo-pin`) |
-| P3-2 | Default regression name `refund_limit_regression` |
+| P3-2 | Default regression name `refund_limit_regression` — **fixed (#36):** API default is `discovered_violation`; Hosted UI suggests `<rule id>_regression` |
 | P3-3 | CONTRIBUTING/GOOD_FIRST_ISSUES strong; link this readiness doc from hub |
 | P3-4 | Web a11y / copy still partially demo-centric in places |
 | P3-5 | ~~No Dockerfile (compose uses stock images + volume mount)~~ **Resolved (#135):** root Dockerfile, non-root images, named data volume, `container-smoke` CI |
@@ -271,7 +271,7 @@ MVP limitations are labeled as such, not “bugs.”
 | `campaign/config.py` `boundary_refund_seeds` / `default_refund_seeds` | `ord_1001`, dollar amounts, `refund_limit` | **Demo/harness pack only** (ADR-020); Core default is `default_policy_seeds` |
 | `fitness/__init__.py` | APR/manager premise list **removed (#41)**; cues now derive from policy tools/argument names | Assistant text only; lexical search hint, not a violation oracle |
 | CLI `init` `POLICY_YAML` | Refund + delete templates | OK as **scaffold**, not engine hardcoding |
-| API `schemas.RegressionSaveRequest` | Default name `refund_limit_regression` | UX bias (P3; out of M-PR6) |
+| API `schemas.RegressionSaveRequest` | Default name `discovered_violation` (was `refund_limit_regression`, #36) | Generic; Hosted UI suggests `<rule id>_regression` |
 | Supervisor `DEFAULT_SAMPLE_PROJECT` | `examples/openai_support_agent` | Fine for local Hosted default |
 
 **Verdict:** Oracle is modular; **product seed/mutation targeting is policy-derived (M-PR6 / ADR-020)**. Refund corpora remain as bundled demo/example helpers, not Core defaults.
